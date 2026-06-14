@@ -204,6 +204,15 @@ Latest capsule alpha verification on 2026-06-14:
 - Desktop production build: passed.
 - Playwright desktop Capsules smoke: Capsules rendered at 1440x950 with no horizontal overflow, no visible spec/marketing copy (`portable projection of the graph`, `not a folder`, `mini-vaults`), and the selected capsule detail rendered. Screenshot captured at `/tmp/vault-capsules-alpha-desktop.png`.
 
+Latest capsule workflow verification on 2026-06-15:
+
+- Added compact `Add to capsule` entry points from the current Note, selected Storage source, selected Storage source block, and selected Graph claim.
+- Review can now attach a newly approved claim to a selected capsule in the same approval action, with claim evidence included automatically.
+- The workflow attach dialog stays compact: capsule, role, optional source export policy, optional claim evidence, and Add/Cancel only.
+- Removed the old note-tools subtitle while touching the note toolbar, keeping the document surface closer to the accepted minimalist direction.
+- Desktop tests: 63 passed.
+- Desktop production build: passed.
+
 Latest focused verification on 2026-06-11 before the current claim-grammar slice:
 
 - Python core tests: 125 passed.
@@ -2516,7 +2525,13 @@ Current good state:
   - add existing note/source/claim,
   - evidence auto-include toggle for claims,
   - manual snapshot action.
-- Focused backend and desktop tests cover the alpha vertical path.
+- Compact capsule attach entry points exist in the real workflows:
+  - current Note,
+  - selected Storage source,
+  - selected Storage source block,
+  - selected Graph claim,
+  - Review approval of a new claim.
+- Focused backend and desktop tests cover the alpha vertical path plus note attach and approval-to-capsule attach.
 
 Remaining tasks:
 
@@ -2526,12 +2541,7 @@ Remaining tasks:
   - clear source/note/claim attachment flow,
   - responsive desktop-first layout,
   - mobile noted later with the broader mobile repair pass.
-- Add capsule entry points from existing workflows:
-  - `Add to capsule` from current note,
-  - `Add to capsule` from Storage source/source block,
-  - add approved Review claims to a capsule.
 - Expand backend item support where useful:
-  - explicit source-block selection,
   - kg node/concept selection,
   - learning items,
   - attached tools.
@@ -2570,7 +2580,7 @@ Acceptance evidence:
 ## Recommended Next Session Steps
 
 1. If continuing UX, keep the Notion/Obsidian/Apple Notes reset active: inspect Notes, Storage, Quick Note, Review, Assistant, Capsules, and Settings screenshots, then simplify the most overloaded flow first.
-2. If continuing Capsules, polish the alpha surface first, then add entry points from Notes/Storage/Review before export/import.
+2. If continuing Capsules, polish the alpha surface and attach dialog first, then start export preview/package/import quarantine before diff/fork.
 3. If continuing local AI production, pick the first real approved runtime/model candidate set and run the release-packet tooling.
 4. If stabilizing before bigger registry edits, stage or commit the current v1 state.
 5. After any slice:

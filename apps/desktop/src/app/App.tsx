@@ -4752,7 +4752,6 @@ function NoteEditor({ note }: { note?: Note }) {
           <summary>
             <span>
               <strong>Note tools</strong>
-              <small>Models, voice, history, export.</small>
             </span>
             <Badge tone="good">local-first</Badge>
           </summary>
@@ -4766,6 +4765,7 @@ function NoteEditor({ note }: { note?: Note }) {
                 <Button icon={<Archive size={16} />} onClick={() => generate.mutate()}>
                   Draft memo
                 </Button>
+                <CapsuleAttachButton targetType="note" targetId={note.id} targetTitle={title || note.title} defaultRole="core" />
               </div>
             </section>
             <section>
@@ -5295,6 +5295,7 @@ async function copyBlock(block: SourceBlock) {
                   Open note
                 </Button>
               )}
+              <CapsuleAttachButton targetType="source" targetId={selected.id} targetTitle={selected.title} defaultRole="primary_source" showExportPolicy />
               <Button icon={<Sparkles size={16} />} disabled={!selected} onClick={() => extract.mutate()}>
                 Find claims
               </Button>
@@ -5393,6 +5394,13 @@ async function copyBlock(block: SourceBlock) {
                       <Button icon={<Copy size={15} />} variant="quiet" onClick={() => void copyBlock(selectedBlock)}>
                         {copiedBlockId === selectedBlock.id ? "Copied" : "Copy quote"}
                       </Button>
+                      <CapsuleAttachButton
+                        targetType="source_block"
+                        targetId={selectedBlock.id}
+                        targetTitle={`${selected.title} ${sourceBlockLocator(selectedBlock)}`}
+                        defaultRole="evidence"
+                        showExportPolicy
+                      />
                     </div>
                     {createNoteFromBlock.error && <small className="model-test-error">{createNoteFromBlock.error.message}</small>}
                   </>
@@ -5893,6 +5901,7 @@ function ReviewView() {
   const [selectedReviewIds, setSelectedReviewIds] = useState<string[]>([]);
   const [decisionNote, setDecisionNote] = useState("");
   const [bulkDecisionNote, setBulkDecisionNote] = useState("");
+  const [reviewCapsuleId, setReviewCapsuleId] = useState("none");
   function selectReviewStatus(status: "pending" | "dismissed") {
     setStatusFilter(status);
     setSelectedReviewItemId(undefined);
@@ -5900,6 +5909,11 @@ function ReviewView() {
   const review = useQuery({
     queryKey: ["review", statusFilter],
     queryFn: () => vaultRequest<ReviewItem[]>("review.list", { status: statusFilter })
+  });
+  const capsules = useQuery({
+    queryKey: ["capsules", "review"],
+    queryFn: () => vaultRequest<CapsuleListResponse>("capsules.list", { limit: 100 }),
+    enabled: statusFilter === "pending"
   });
   const reviewItems = useMemo(() => review.data ?? [], [review.data]);
   const itemTypes = useMemo(() => Array.from(new Set(reviewItems.map((reviewItem) => reviewItem.item_type))).sort(), [reviewItems]);
@@ -5918,6 +5932,7 @@ function ReviewView() {
   const pendingCount = reviewItems.filter((reviewItem) => reviewItem.status === "pending").length;
   useEffect(() => {
     setDecisionNote("");
+    setReviewCapsuleId("none");
   }, [item?.id]);
   useEffect(() => {
     setSelectedReviewIds([]);
@@ -5930,10 +5945,28 @@ function ReviewView() {
     setSelectedReviewIds((ids) => ids.filter((id) => pendingIds.has(id)));
   }, [reviewItems]);
   const approve = useMutation({
-    mutationFn: (reviewItem: ReviewItem) =>
-      vaultRequest("review.approve", { itemId: reviewItem.id, data: { decision_note: decisionNote.trim() || "Approved after evidence review" } }),
+    mutationFn: async (reviewItem: ReviewItem) => {
+      const result: any = await vaultRequest("review.approve", { itemId: reviewItem.id, data: { decision_note: decisionNote.trim() || "Approved after evidence review" } });
+      const claimId = result?.created?.claim_id ? String(result.created.claim_id) : "";
+      if (claimId && reviewCapsuleId !== "none") {
+        await vaultRequest("capsules.addItems", {
+          capsuleId: reviewCapsuleId,
+          items: [
+            {
+              target_type: "claim",
+              target_id: claimId,
+              role: "core",
+              include_mode: "reference",
+              auto_include_evidence: true
+            }
+          ]
+        });
+      }
+      return result;
+    },
     onSuccess: () => {
       setDecisionNote("");
+      setReviewCapsuleId("none");
       queryClient.invalidateQueries();
     }
   });
@@ -6124,6 +6157,24 @@ function ReviewView() {
             <ReviewPayloadSummary item={item} />
             {item.status === "pending" && (
               <div className="review-decision-panel">
+                {item.item_type === "new_claim" && (capsules.data?.items?.length ?? 0) > 0 && (
+                  <label className="field">
+                    <span>Capsule</span>
+                    <SelectRoot value={reviewCapsuleId} onValueChange={setReviewCapsuleId}>
+                      <SelectTrigger aria-label="Add approved claim to capsule">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">None</SelectItem>
+                        {(capsules.data?.items ?? []).map((capsule) => (
+                          <SelectItem key={capsule.id} value={capsule.id}>
+                            {capsule.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </SelectRoot>
+                  </label>
+                )}
                 <label className="field">
                   <span>Why this decision?</span>
                   <Textarea
@@ -6151,7 +6202,189 @@ function ReviewView() {
   );
 }
 
-type CapsuleAddTargetType = "note" | "source" | "claim";
+type CapsuleAddTargetType = "note" | "source" | "source_block" | "claim";
+
+type CapsuleAttachButtonProps = {
+  targetType: CapsuleAddTargetType;
+  targetId: string;
+  targetTitle: string;
+  buttonLabel?: string;
+  defaultRole?: string;
+  showExportPolicy?: boolean;
+  autoIncludeEvidence?: boolean;
+};
+
+const capsuleAttachRoles = ["core", "supporting", "context", "primary_source", "evidence", "reference"];
+const capsuleSourcePolicies = ["reference_only", "metadata_and_quotes", "extracted_text_only", "full_sources_private"];
+
+function CapsuleAttachButton({
+  targetType,
+  targetId,
+  targetTitle,
+  buttonLabel = "Capsule",
+  defaultRole = "supporting",
+  showExportPolicy = false,
+  autoIncludeEvidence = targetType === "claim"
+}: CapsuleAttachButtonProps) {
+  const queryClient = useQueryClient();
+  const setSurface = useUIStore((state) => state.setSurface);
+  const [open, setOpen] = useState(false);
+  const [capsuleId, setCapsuleId] = useState("none");
+  const [role, setRole] = useState(defaultRole);
+  const [exportPolicy, setExportPolicy] = useState("reference_only");
+  const [includeEvidence, setIncludeEvidence] = useState(autoIncludeEvidence);
+  const capsules = useQuery({
+    queryKey: ["capsules", "attach"],
+    queryFn: () => vaultRequest<CapsuleListResponse>("capsules.list", { limit: 100 }),
+    enabled: open
+  });
+  const rows = capsules.data?.items ?? [];
+
+  useEffect(() => {
+    if (!open) return;
+    setRole(defaultRole);
+    setExportPolicy("reference_only");
+    setIncludeEvidence(autoIncludeEvidence);
+  }, [autoIncludeEvidence, defaultRole, open, targetId]);
+
+  useEffect(() => {
+    if (!open) return;
+    if (capsuleId === "none" && rows[0]?.id) setCapsuleId(rows[0].id);
+    if (capsuleId !== "none" && rows.length > 0 && !rows.some((capsule) => capsule.id === capsuleId)) setCapsuleId(rows[0].id);
+  }, [capsuleId, open, rows]);
+
+  const addItem = useMutation({
+    mutationFn: () =>
+      vaultRequest("capsules.addItems", {
+        capsuleId,
+        items: [
+          {
+            target_type: targetType,
+            target_id: targetId,
+            role,
+            include_mode: "reference",
+            export_policy: showExportPolicy ? exportPolicy : undefined,
+            auto_include_evidence: targetType === "claim" && includeEvidence
+          }
+        ]
+      }),
+    onSuccess: () => {
+      setOpen(false);
+      queryClient.invalidateQueries({ queryKey: ["capsules"] });
+      queryClient.invalidateQueries({ queryKey: ["capsule"] });
+      queryClient.invalidateQueries({ queryKey: ["stats"] });
+    }
+  });
+
+  function openCapsulesSurface() {
+    setOpen(false);
+    setSurface("capsules");
+  }
+
+  return (
+    <Dialog.Root open={open} onOpenChange={setOpen}>
+      <Dialog.Trigger asChild>
+        <Button type="button" icon={<Archive size={15} />} variant="quiet">
+          {buttonLabel}
+        </Button>
+      </Dialog.Trigger>
+      <Dialog.Portal>
+        <Dialog.Overlay className="dialog-overlay" />
+        <Dialog.Content className="dialog-content capsule-attach-dialog" aria-describedby={undefined}>
+          <div className="dialog-header">
+            <div>
+              <Dialog.Title>Add to capsule</Dialog.Title>
+            </div>
+            <Dialog.Close asChild>
+              <button className="dialog-close" aria-label="Close capsule dialog">
+                <X size={16} />
+              </button>
+            </Dialog.Close>
+          </div>
+          <div className="capsule-attach-target">
+            <Badge>{capsuleOptionLabel(targetType)}</Badge>
+            <strong title={targetTitle}>{targetTitle}</strong>
+          </div>
+          {capsules.isLoading ? (
+            <p className="empty-copy">Loading capsules...</p>
+          ) : rows.length === 0 ? (
+            <div className="capsule-attach-empty">
+              <strong>No capsules</strong>
+              <Button type="button" size="sm" icon={<Archive size={14} />} onClick={openCapsulesSurface}>
+                Open Capsules
+              </Button>
+            </div>
+          ) : (
+            <div className="capsule-attach-form">
+              <label className="field">
+                <span>Capsule</span>
+                <SelectRoot value={capsuleId} onValueChange={setCapsuleId}>
+                  <SelectTrigger aria-label="Capsule">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {rows.map((capsule) => (
+                      <SelectItem key={capsule.id} value={capsule.id}>
+                        {capsule.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </SelectRoot>
+              </label>
+              <label className="field">
+                <span>Role</span>
+                <SelectRoot value={role} onValueChange={setRole}>
+                  <SelectTrigger aria-label="Capsule role">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {capsuleAttachRoles.map((value) => (
+                      <SelectItem key={value} value={value}>
+                        {capsuleOptionLabel(value)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </SelectRoot>
+              </label>
+              {showExportPolicy && (
+                <label className="field">
+                  <span>Export</span>
+                  <SelectRoot value={exportPolicy} onValueChange={setExportPolicy}>
+                    <SelectTrigger aria-label="Capsule source export policy">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {capsuleSourcePolicies.map((value) => (
+                        <SelectItem key={value} value={value}>
+                          {capsuleOptionLabel(value)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </SelectRoot>
+                </label>
+              )}
+              {targetType === "claim" && (
+                <label className="capsule-check">
+                  <Checkbox checked={includeEvidence} onCheckedChange={(checked) => setIncludeEvidence(checked === true)} />
+                  <span>Evidence</span>
+                </label>
+              )}
+              {addItem.error && <small className="model-test-error">{addItem.error.message}</small>}
+              <div className="capsule-attach-actions">
+                <Button type="button" variant="quiet" onClick={() => setOpen(false)}>
+                  Cancel
+                </Button>
+                <Button type="button" variant="primary" disabled={capsuleId === "none" || addItem.isPending} onClick={() => addItem.mutate()}>
+                  {addItem.isPending ? "Adding" : "Add"}
+                </Button>
+              </div>
+            </div>
+          )}
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
+  );
+}
 
 function CapsulesView() {
   const queryClient = useQueryClient();
@@ -6678,7 +6911,15 @@ function GraphView() {
         </div>
       </Panel>
       <Panel className="detail-pane">
-        <SectionHeader title={selected?.title ?? "Claim detail"} eyebrow={selected?.status?.replace(/_/g, " ")} />
+        <SectionHeader
+          title={selected?.title ?? "Claim detail"}
+          eyebrow={selected?.status?.replace(/_/g, " ")}
+          actions={
+            selected ? (
+              <CapsuleAttachButton targetType="claim" targetId={selected.id} targetTitle={selected.title} defaultRole="core" autoIncludeEvidence />
+            ) : undefined
+          }
+        />
         {selected ? (
           <>
             <div className="claim-detail-card">

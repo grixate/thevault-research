@@ -720,6 +720,95 @@ describe("App", () => {
     expect(await screen.findByLabelText("Capsule counts")).toBeTruthy();
   });
 
+  it("adds the current note to a capsule from the note editor", async () => {
+    const capsule = {
+      id: "cap_fieldwork",
+      name: "Fieldwork Packet",
+      slug: "fieldwork-packet",
+      description: null,
+      purpose: null,
+      capsule_type: "project",
+      status: "draft",
+      version: "0.1.0",
+      language: "en",
+      domains: [],
+      tags: [],
+      epistemic_strictness: "balanced",
+      default_source_policy: "reference_only",
+      updated_at: "2026-06-14T12:00:00Z",
+      counts: { sources: 0, notes: 0, claims: 0, concepts: 0, tools: 0 },
+      health: { score: 0, status: "needs_review", warnings: [] },
+      items: [],
+      versions: [],
+      activity: []
+    };
+    const note = {
+      id: "note_fieldwork",
+      title: "Fieldwork synthesis",
+      content: { type: "doc", content: [{ type: "paragraph", content: [{ type: "text", text: "A short note." }] }] },
+      content_markdown: "A short note.\n",
+      origin: "user_written",
+      status: "active",
+      version: 1,
+      source_id: "",
+      updated_at: "2026-06-14T12:00:00Z"
+    };
+    const request = vi.fn(async (route: string) => {
+      if (route === "health.get") return { ok: true, version: "0.1.0", db_ready: true, workspace_id: "wrk_default" };
+      if (route === "jobs.list") return [];
+      if (route === "stats.get") {
+        return {
+          sources: 0,
+          source_blocks: 0,
+          notes: 1,
+          claims: 0,
+          claims_without_evidence: 0,
+          contradicted_claims: 0,
+          pending_review_items: 0,
+          generated_notes_pending_review: 0,
+          installed_tools: 0,
+          capsules: 1,
+          failed_jobs: 0,
+          learning_items: 0
+        };
+      }
+      if (route === "events.list") return [];
+      if (route === "notes.list") return [note];
+      if (route === "sources.list") return [];
+      if (route === "capsules.list") return { items: [capsule], total: 1 };
+      if (route === "capsules.addItems") return { added: 1 };
+      if (route === "ai.capabilities") return [];
+      if (route === "ai.providers") return [];
+      return [];
+    });
+    window.vault = { request, selectFiles: vi.fn(async () => []) };
+    useUIStore.setState({ surface: "notes", selectedNoteId: "note_fieldwork" });
+    renderApp();
+
+    expect(await screen.findByDisplayValue("Fieldwork synthesis")).toBeTruthy();
+    await openNoteTools();
+    fireEvent.click(await screen.findByRole("button", { name: "Capsule" }));
+    const dialog = await screen.findByRole("dialog", { name: "Add to capsule" });
+    expect(await within(dialog).findByText("Fieldwork Packet")).toBeTruthy();
+    fireEvent.click(within(dialog).getByRole("button", { name: /^add$/i }));
+
+    await waitFor(() =>
+      expect(request).toHaveBeenCalledWith("capsules.addItems", {
+        capsuleId: "cap_fieldwork",
+        items: [
+          {
+            target_type: "note",
+            target_id: "note_fieldwork",
+            role: "core",
+            include_mode: "reference",
+            export_policy: undefined,
+            auto_include_evidence: false
+          }
+        ]
+      })
+    );
+  });
+
   it("surfaces the first-run workspace start from Home", async () => {
     window.vault = {
       request: vi.fn(async (route: string) => {
@@ -2573,6 +2662,27 @@ describe("App", () => {
   it("reviews a claim proposal with evidence navigation and a decision note", async () => {
     const longReviewTitle = "Handwriting supports uncertainty in the longitudinal synthesis workflow with a deliberately long reviewer-facing title";
     const longReviewSummary = "Participants returned to handwritten notes when synthesis felt uncertain, and this intentionally long summary should stay available without letting the review list become a wall of text.";
+    const capsule = {
+      id: "cap_review",
+      name: "Review Capsule",
+      slug: "review-capsule",
+      description: null,
+      purpose: null,
+      capsule_type: "project",
+      status: "draft",
+      version: "0.1.0",
+      language: "en",
+      domains: [],
+      tags: [],
+      epistemic_strictness: "balanced",
+      default_source_policy: "reference_only",
+      updated_at: "2026-06-14T12:00:00Z",
+      counts: { sources: 0, notes: 0, claims: 0, concepts: 0, tools: 0 },
+      health: { score: 0, status: "needs_review", warnings: [] },
+      items: [],
+      versions: [],
+      activity: []
+    };
     const reviewItem = {
       id: "rev_claim",
       item_type: "new_claim",
@@ -2618,6 +2728,8 @@ describe("App", () => {
         approved = true;
         return { item_id: payload.itemId, status: "approved", created: { claim_id: "clm_review", evidence_link_id: "ev_review" } };
       }
+      if (route === "capsules.list") return { items: [capsule], total: 1 };
+      if (route === "capsules.addItems") return { added: 1 };
       if (route === "sources.list") {
         return [
           {
@@ -2674,6 +2786,8 @@ describe("App", () => {
     expect((await screen.findAllByText("Participants returned to handwritten notes when synthesis felt uncertain.")).length).toBeGreaterThan(0);
 
     fireEvent.click(screen.getByRole("button", { name: "Review" }));
+    fireEvent.click(await screen.findByLabelText("Add approved claim to capsule"));
+    fireEvent.click(await screen.findByRole("option", { name: "Review Capsule" }));
     fireEvent.change(await screen.findByLabelText("Decision reason"), { target: { value: "Quote exactly supports the claim." } });
     fireEvent.click(screen.getByRole("button", { name: /^approve$/i }));
 
@@ -2681,6 +2795,20 @@ describe("App", () => {
       expect(request).toHaveBeenCalledWith("review.approve", {
         itemId: "rev_claim",
         data: { decision_note: "Quote exactly supports the claim." }
+      })
+    );
+    await waitFor(() =>
+      expect(request).toHaveBeenCalledWith("capsules.addItems", {
+        capsuleId: "cap_review",
+        items: [
+          {
+            target_type: "claim",
+            target_id: "clm_review",
+            role: "core",
+            include_mode: "reference",
+            auto_include_evidence: true
+          }
+        ]
       })
     );
   });

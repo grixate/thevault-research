@@ -6,3 +6,4 @@ vi.stubGlobal("ResizeObserver", class ResizeObserver {
   disconnect() {}
 });
 
+Element.prototype.scrollIntoView = vi.fn();

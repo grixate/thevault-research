@@ -1041,6 +1041,59 @@ textarea:not(.ui-textarea) {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
+.capsule-attach-dialog {
+  width: min(440px, calc(100vw - 28px));
+}
+
+.capsule-attach-target {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 8px;
+  align-items: center;
+  padding: 8px 0 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+.capsule-attach-target strong {
+  min-width: 0;
+  color: var(--foreground);
+  font-size: 13px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.capsule-attach-form {
+  display: grid;
+  gap: 10px;
+  padding-top: 12px;
+}
+
+.capsule-attach-form .field {
+  gap: 6px;
+}
+
+.capsule-attach-empty {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 14px;
+}
+
+.capsule-attach-empty strong {
+  color: var(--foreground);
+  font-size: 13px;
+}
+
+.capsule-attach-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding-top: 2px;
+}
+
 .wide-panel,
 .detail-pane,
 .editor-pane,
