@@ -1,0 +1,100 @@
+{
+  "schema_version": 1,
+  "runtimes": [
+    {
+      "id": "llama-cpp-fixture-runtime",
+      "display_name": "Demo llama.cpp Runtime Fixture",
+      "runtime": "llama_cpp",
+      "release_channel": "demo",
+      "version": "fixture-0.1.0",
+      "platform": "any",
+      "arch": "any",
+      "binary_name": "llama-cli",
+      "license_label": "test fixture",
+      "source": {
+        "type": "local_fixture",
+        "path": "fixtures/runtimes/llama-cli-fixture"
+      },
+      "files": [
+        {
+          "filename": "llama-cli",
+          "sha256": "5a3672c861bb63a4a4ca8953e9c9603f798ae0c0ce4b1c2f5caada7d4607021d",
+          "size_bytes": 252,
+          "executable": true
+        }
+      ]
+    },
+    {
+      "id": "llama-cpp-managed-runtime",
+      "display_name": "Managed llama.cpp Runtime",
+      "runtime": "llama_cpp",
+      "release_channel": "production",
+      "version": "REQUIRED_BEFORE_RELEASE",
+      "platform": "macos",
+      "arch": "arm64",
+      "binary_name": "llama-cli",
+      "license_label": "check upstream release license",
+      "license_url": "REQUIRED_BEFORE_RELEASE",
+      "source": {
+        "type": "url",
+        "url": "REPLACE_WITH_APPROVED_LLAMA_CPP_RELEASE"
+      },
+      "files": [
+        {
+          "filename": "llama-cli",
+          "sha256": "REQUIRED_BEFORE_RELEASE",
+          "size_bytes": null,
+          "executable": true
+        }
+      ]
+    },
+    {
+      "id": "whisper-cpp-managed-runtime",
+      "display_name": "Managed whisper.cpp Runtime",
+      "runtime": "whisper_cpp",
+      "release_channel": "production",
+      "version": "REQUIRED_BEFORE_RELEASE",
+      "platform": "macos",
+      "arch": "arm64",
+      "binary_name": "whisper-cli",
+      "license_label": "check upstream release license",
+      "license_url": "REQUIRED_BEFORE_RELEASE",
+      "source": {
+        "type": "url",
+        "url": "REPLACE_WITH_APPROVED_WHISPER_CPP_RELEASE"
+      },
+      "files": [
+        {
+          "filename": "whisper-cli",
+          "sha256": "REQUIRED_BEFORE_RELEASE",
+          "size_bytes": null,
+          "executable": true
+        }
+      ]
+    },
+    {
+      "id": "piper-managed-runtime",
+      "display_name": "Managed Piper Runtime",
+      "runtime": "piper",
+      "release_channel": "production",
+      "version": "REQUIRED_BEFORE_RELEASE",
+      "platform": "macos",
+      "arch": "arm64",
+      "binary_name": "piper",
+      "license_label": "check upstream release license",
+      "license_url": "REQUIRED_BEFORE_RELEASE",
+      "source": {
+        "type": "url",
+        "url": "REPLACE_WITH_APPROVED_PIPER_RELEASE"
+      },
+      "files": [
+        {
+          "filename": "piper",
+          "sha256": "REQUIRED_BEFORE_RELEASE",
+          "size_bytes": null,
+          "executable": true
+        }
+      ]
+    }
+  ]
+}

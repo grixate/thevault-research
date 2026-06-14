@@ -1,0 +1,6 @@
+root ::= "{" ws "\"claims\"" ws ":" ws "[" ws claim-list? ws "]" ws "}"
+claim-list ::= claim (ws "," ws claim)*
+claim ::= "{" ws "\"title\"" ws ":" ws string ws "," ws "\"body\"" ws ":" ws string ws "," ws "\"source_quote\"" ws ":" ws string ws "," ws "\"confidence\"" ws ":" ws number ws "," ws "\"language\"" ws ":" ws string ws "}"
+string ::= "\"" ([^"\\] | "\\" ["\\/bfnrt])* "\""
+number ::= "0" ("." [0-9]+)? | "1" ("." "0"+)?
+ws ::= ([ \t\n])*

@@ -1,0 +1,309 @@
+{
+  "schema_version": 1,
+  "status": "candidate_shortlist",
+  "generated_at": "2026-06-11",
+  "decision_note": "Initial production-local AI candidate shortlist. This file is not approval evidence and must not be copied into the pinned registries until hydration, source probing, byte verification, license review, and approval overlay all pass.",
+  "model_candidates": [
+    {
+      "id": "qwen3-0.6b-gguf-tiny",
+      "replaces_model_ids": ["tiny-gguf-placeholder"],
+      "profile": "tiny",
+      "kind": "llm",
+      "runtime": "llama_cpp",
+      "capabilities": ["extract_objects", "extract_claims", "summarize", "generate_note"],
+      "source": {
+        "type": "huggingface",
+        "repo_id": "Qwen/Qwen3-0.6B-GGUF",
+        "filename": "Qwen3-0.6B-Q8_0.gguf",
+        "revision": "TO_HYDRATE"
+      },
+      "license_label": "Apache-2.0",
+      "license_url": "https://huggingface.co/Qwen/Qwen3-0.6B-GGUF/blob/main/LICENSE",
+      "lifecycle_status": "needs_hydration",
+      "evidence_urls": [
+        "https://huggingface.co/Qwen/Qwen3-0.6B-GGUF"
+      ],
+      "rationale": "Official Qwen GGUF repo, Apache-2.0 model card, 0.6B size class, and llama.cpp quickstart path make it the smallest production LLM candidate."
+    },
+    {
+      "id": "qwen3-1.7b-gguf-standard",
+      "replaces_model_ids": ["standard-gguf-placeholder"],
+      "profile": "standard",
+      "kind": "llm",
+      "runtime": "llama_cpp",
+      "capabilities": [
+        "extract_objects",
+        "extract_claims",
+        "summarize",
+        "generate_note",
+        "grounded_answer",
+        "create_learning_item"
+      ],
+      "source": {
+        "type": "huggingface",
+        "repo_id": "Qwen/Qwen3-1.7B-GGUF",
+        "filename": "Qwen3-1.7B-Q8_0.gguf",
+        "revision": "TO_HYDRATE"
+      },
+      "license_label": "Apache-2.0",
+      "license_url": "https://huggingface.co/Qwen/Qwen3-1.7B-GGUF/blob/main/LICENSE",
+      "lifecycle_status": "needs_hydration",
+      "evidence_urls": [
+        "https://huggingface.co/Qwen/Qwen3-1.7B-GGUF"
+      ],
+      "rationale": "Official Qwen GGUF repo, Apache-2.0 model card, and small 1.7B profile for the default alpha laptop path."
+    },
+    {
+      "id": "qwen3-8b-gguf-strong",
+      "replaces_model_ids": ["strong-gguf-placeholder"],
+      "profile": "strong",
+      "kind": "llm",
+      "runtime": "llama_cpp",
+      "capabilities": [
+        "extract_objects",
+        "extract_claims",
+        "summarize",
+        "generate_note",
+        "grounded_answer",
+        "create_learning_item"
+      ],
+      "source": {
+        "type": "huggingface",
+        "repo_id": "Qwen/Qwen3-8B-GGUF",
+        "filename": "Qwen3-8B-Q4_K_M.gguf",
+        "revision": "TO_HYDRATE"
+      },
+      "license_label": "Apache-2.0",
+      "license_url": "https://huggingface.co/Qwen/Qwen3-8B-GGUF/blob/main/LICENSE",
+      "lifecycle_status": "needs_hydration",
+      "evidence_urls": [
+        "https://huggingface.co/Qwen/Qwen3-8B-GGUF"
+      ],
+      "rationale": "Official Qwen GGUF repo, Apache-2.0 model card, Q4_K_M file, and stronger 8B local profile for workstations."
+    },
+    {
+      "id": "qwen3-embedding-0.6b-tiny",
+      "replaces_model_ids": ["tiny-embedding-placeholder", "balanced-embedding-placeholder"],
+      "profile": "standard",
+      "kind": "embedding",
+      "runtime": "local_embedding",
+      "capabilities": ["embed_text"],
+      "source": {
+        "type": "huggingface",
+        "repo_id": "Qwen/Qwen3-Embedding-0.6B",
+        "filename": "model.safetensors",
+        "revision": "TO_HYDRATE"
+      },
+      "license_label": "Apache-2.0",
+      "license_url": "https://huggingface.co/Qwen/Qwen3-Embedding-0.6B/blob/main/README.md",
+      "lifecycle_status": "needs_hydration",
+      "evidence_urls": [
+        "https://huggingface.co/Qwen/Qwen3-Embedding-0.6B"
+      ],
+      "rationale": "Official Qwen embedding model, Apache-2.0 model card, 100+ language support, and configurable dimensions make one artifact suitable for Tiny and Standard alpha search."
+    },
+    {
+      "id": "qwen3-reranker-0.6b-tiny",
+      "replaces_model_ids": ["tiny-reranker-placeholder", "balanced-reranker-placeholder"],
+      "profile": "standard",
+      "kind": "reranker",
+      "runtime": "local_cross_encoder",
+      "capabilities": ["rerank_results"],
+      "source": {
+        "type": "huggingface",
+        "repo_id": "Qwen/Qwen3-Reranker-0.6B",
+        "filename": "model.safetensors",
+        "revision": "TO_HYDRATE"
+      },
+      "license_label": "Apache-2.0",
+      "license_url": "https://huggingface.co/Qwen/Qwen3-Reranker-0.6B/blob/main/README.md",
+      "lifecycle_status": "needs_hydration",
+      "evidence_urls": [
+        "https://huggingface.co/Qwen/Qwen3-Reranker-0.6B"
+      ],
+      "rationale": "Official Qwen reranker, Apache-2.0 model card, 0.6B size, and sentence-transformers CrossEncoder usage align with the optional local reranking path."
+    },
+    {
+      "id": "whisper-ggml-tiny-en",
+      "replaces_model_ids": ["tiny-whisper-placeholder"],
+      "profile": "tiny",
+      "kind": "stt",
+      "runtime": "whisper_cpp",
+      "capabilities": ["transcribe_audio"],
+      "source": {
+        "type": "huggingface",
+        "repo_id": "ggerganov/whisper.cpp",
+        "filename": "ggml-tiny.en.bin",
+        "revision": "TO_HYDRATE"
+      },
+      "license_label": "MIT",
+      "license_url": "https://huggingface.co/ggerganov/whisper.cpp/blob/main/README.md",
+      "lifecycle_status": "needs_hydration",
+      "evidence_urls": [
+        "https://huggingface.co/ggerganov/whisper.cpp",
+        "https://github.com/ggml-org/whisper.cpp"
+      ],
+      "rationale": "Public ggerganov/whisper.cpp Hugging Face repo exposes ggml-tiny.en.bin with MIT model-card metadata and a whisper.cpp-compatible file layout. Keep blocked until hydration, source probe, byte verification, runtime smoke, and approval gates pass."
+    },
+    {
+      "id": "whisper-ggml-base-en",
+      "replaces_model_ids": ["standard-whisper-placeholder"],
+      "profile": "standard",
+      "kind": "stt",
+      "runtime": "whisper_cpp",
+      "capabilities": ["transcribe_audio"],
+      "source": {
+        "type": "huggingface",
+        "repo_id": "ggerganov/whisper.cpp",
+        "filename": "ggml-base.en.bin",
+        "revision": "TO_HYDRATE"
+      },
+      "license_label": "MIT",
+      "license_url": "https://huggingface.co/ggerganov/whisper.cpp/blob/main/README.md",
+      "lifecycle_status": "needs_hydration",
+      "evidence_urls": [
+        "https://huggingface.co/ggerganov/whisper.cpp",
+        "https://github.com/ggml-org/whisper.cpp"
+      ],
+      "rationale": "Public ggerganov/whisper.cpp Hugging Face repo exposes ggml-base.en.bin with MIT model-card metadata and a whisper.cpp-compatible file layout. Keep blocked until hydration, source probe, byte verification, runtime smoke, and approval gates pass."
+    },
+    {
+      "id": "piper-en-us-amy-low",
+      "replaces_model_ids": ["tiny-piper-placeholder"],
+      "profile": "tiny",
+      "kind": "tts",
+      "runtime": "piper",
+      "capabilities": ["synthesize_speech"],
+      "source": {
+        "type": "huggingface",
+        "repo_id": "rhasspy/piper-voices",
+        "filename": "en/en_US/amy/low/en_US-amy-low.onnx",
+        "revision": "TO_HYDRATE",
+        "sidecar_filenames": ["en/en_US/amy/low/en_US-amy-low.onnx.json"]
+      },
+      "license_label": "MIT",
+      "license_url": "https://huggingface.co/rhasspy/piper-voices/blob/main/en/en_US/amy/low/MODEL_CARD",
+      "lifecycle_status": "needs_hydration",
+      "evidence_urls": [
+        "https://huggingface.co/rhasspy/piper-voices",
+        "https://huggingface.co/rhasspy/piper-voices/blob/main/en/en_US/amy/low/MODEL_CARD",
+        "https://github.com/rhasspy/piper"
+      ],
+      "rationale": "Small Piper voice candidate for local read-aloud. The Hugging Face repo is MIT-tagged and the voice MODEL_CARD points to the upstream voice dataset/license trail; keep blocked until hydration, source probe, sidecar byte verification, runtime smoke, and approval gates pass."
+    }
+  ],
+  "runtime_candidates": [
+    {
+      "id": "llama-cpp-b9596-macos-arm64",
+      "replaces_runtime_ids": ["llama-cpp-managed-runtime"],
+      "runtime": "llama_cpp",
+      "platform": "macos",
+      "arch": "arm64",
+      "binary_name": "llama-cli",
+      "source": {
+        "type": "github_release",
+        "repo": "ggml-org/llama.cpp",
+        "tag": "b9596",
+        "asset": "llama-b9596-bin-macos-arm64.tar.gz",
+        "archive_member": "llama-b9596/llama-cli",
+        "asset_size_bytes": 10547769,
+        "asset_sha256": "b77565f38c8cad9b0132dd4dbca54e201e8fb5b654d57780b87e0e05da25fafe"
+      },
+      "license_label": "MIT",
+      "license_url": "https://github.com/ggml-org/llama.cpp/blob/b9596/LICENSE",
+      "lifecycle_status": "needs_release_evidence",
+      "evidence_urls": [
+        "https://github.com/ggml-org/llama.cpp/releases"
+      ],
+      "rationale": "Latest observed llama.cpp macOS Apple Silicon release asset for the current development date. Archive member, size, checksum, and license URL are pinned; it must still pass source probe, byte verification, smoke, and approval gates."
+    },
+    {
+      "id": "whisper-cpp-macos-arm64",
+      "replaces_runtime_ids": ["whisper-cpp-managed-runtime"],
+      "runtime": "whisper_cpp",
+      "platform": "macos",
+      "arch": "arm64",
+      "binary_name": "whisper-cli",
+      "source": {
+        "type": "github_release",
+        "repo": "ggml-org/whisper.cpp",
+        "tag": "v1.8.6",
+        "asset": "whisper.cpp-v1.8.6-macos-arm64.tar.gz",
+        "url": "REPLACE_WITH_APPROVED_WHISPER_CPP_PACKAGE_URL",
+        "archive_member": "whisper.cpp-v1.8.6-macos-arm64/whisper-cli",
+        "asset_sha256": "cfbba61b4f9a4fa3c0387ff7816c1368cac6394f2c97432e22b635564f03ad6d",
+        "asset_size_bytes": 1224375,
+        "archive_format": "tar.gz",
+        "latest_release_checked_at": "2026-06-12",
+        "latest_release_assets_seen": [
+          "whisper-bin-Win32.zip",
+          "whisper-bin-x64.zip",
+          "whisper-blas-bin-Win32.zip",
+          "whisper-blas-bin-x64.zip",
+          "whisper-cublas-11.8.0-bin-x64.zip",
+          "whisper-cublas-12.4.0-bin-x64.zip",
+          "whisper-v1.8.6-xcframework.zip",
+          "whispercpp.jar.zip"
+        ],
+        "rejected_assets": [
+          {
+            "asset": "whisper-v1.8.6-xcframework.zip",
+            "reason": "Apple framework archive, not a whisper-cli executable runtime."
+          },
+          {
+            "asset": "whisper-bin-x64.zip",
+            "reason": "Windows x64 CLI archive, not macOS arm64."
+          },
+          {
+            "asset": "whisper-bin-Win32.zip",
+            "reason": "Windows 32-bit CLI archive, not macOS arm64."
+          }
+        ],
+        "recommended_distribution_path": "package-approved-macos-arm64-cli-from-source"
+      },
+      "license_label": "MIT",
+      "license_url": "https://github.com/ggml-org/whisper.cpp/blob/v1.8.6/LICENSE",
+      "lifecycle_status": "needs_release_evidence",
+      "smoke_test": {
+        "args": [
+          "--help"
+        ],
+        "allowed_exit_codes": [
+          0
+        ],
+        "timeout_seconds": 10
+      },
+      "evidence_urls": [
+        "https://github.com/ggml-org/whisper.cpp/releases/tag/v1.8.6",
+        "https://github.com/ggml-org/whisper.cpp/blob/v1.8.6/LICENSE",
+        "file:///tmp/vault-whisper-package-script/dist/whisper.cpp-v1.8.6-macos-arm64.tar.gz"
+      ],
+      "rationale": "Latest whisper.cpp release v1.8.6 was checked on 2026-06-12. It exposes Windows CLI zips, CUDA Windows zips, an Apple xcframework, and a Java wrapper zip, but no macOS arm64 whisper-cli runtime archive. A static macOS arm64 whisper-cli package was built from the v1.8.6 source tag with scripts/package_whisper_cpp_runtime.sh using CMake Release and BUILD_SHARED_LIBS=OFF. The package filename, archive member, size, SHA-256, license URL, and smoke command are pinned; it remains blocked until the package is published to an approved release URL, source/byte probes are rerun against that URL, and reviewer approval evidence is applied."
+    },
+    {
+      "id": "piper-macos-arm64",
+      "replaces_runtime_ids": ["piper-managed-runtime"],
+      "runtime": "piper",
+      "platform": "macos",
+      "arch": "arm64",
+      "binary_name": "piper",
+      "source": {
+        "type": "github_release",
+        "repo": "rhasspy/piper",
+        "tag": "2023.11.14-2",
+        "asset": "piper_macos_aarch64.tar.gz",
+        "archive_member": "piper/piper",
+        "asset_size_bytes": 19146957,
+        "asset_sha256": "6b1eb03b3735946cb35216e063e7eebcc33a6bbf5dd96ec0217959bf1cdcb0cc"
+      },
+      "license_label": "MIT",
+      "license_url": "https://github.com/rhasspy/piper/blob/2023.11.14-2/LICENSE.md",
+      "lifecycle_status": "needs_release_evidence",
+      "evidence_urls": [
+        "https://github.com/rhasspy/piper/releases/tag/2023.11.14-2",
+        "https://github.com/rhasspy/piper/blob/master/LICENSE.md"
+      ],
+      "rationale": "Archived Piper repo latest release includes piper_macos_aarch64.tar.gz for macOS Apple Silicon. Archive member, size, checksum, and license URL are pinned; it must still pass source probe, byte verification, smoke, and approval gates."
+    }
+  ]
+}

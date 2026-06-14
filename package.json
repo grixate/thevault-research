@@ -1,0 +1,21 @@
+{
+  "name": "the-vault-research-lab",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Local-first autonomous research lab alpha.",
+  "scripts": {
+    "dev": "pnpm --filter @vault/desktop dev",
+    "test": "pnpm --filter @vault/desktop test",
+    "e2e": "pnpm --filter @vault/desktop e2e",
+    "build": "pnpm --filter @vault/desktop build",
+    "verify": "./scripts/verify_v1.sh",
+    "verify:strict": "./scripts/verify_v1.sh --strict-production",
+    "generate:contracts": "./scripts/generate_contracts.sh",
+    "validate:ai-registries": "./scripts/validate_ai_registries.sh"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.52.0",
+    "typescript": "^5.8.3"
+  },
+  "packageManager": "pnpm@10.12.1"
+}

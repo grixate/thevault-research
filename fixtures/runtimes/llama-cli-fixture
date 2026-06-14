@@ -1,0 +1,11 @@
+#!/bin/sh
+if [ "$1" = "--version" ]; then
+  echo "llama.cpp fixture runtime 0.1.0"
+  exit 0
+fi
+if [ "$1" = "--help" ]; then
+  echo "llama.cpp fixture runtime"
+  echo "  --grammar-file <path>"
+  exit 0
+fi
+echo "fixture llama runtime: no real inference"

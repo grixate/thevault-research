@@ -1,0 +1,4 @@
+vault-local-ai-fixture-model
+
+This is not a real GGUF model. It exists only to exercise the registry-only
+download, checksum verification, installed-model record, and UI state path in CI.

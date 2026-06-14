@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "pin_mode": "app_pinned",
+  "registries": {
+    "model_registry": {
+      "path": "model_registry.json",
+      "sha256": "0774cee8305b03fa7fe0fbc6030f627ee532d6ffacc344561991b8c901130aee"
+    },
+    "runtime_registry": {
+      "path": "runtime_registry.json",
+      "sha256": "f6eb2d8e9c866523299515e218229d0b17bd649022d45dd39c6ec32fafa5e041"
+    }
+  }
+}

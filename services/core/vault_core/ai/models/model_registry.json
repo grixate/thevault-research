@@ -1,0 +1,647 @@
+{
+  "schema_version": 1,
+  "model_packs": [
+    {
+      "id": "tiny-local-pack",
+      "display_name": "Demo Fixture Pack",
+      "profile": "tiny",
+      "release_channel": "demo",
+      "description": "CI-friendly fixture pack for smoke tests, model-manager demos, simple extraction, note drafts, local embeddings, dictation, and mock local narration.",
+      "privacy_label": "Runs on this device",
+      "required_model_ids": [
+        "tiny-fixture-llm",
+        "mock-local-embedding",
+        "tiny-fixture-whisper",
+        "mock-local-tts"
+      ],
+      "optional_model_ids": [],
+      "capabilities": [
+        "extract_objects",
+        "extract_claims",
+        "summarize",
+        "generate_note",
+        "embed_text",
+        "transcribe_audio",
+        "synthesize_speech"
+      ]
+    },
+    {
+      "id": "tiny-production-pack",
+      "display_name": "Tiny Production Local Pack",
+      "profile": "tiny",
+      "release_channel": "production",
+      "description": "The first real small-model pack target: tiny GGUF instruction model, local embeddings, whisper.cpp STT, and Piper TTS once sources, licenses, runtimes, and checksums are approved.",
+      "privacy_label": "Runs on this device",
+      "required_model_ids": [
+        "tiny-gguf-placeholder",
+        "tiny-embedding-placeholder",
+        "tiny-whisper-placeholder",
+        "tiny-piper-placeholder"
+      ],
+      "optional_model_ids": [
+        "tiny-reranker-placeholder"
+      ],
+      "capabilities": [
+        "extract_objects",
+        "extract_claims",
+        "summarize",
+        "generate_note",
+        "embed_text",
+        "transcribe_audio",
+        "synthesize_speech"
+      ]
+    },
+    {
+      "id": "standard-local-pack",
+      "display_name": "Standard Local Pack",
+      "profile": "standard",
+      "release_channel": "production",
+      "description": "Default alpha target for modern laptops: small GGUF extraction/generation, balanced local embeddings, whisper small-class STT, and local TTS once approved model files are pinned.",
+      "privacy_label": "Runs on this device",
+      "required_model_ids": [
+        "standard-gguf-placeholder",
+        "balanced-embedding-placeholder",
+        "standard-whisper-placeholder",
+        "tiny-piper-placeholder"
+      ],
+      "optional_model_ids": [
+        "balanced-reranker-placeholder"
+      ],
+      "capabilities": [
+        "extract_objects",
+        "extract_claims",
+        "summarize",
+        "generate_note",
+        "grounded_answer",
+        "create_learning_item",
+        "embed_text",
+        "transcribe_audio",
+        "synthesize_speech"
+      ]
+    },
+    {
+      "id": "strong-local-pack",
+      "display_name": "Strong Local Pack",
+      "profile": "strong",
+      "release_channel": "production",
+      "description": "Power-user profile for longer synthesis, richer learning generation, and stronger local reasoning after larger model licenses and checksums are approved.",
+      "privacy_label": "Runs on this device",
+      "required_model_ids": [
+        "strong-gguf-placeholder",
+        "balanced-embedding-placeholder",
+        "standard-whisper-placeholder",
+        "tiny-piper-placeholder"
+      ],
+      "optional_model_ids": [
+        "balanced-reranker-placeholder"
+      ],
+      "capabilities": [
+        "extract_objects",
+        "extract_claims",
+        "summarize",
+        "generate_note",
+        "grounded_answer",
+        "create_learning_item",
+        "embed_text",
+        "transcribe_audio",
+        "synthesize_speech"
+      ]
+    }
+  ],
+  "models": [
+    {
+      "id": "mock-local-llm",
+      "display_name": "Mock Local LLM",
+      "family": "mock",
+      "kind": "llm",
+      "capabilities": [
+        "extract_objects",
+        "extract_claims",
+        "summarize",
+        "generate_note",
+        "grounded_answer",
+        "create_learning_item"
+      ],
+      "runtime": "mock",
+      "format": "test",
+      "size_class": "tiny",
+      "recommended_profile": "tiny",
+      "languages": ["en", "ru"],
+      "license_label": "test fixture",
+      "download_state": "installed",
+      "installed": true,
+      "files": [],
+      "defaults": {
+        "context_tokens": 2048,
+        "temperature_extraction": 0,
+        "temperature_generation": 0.2,
+        "max_tokens_extraction": 384,
+        "max_tokens_generation": 800
+      }
+    },
+    {
+      "id": "tiny-fixture-llm",
+      "display_name": "Tiny Fixture Local Model",
+      "family": "fixture",
+      "kind": "llm",
+      "capabilities": ["extract_objects", "extract_claims", "summarize", "generate_note"],
+      "runtime": "llama_cpp",
+      "format": "gguf",
+      "size_class": "tiny",
+      "recommended_profile": "tiny",
+      "languages": ["en"],
+      "license_label": "test fixture",
+      "download_state": "not_installed",
+      "installed": false,
+      "source": {
+        "type": "local_fixture",
+        "path": "fixtures/models/tiny-fixture-model.gguf"
+      },
+      "files": [
+        {
+          "filename": "tiny-fixture-model.gguf",
+          "sha256": "0da700a58614764ac9aa6c5200993ddbd35bfa55181cb4659b05ff765258b667",
+          "size_bytes": 188
+        }
+      ],
+      "defaults": {
+        "context_tokens": 512,
+        "temperature_extraction": 0,
+        "temperature_generation": 0.2,
+        "max_tokens_extraction": 128,
+        "max_tokens_generation": 256
+      }
+    },
+    {
+      "id": "bad-checksum-fixture-llm",
+      "display_name": "Bad Checksum Fixture Model",
+      "family": "fixture",
+      "kind": "llm",
+      "capabilities": ["summarize"],
+      "runtime": "llama_cpp",
+      "format": "gguf",
+      "size_class": "tiny",
+      "recommended_profile": "tiny",
+      "languages": ["en"],
+      "license_label": "test fixture",
+      "download_state": "not_installed",
+      "installed": false,
+      "source": {
+        "type": "local_fixture",
+        "path": "fixtures/models/tiny-fixture-model.gguf"
+      },
+      "files": [
+        {
+          "filename": "bad-checksum-fixture-model.gguf",
+          "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "size_bytes": 188
+        }
+      ],
+      "defaults": {
+        "context_tokens": 512,
+        "temperature_extraction": 0,
+        "temperature_generation": 0.2,
+        "max_tokens_extraction": 128,
+        "max_tokens_generation": 256
+      }
+    },
+    {
+      "id": "tiny-gguf-placeholder",
+      "display_name": "Tiny GGUF Local Model",
+      "family": "qwen-or-equivalent",
+      "kind": "llm",
+      "capabilities": ["extract_objects", "extract_claims", "summarize", "generate_note"],
+      "runtime": "llama_cpp",
+      "format": "gguf",
+      "size_class": "tiny",
+      "recommended_profile": "tiny",
+      "languages": ["en", "ru"],
+      "license_label": "check upstream model card",
+      "license_url": "REQUIRED_BEFORE_RELEASE",
+      "download_state": "not_installed",
+      "installed": false,
+      "source": {
+        "type": "huggingface",
+        "repo_id": "REPLACE_WITH_APPROVED_GGUF_REPO",
+        "revision": "REQUIRED_BEFORE_RELEASE",
+        "allow_patterns": ["*.gguf"]
+      },
+      "files": [
+        {
+          "filename": "REPLACE_WITH_APPROVED_FILE.gguf",
+          "sha256": "REQUIRED_BEFORE_RELEASE",
+          "size_bytes": null
+        }
+      ],
+      "defaults": {
+        "context_tokens": 4096,
+        "temperature_extraction": 0,
+        "temperature_generation": 0.4,
+        "max_tokens_extraction": 384,
+        "max_tokens_generation": 1200
+      }
+    },
+    {
+      "id": "standard-gguf-placeholder",
+      "display_name": "Standard GGUF Local Model",
+      "family": "gemma-qwen-small-or-equivalent",
+      "kind": "llm",
+      "capabilities": [
+        "extract_objects",
+        "extract_claims",
+        "summarize",
+        "generate_note",
+        "grounded_answer",
+        "create_learning_item"
+      ],
+      "runtime": "llama_cpp",
+      "format": "gguf",
+      "size_class": "small",
+      "recommended_profile": "standard",
+      "languages": ["en", "ru"],
+      "license_label": "check upstream model card",
+      "license_url": "REQUIRED_BEFORE_RELEASE",
+      "download_state": "not_installed",
+      "installed": false,
+      "source": {
+        "type": "huggingface",
+        "repo_id": "REPLACE_WITH_APPROVED_STANDARD_GGUF_REPO",
+        "revision": "REQUIRED_BEFORE_RELEASE",
+        "allow_patterns": ["*.gguf"]
+      },
+      "files": [
+        {
+          "filename": "REPLACE_WITH_APPROVED_STANDARD_FILE.gguf",
+          "sha256": "REQUIRED_BEFORE_RELEASE",
+          "size_bytes": null
+        }
+      ],
+      "defaults": {
+        "context_tokens": 8192,
+        "temperature_extraction": 0,
+        "temperature_generation": 0.35,
+        "max_tokens_extraction": 512,
+        "max_tokens_generation": 1600
+      }
+    },
+    {
+      "id": "strong-gguf-placeholder",
+      "display_name": "Strong GGUF Local Model",
+      "family": "qwen-gemma-7b-or-equivalent",
+      "kind": "llm",
+      "capabilities": [
+        "extract_objects",
+        "extract_claims",
+        "summarize",
+        "generate_note",
+        "grounded_answer",
+        "create_learning_item"
+      ],
+      "runtime": "llama_cpp",
+      "format": "gguf",
+      "size_class": "medium",
+      "recommended_profile": "strong",
+      "languages": ["en", "ru"],
+      "license_label": "check upstream model card",
+      "license_url": "REQUIRED_BEFORE_RELEASE",
+      "download_state": "not_installed",
+      "installed": false,
+      "source": {
+        "type": "huggingface",
+        "repo_id": "REPLACE_WITH_APPROVED_STRONG_GGUF_REPO",
+        "revision": "REQUIRED_BEFORE_RELEASE",
+        "allow_patterns": ["*.gguf"]
+      },
+      "files": [
+        {
+          "filename": "REPLACE_WITH_APPROVED_STRONG_FILE.gguf",
+          "sha256": "REQUIRED_BEFORE_RELEASE",
+          "size_bytes": null
+        }
+      ],
+      "defaults": {
+        "context_tokens": 16384,
+        "temperature_extraction": 0,
+        "temperature_generation": 0.35,
+        "max_tokens_extraction": 640,
+        "max_tokens_generation": 2200
+      }
+    },
+    {
+      "id": "mock-local-embedding",
+      "display_name": "Mock Local Embeddings",
+      "family": "mock",
+      "kind": "embedding",
+      "capabilities": ["embed_text"],
+      "runtime": "mock",
+      "format": "test",
+      "size_class": "tiny",
+      "recommended_profile": "tiny",
+      "languages": ["en", "ru"],
+      "license_label": "test fixture",
+      "download_state": "installed",
+      "installed": true,
+      "files": [],
+      "defaults": {
+        "dimensions": 6
+      }
+    },
+    {
+      "id": "tiny-embedding-placeholder",
+      "display_name": "Tiny Production Embedding Model",
+      "family": "small-local-embedding",
+      "kind": "embedding",
+      "capabilities": ["embed_text"],
+      "runtime": "local_embedding",
+      "format": "model",
+      "size_class": "tiny",
+      "recommended_profile": "tiny",
+      "languages": ["en", "ru"],
+      "license_label": "check upstream model card",
+      "license_url": "REQUIRED_BEFORE_RELEASE",
+      "download_state": "not_installed",
+      "installed": false,
+      "source": {
+        "type": "huggingface",
+        "repo_id": "REPLACE_WITH_APPROVED_EMBEDDING_REPO",
+        "revision": "REQUIRED_BEFORE_RELEASE",
+        "allow_patterns": ["*"]
+      },
+      "files": [
+        {
+          "filename": "REPLACE_WITH_APPROVED_EMBEDDING_FILE",
+          "sha256": "REQUIRED_BEFORE_RELEASE",
+          "size_bytes": null
+        }
+      ],
+      "defaults": {
+        "dimensions": 384
+      }
+    },
+    {
+      "id": "balanced-embedding-placeholder",
+      "display_name": "Balanced Production Embedding Model",
+      "family": "nomic-bge-qwen-embedding-or-equivalent",
+      "kind": "embedding",
+      "capabilities": ["embed_text"],
+      "runtime": "local_embedding",
+      "format": "model",
+      "size_class": "small",
+      "recommended_profile": "standard",
+      "languages": ["en", "ru"],
+      "license_label": "check upstream model card",
+      "license_url": "REQUIRED_BEFORE_RELEASE",
+      "download_state": "not_installed",
+      "installed": false,
+      "source": {
+        "type": "huggingface",
+        "repo_id": "REPLACE_WITH_APPROVED_BALANCED_EMBEDDING_REPO",
+        "revision": "REQUIRED_BEFORE_RELEASE",
+        "allow_patterns": ["*"]
+      },
+      "files": [
+        {
+          "filename": "REPLACE_WITH_APPROVED_BALANCED_EMBEDDING_FILE",
+          "sha256": "REQUIRED_BEFORE_RELEASE",
+          "size_bytes": null
+        }
+      ],
+      "defaults": {
+        "dimensions": 768
+      }
+    },
+    {
+      "id": "tiny-reranker-placeholder",
+      "display_name": "Tiny Production Reranker",
+      "family": "bge-tiny-cross-encoder-or-equivalent",
+      "kind": "reranker",
+      "capabilities": ["rerank_results"],
+      "runtime": "local_cross_encoder",
+      "format": "model",
+      "size_class": "tiny",
+      "recommended_profile": "tiny",
+      "languages": ["en", "ru"],
+      "license_label": "check upstream model card",
+      "license_url": "REQUIRED_BEFORE_RELEASE",
+      "download_state": "not_installed",
+      "installed": false,
+      "source": {
+        "type": "huggingface",
+        "repo_id": "REPLACE_WITH_APPROVED_TINY_RERANKER_REPO",
+        "revision": "REQUIRED_BEFORE_RELEASE",
+        "allow_patterns": ["*"]
+      },
+      "files": [
+        {
+          "filename": "REPLACE_WITH_APPROVED_TINY_RERANKER_FILE",
+          "sha256": "REQUIRED_BEFORE_RELEASE",
+          "size_bytes": null
+        }
+      ],
+      "defaults": {
+        "batch_size": 8,
+        "max_length": 512,
+        "timeout_seconds": 15
+      }
+    },
+    {
+      "id": "balanced-reranker-placeholder",
+      "display_name": "Balanced Production Reranker",
+      "family": "bge-small-cross-encoder-or-equivalent",
+      "kind": "reranker",
+      "capabilities": ["rerank_results"],
+      "runtime": "local_cross_encoder",
+      "format": "model",
+      "size_class": "small",
+      "recommended_profile": "standard",
+      "languages": ["en", "ru"],
+      "license_label": "check upstream model card",
+      "license_url": "REQUIRED_BEFORE_RELEASE",
+      "download_state": "not_installed",
+      "installed": false,
+      "source": {
+        "type": "huggingface",
+        "repo_id": "REPLACE_WITH_APPROVED_BALANCED_RERANKER_REPO",
+        "revision": "REQUIRED_BEFORE_RELEASE",
+        "allow_patterns": ["*"]
+      },
+      "files": [
+        {
+          "filename": "REPLACE_WITH_APPROVED_BALANCED_RERANKER_FILE",
+          "sha256": "REQUIRED_BEFORE_RELEASE",
+          "size_bytes": null
+        }
+      ],
+      "defaults": {
+        "batch_size": 8,
+        "max_length": 512,
+        "timeout_seconds": 20
+      }
+    },
+    {
+      "id": "mock-local-stt",
+      "display_name": "Mock Local Speech-to-Text",
+      "family": "mock",
+      "kind": "stt",
+      "capabilities": ["transcribe_audio"],
+      "runtime": "mock",
+      "format": "test",
+      "size_class": "tiny",
+      "recommended_profile": "tiny",
+      "languages": ["en", "ru"],
+      "license_label": "test fixture",
+      "download_state": "installed",
+      "installed": true,
+      "files": []
+    },
+    {
+      "id": "tiny-fixture-whisper",
+      "display_name": "Tiny Fixture whisper.cpp Model",
+      "family": "fixture",
+      "kind": "stt",
+      "capabilities": ["transcribe_audio"],
+      "runtime": "whisper_cpp",
+      "format": "ggml",
+      "size_class": "tiny",
+      "recommended_profile": "tiny",
+      "languages": ["en"],
+      "license_label": "test fixture",
+      "download_state": "not_installed",
+      "installed": false,
+      "source": {
+        "type": "local_fixture",
+        "path": "fixtures/models/tiny-fixture-whisper.bin"
+      },
+      "files": [
+        {
+          "filename": "tiny-fixture-whisper.bin",
+          "sha256": "517ab5fc8d002300c813ceeb921fd2d014973b681051e0196509b66c2cdc833c",
+          "size_bytes": 32
+        }
+      ],
+      "defaults": {
+        "language": "en",
+        "timestamps": true,
+        "timeout_seconds": 120
+      }
+    },
+    {
+      "id": "tiny-whisper-placeholder",
+      "display_name": "Tiny Production whisper.cpp Model",
+      "family": "whisper-small-local",
+      "kind": "stt",
+      "capabilities": ["transcribe_audio"],
+      "runtime": "whisper_cpp",
+      "format": "ggml",
+      "size_class": "tiny",
+      "recommended_profile": "tiny",
+      "languages": ["en", "ru"],
+      "license_label": "check upstream model card",
+      "license_url": "REQUIRED_BEFORE_RELEASE",
+      "download_state": "not_installed",
+      "installed": false,
+      "source": {
+        "type": "huggingface",
+        "repo_id": "REPLACE_WITH_APPROVED_WHISPER_REPO",
+        "revision": "REQUIRED_BEFORE_RELEASE",
+        "allow_patterns": ["*.bin"]
+      },
+      "files": [
+        {
+          "filename": "REPLACE_WITH_APPROVED_WHISPER_FILE.bin",
+          "sha256": "REQUIRED_BEFORE_RELEASE",
+          "size_bytes": null
+        }
+      ],
+      "defaults": {
+        "language": "auto",
+        "timestamps": true,
+        "timeout_seconds": 120
+      }
+    },
+    {
+      "id": "standard-whisper-placeholder",
+      "display_name": "Production whisper.cpp Small Model",
+      "family": "whisper-small-local",
+      "kind": "stt",
+      "capabilities": ["transcribe_audio"],
+      "runtime": "whisper_cpp",
+      "format": "ggml",
+      "size_class": "small",
+      "recommended_profile": "standard",
+      "languages": ["en", "ru"],
+      "license_label": "check upstream model card",
+      "license_url": "REQUIRED_BEFORE_RELEASE",
+      "download_state": "not_installed",
+      "installed": false,
+      "source": {
+        "type": "huggingface",
+        "repo_id": "REPLACE_WITH_APPROVED_STANDARD_WHISPER_REPO",
+        "revision": "REQUIRED_BEFORE_RELEASE",
+        "allow_patterns": ["*.bin"]
+      },
+      "files": [
+        {
+          "filename": "REPLACE_WITH_APPROVED_STANDARD_WHISPER_FILE.bin",
+          "sha256": "REQUIRED_BEFORE_RELEASE",
+          "size_bytes": null
+        }
+      ],
+      "defaults": {
+        "language": "auto",
+        "timestamps": true,
+        "timeout_seconds": 180
+      }
+    },
+    {
+      "id": "mock-local-tts",
+      "display_name": "Mock Local Text-to-Speech",
+      "family": "mock",
+      "kind": "tts",
+      "capabilities": ["synthesize_speech"],
+      "runtime": "mock",
+      "format": "test",
+      "size_class": "tiny",
+      "recommended_profile": "tiny",
+      "languages": ["en"],
+      "license_label": "test fixture",
+      "download_state": "installed",
+      "installed": true,
+      "files": []
+    },
+    {
+      "id": "tiny-piper-placeholder",
+      "display_name": "Tiny Production Piper Voice",
+      "family": "piper-small-local",
+      "kind": "tts",
+      "capabilities": ["synthesize_speech"],
+      "runtime": "piper",
+      "format": "onnx",
+      "size_class": "tiny",
+      "recommended_profile": "tiny",
+      "languages": ["en", "ru"],
+      "license_label": "check upstream voice model card",
+      "license_url": "REQUIRED_BEFORE_RELEASE",
+      "download_state": "not_installed",
+      "installed": false,
+      "source": {
+        "type": "huggingface",
+        "repo_id": "REPLACE_WITH_APPROVED_PIPER_REPO",
+        "revision": "REQUIRED_BEFORE_RELEASE",
+        "allow_patterns": ["*.onnx", "*.json"]
+      },
+      "files": [
+        {
+          "filename": "REPLACE_WITH_APPROVED_PIPER_VOICE.onnx",
+          "sha256": "REQUIRED_BEFORE_RELEASE",
+          "size_bytes": null
+        }
+      ],
+      "defaults": {
+        "format": "wav",
+        "speed": 1.0,
+        "timeout_seconds": 120
+      }
+    }
+  ]
+}

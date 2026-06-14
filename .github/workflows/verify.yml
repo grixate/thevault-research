@@ -1,0 +1,65 @@
+name: Vault v1 verification
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      strict_production:
+        description: "Run the strict production local-AI readiness gate"
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  verify:
+    name: V1 gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      CI: true
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Enable pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@10.12.1 --activate
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          working-directory: services/core
+
+      - name: Install JavaScript dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Python dependencies
+        working-directory: services/core
+        run: uv sync --frozen
+
+      - name: Install Playwright browsers
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Verify runnable v1
+        if: ${{ github.event_name != 'workflow_dispatch' || inputs.strict_production != true }}
+        run: pnpm verify
+
+      - name: Verify strict production release gate
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.strict_production == true }}
+        run: pnpm verify:strict

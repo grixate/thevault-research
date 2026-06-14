@@ -1,0 +1,8 @@
+Page 1
+
+Text-based PDFs should preserve page locators when source blocks are created.
+
+Page 2
+
+Stable source blocks make citations resilient across repeated extraction runs.
+

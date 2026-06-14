@@ -1,0 +1,19 @@
+{
+  "id": "tool_claim_citation_checker",
+  "name": "Claim Citation Checker",
+  "version": "0.1.0",
+  "entrypoint": "main.py",
+  "runtime": "python",
+  "timeout_ms": 30000,
+  "permissions": {
+    "read_sources": true,
+    "read_claims": true,
+    "write_derived_artifacts": true,
+    "propose_review_items": true,
+    "write_canonical_graph": false,
+    "network": false,
+    "shell": false,
+    "secrets": false
+  }
+}
+

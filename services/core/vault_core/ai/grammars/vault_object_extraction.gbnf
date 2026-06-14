@@ -1,0 +1,11 @@
+root ::= "{" ws "\"objects\"" ws ":" ws "[" ws object-list? ws "]" ws "}"
+object-list ::= object (ws "," ws object)*
+object ::= "{" ws "\"type\"" ws ":" ws type ws "," ws "\"title\"" ws ":" ws string ws "," ws "\"body\"" ws ":" ws string ws "," ws "\"source_block_id\"" ws ":" ws string ws "," ws "\"source_quote\"" ws ":" ws string ws "," ws "\"confidence\"" ws ":" ws number relations? ws "}"
+relations ::= ws "," ws "\"relations\"" ws ":" ws "[" ws relation-list? ws "]"
+relation-list ::= relation (ws "," ws relation)*
+relation ::= "{" ws "\"type\"" ws ":" ws relation-type ws "," ws "\"target_ref\"" ws ":" ws string ws "," ws "\"confidence\"" ws ":" ws number ws "}"
+type ::= "\"claim\"" | "\"concept\"" | "\"question\"" | "\"definition\"" | "\"procedure\"" | "\"task\"" | "\"project\"" | "\"person\"" | "\"organization\"" | "\"tool_idea\"" | "\"contradiction\"" | "\"learning_goal\""
+relation-type ::= "\"derived_from\"" | "\"cites\"" | "\"supports\"" | "\"contradicts\"" | "\"mentions\"" | "\"explains\"" | "\"depends_on\"" | "\"part_of\"" | "\"example_of\"" | "\"duplicates\"" | "\"outdated_by\"" | "\"refines\"" | "\"prerequisite_for\"" | "\"useful_for\"" | "\"generates\"" | "\"validates\"" | "\"invalidates\""
+string ::= "\"" ([^"\\] | "\\" ["\\/bfnrt])* "\""
+number ::= "0" ("." [0-9]+)? | "1" ("." "0"+)?
+ws ::= ([ \t\n])*
