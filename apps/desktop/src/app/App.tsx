@@ -116,6 +116,7 @@ import type {
   Claim,
   HardwareProfile,
   Health,
+  KnowledgeNode,
   LabJob,
   LearningItem,
   Note,
@@ -6212,7 +6213,7 @@ function ReviewView() {
   );
 }
 
-type CapsuleAddTargetType = "note" | "source" | "source_block" | "claim";
+type CapsuleAddTargetType = "note" | "source" | "source_block" | "claim" | "kg_node" | "learning_item" | "tool";
 
 type CapsuleAttachButtonProps = {
   targetType: CapsuleAddTargetType;
@@ -6487,6 +6488,12 @@ function CapsulesView() {
     } else if (item.target_type === "claim") {
       setSelectedClaimId(item.target_id);
       setSurface("graph");
+    } else if (item.target_type === "kg_node") {
+      setSurface("graph");
+    } else if (item.target_type === "learning_item") {
+      setSurface("learning");
+    } else if (item.target_type === "tool") {
+      setSurface("tools");
     }
   }
   return (
@@ -6740,15 +6747,26 @@ function CapsuleDetail({ capsule, onOpenTarget }: { capsule: Capsule; onOpenTarg
   const notes = useQuery({ queryKey: ["notes"], queryFn: () => vaultRequest<Note[]>("notes.list") });
   const sources = useQuery({ queryKey: ["sources"], queryFn: () => vaultRequest<Source[]>("sources.list") });
   const claims = useQuery({ queryKey: ["claims"], queryFn: () => vaultRequest<Claim[]>("claims.list") });
+  const concepts = useQuery({ queryKey: ["graph-nodes"], queryFn: () => vaultRequest<KnowledgeNode[]>("graph.nodes", { limit: 100 }) });
+  const learningItems = useQuery({ queryKey: ["learning"], queryFn: () => vaultRequest<LearningItem[]>("learning.items") });
+  const tools = useQuery({ queryKey: ["tools"], queryFn: () => vaultRequest<Tool[]>("tools.list") });
   const [targetType, setTargetType] = useState<CapsuleAddTargetType>("note");
   const [targetId, setTargetId] = useState("");
   const [role, setRole] = useState("core");
   const [autoIncludeEvidence, setAutoIncludeEvidence] = useState(true);
   const [snapshotVersion, setSnapshotVersion] = useState(nextCapsulePatchVersion(capsule.version));
   const [exportOpen, setExportOpen] = useState(false);
-  const targetOptions = targetType === "note" ? notes.data ?? [] : targetType === "source" ? sources.data ?? [] : claims.data ?? [];
+  const targetOptions = capsuleTargetOptions(targetType, {
+    notes: notes.data ?? [],
+    sources: sources.data ?? [],
+    claims: claims.data ?? [],
+    concepts: concepts.data ?? [],
+    learningItems: learningItems.data ?? [],
+    tools: tools.data ?? []
+  });
   useEffect(() => {
     setTargetId("");
+    setRole(defaultCapsuleRoleForTarget(targetType));
   }, [targetType]);
   useEffect(() => {
     setSnapshotVersion(nextCapsulePatchVersion(capsule.version));
@@ -6869,6 +6887,9 @@ function CapsuleDetail({ capsule, onOpenTarget }: { capsule: Capsule; onOpenTarg
               <SelectItem value="note">Note</SelectItem>
               <SelectItem value="source">Source</SelectItem>
               <SelectItem value="claim">Claim</SelectItem>
+              <SelectItem value="kg_node">Concept</SelectItem>
+              <SelectItem value="learning_item">Practice</SelectItem>
+              <SelectItem value="tool">Tool</SelectItem>
             </SelectContent>
           </SelectRoot>
           <SelectRoot value={targetId || undefined} onValueChange={setTargetId}>
@@ -7075,8 +7096,39 @@ function capsuleOptionLabel(value?: string): string {
     .join(" ");
 }
 
-function targetOptionLabel(item: Note | Source | Claim): string {
+type CapsuleTargetOption = Note | Source | Claim | KnowledgeNode | LearningItem | Tool;
+
+function capsuleTargetOptions(
+  targetType: CapsuleAddTargetType,
+  options: {
+    notes: Note[];
+    sources: Source[];
+    claims: Claim[];
+    concepts: KnowledgeNode[];
+    learningItems: LearningItem[];
+    tools: Tool[];
+  }
+): CapsuleTargetOption[] {
+  if (targetType === "note") return options.notes;
+  if (targetType === "source") return options.sources;
+  if (targetType === "claim") return options.claims;
+  if (targetType === "kg_node") return options.concepts;
+  if (targetType === "learning_item") return options.learningItems;
+  if (targetType === "tool") return options.tools;
+  return [];
+}
+
+function defaultCapsuleRoleForTarget(targetType: CapsuleAddTargetType): string {
+  if (targetType === "source" || targetType === "source_block") return "primary_source";
+  if (targetType === "learning_item") return "learning";
+  if (targetType === "tool") return "reference";
+  return "core";
+}
+
+function targetOptionLabel(item: CapsuleTargetOption): string {
   if ("normalized_text" in item) return item.normalized_text;
+  if ("name" in item) return item.name;
+  if ("canonical_text" in item && item.canonical_text) return item.canonical_text;
   return item.title;
 }
 

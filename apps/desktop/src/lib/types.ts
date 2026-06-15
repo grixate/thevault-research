@@ -130,6 +130,17 @@ export type Claim = {
   evidence_strength: number;
 };
 
+export type KnowledgeNode = {
+  id: string;
+  node_type: string;
+  title: string;
+  canonical_text?: string | null;
+  status: string;
+  confidence?: number | null;
+  payload?: Record<string, any>;
+  updated_at: string;
+};
+
 export type Tool = {
   id: string;
   name: string;

@@ -162,6 +162,7 @@ function mapRoute(route: string, payload?: any): { method: string; path: string;
     "review.reject": { method: "POST", path: `/review/items/${payload?.itemId}/reject`, body: payload?.data ?? {} },
     "review.edit": { method: "POST", path: `/review/items/${payload?.itemId}/edit`, body: payload?.data ?? {} },
     "review.bulk": { method: "POST", path: "/review/bulk", body: payload ?? {} },
+    "graph.nodes": { method: "GET", path: `/graph/nodes?limit=${payload?.limit ?? 100}` },
     "claims.list": { method: "GET", path: "/claims" },
     "claims.get": { method: "GET", path: `/claims/${payload?.claimId}` },
     "claims.evidence": { method: "GET", path: `/claims/${payload?.claimId}/evidence` },

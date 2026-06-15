@@ -2331,6 +2331,22 @@ def register_routes(app: FastAPI) -> None:
                 result["claim"] = dict(claim) if claim else None
             return result
 
+    @app.get("/graph/nodes", dependencies=[auth])
+    def graph_nodes(limit: int = 100, db: VaultDatabase = Depends(get_db)) -> list[dict[str, Any]]:
+        capped_limit = max(1, min(limit, 250))
+        with db.connect() as conn:
+            rows = conn.execute(
+                """
+                SELECT *
+                FROM kg_nodes
+                WHERE workspace_id=? AND node_type!='claim'
+                ORDER BY updated_at DESC
+                LIMIT ?
+                """,
+                (db.workspace_id, capped_limit),
+            ).fetchall()
+            return [inflate_json(dict(row), "payload_json") for row in rows]
+
     @app.get("/graph/neighborhood/{node_id}", dependencies=[auth])
     def graph_neighborhood(node_id: str, depth: int = 2, db: VaultDatabase = Depends(get_db)) -> dict[str, Any]:
         with db.connect() as conn:

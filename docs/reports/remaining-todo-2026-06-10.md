@@ -2544,7 +2544,7 @@ Current good state:
   - selected capsule detail,
   - count strip,
   - health/status,
-  - add existing note/source/claim,
+  - add existing note/source/claim/concept/practice/tool,
   - evidence auto-include toggle for claims,
   - manual snapshot action.
 - Backend capsule export preview and package creation exist for reference-only, sanitized, private-full, learning, tool, and public modes.
@@ -2560,6 +2560,7 @@ Current good state:
 - Capsules can generate an overview note from capsule-scoped sources and approved claims only.
 - Generated capsule overview notes enter Notes as `generated_pending_review`, keep normal generated-note metadata, and attach back to the capsule with role `overview`.
 - Capsules can generate a reviewed-claims-only learning deck into Review, and approved cards attach back to the capsule as `learning_item` references.
+- Desktop Capsules can curate richer global references from the compact add panel: concepts from the graph, practice items from Learning, and installed local tools.
 - Compact capsule attach entry points exist in the real workflows:
   - current Note,
   - selected Storage source,
@@ -2576,10 +2577,6 @@ Remaining tasks:
   - clear source/note/claim attachment flow,
   - responsive desktop-first layout,
   - mobile noted later with the broader mobile repair pass.
-- Expand backend item support where useful:
-  - kg node/concept selection,
-  - learning items,
-  - attached tools.
 - Expand capsule learning generation beyond flashcards into outlines, lessons, quizzes, and explain-back prompts.
 - Harden/export follow-ups:
   - add richer copyrighted-file and secret scanning,
@@ -2606,8 +2603,8 @@ Acceptance evidence:
 - Export cannot proceed through unsafe modes when privacy blockers are unresolved.
 - Generated capsule notes and learning items stay reviewable and evidence-linked.
 - Browser screenshots show Capsules as a calm knowledge curation surface, not an overloaded management console.
-- Backend tests cover item references, evidence auto-inclusion, health, generated overview notes, reviewed capsule learning generation, snapshots, export preview, export manifest/checksum files, export privacy blocking, import quarantine, import review-item creation, and selective merge approval for existing local objects.
-- Desktop tests cover create, attach note/source/claim, snapshot, health, export preview/package creation, export blocking, import quarantine inspection, and the Review handoff.
+- Backend tests cover note/source/claim/concept/practice/tool item references, evidence auto-inclusion, health, generated overview notes, reviewed capsule learning generation, snapshots, export preview, export manifest/checksum files, export privacy blocking, import quarantine, import review-item creation, and selective merge approval for existing local objects.
+- Desktop tests cover create, concept/practice/tool selector data hydration, attach note/source/claim, snapshot, health, export preview/package creation, export blocking, import quarantine inspection, and the Review handoff.
 
 ## Recommended Next Session Steps
 

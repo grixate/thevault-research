@@ -47,6 +47,7 @@ export type VaultRoute =
   | "review.reject"
   | "review.edit"
   | "review.bulk"
+  | "graph.nodes"
   | "graph.node"
   | "graph.neighborhood"
   | "graph.relationPropose"
@@ -192,6 +193,7 @@ export const allowedRoutes: Record<VaultRoute, RouteSpec> = {
   "review.reject": { method: "POST", path: (p) => `/review/items/${p.itemId}/reject`, body: (p) => p.data ?? {} },
   "review.edit": { method: "POST", path: (p) => `/review/items/${p.itemId}/edit`, body: (p) => p.data ?? {} },
   "review.bulk": { method: "POST", path: () => "/review/bulk", body: (p) => p },
+  "graph.nodes": { method: "GET", path: (p) => `/graph/nodes?limit=${p?.limit ?? 100}` },
   "graph.node": { method: "GET", path: (p) => `/graph/node/${p.nodeId}` },
   "graph.neighborhood": { method: "GET", path: (p) => `/graph/neighborhood/${p.nodeId}?depth=${p.depth ?? 2}` },
   "graph.relationPropose": { method: "POST", path: () => "/graph/relations/propose", body: (p) => p },

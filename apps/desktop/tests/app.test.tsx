@@ -784,6 +784,9 @@ describe("App", () => {
         if (route === "notes.list") return [];
         if (route === "sources.list") return [];
         if (route === "claims.list") return [];
+        if (route === "graph.nodes") return [{ id: "node_natural_frequency", node_type: "concept", title: "Natural frequency", canonical_text: "Natural frequency", status: "active", updated_at: "2026-06-14T12:00:00Z" }];
+        if (route === "learning.items") return [{ id: "learn_natural_frequency", type: "flashcard", title: "Natural frequency recall", status: "active" }];
+        if (route === "tools.list") return [{ id: "tool_claim_citation_checker", name: "Claim citation checker", slug: "claim-citation-checker", version: "0.1.0", status: "installed" }];
         if (route === "review.list") return [];
         return [];
       }),
@@ -800,6 +803,10 @@ describe("App", () => {
 
     expect(await screen.findByText("Acoustic Science Foundations")).toBeTruthy();
     expect(await screen.findByLabelText("Capsule counts")).toBeTruthy();
+    expect(await screen.findByLabelText("Capsule target type")).toBeTruthy();
+    await waitFor(() => expect(window.vault.request).toHaveBeenCalledWith("graph.nodes", { limit: 100 }));
+    expect(window.vault.request).toHaveBeenCalledWith("learning.items", undefined);
+    expect(window.vault.request).toHaveBeenCalledWith("tools.list", undefined);
     fireEvent.click(await screen.findByRole("button", { name: "Export" }));
     const dialog = await screen.findByRole("dialog", { name: "Export capsule" });
     expect(await within(dialog).findByLabelText("Capsule export preview")).toBeTruthy();

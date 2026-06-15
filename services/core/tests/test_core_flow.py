@@ -639,6 +639,36 @@ def test_capsules_reference_global_objects_and_snapshot_health(client):
     client.post("/extraction/run", json={"target_type": "source", "target_id": imported["source"]["id"], "extract": ["claims"]})
     review_item = client.get("/review/items").json()[0]
     claim_id = client.post(f"/review/items/{review_item['id']}/approve", json={"decision_note": "Capsule evidence checked."}).json()["created"]["claim_id"]
+    ts = "2026-06-14T12:00:00Z"
+    concept_id = "node_capsule_acoustics_concept"
+    loose_learning_id = "learn_capsule_loose"
+    with client.app.state.db.connect() as conn:
+        conn.execute(
+            """
+            INSERT INTO kg_nodes
+              (id, workspace_id, node_type, title, canonical_text, status, confidence, payload_json, created_at, updated_at)
+            VALUES (?, ?, 'concept', 'Natural frequency', 'A natural frequency is a preferred vibration frequency of a system.', 'active', 0.9, ?, ?, ?)
+            """,
+            (concept_id, client.app.state.db.workspace_id, json.dumps({"tags": ["acoustics"]}), ts, ts),
+        )
+        conn.execute(
+            """
+            INSERT INTO learning_items
+              (id, workspace_id, type, title, body_json, source_refs_json, status, created_at, updated_at)
+            VALUES (?, ?, 'flashcard', 'Natural frequency recall', ?, ?, 'active', ?, ?)
+            """,
+            (
+                loose_learning_id,
+                client.app.state.db.workspace_id,
+                json.dumps({"front": "What is natural frequency?", "back": "A preferred vibration frequency of a system."}),
+                json.dumps([]),
+                ts,
+                ts,
+            ),
+        )
+    concept_rows = client.get("/graph/nodes").json()
+    assert [row["id"] for row in concept_rows] == [concept_id]
+    tool_id = client.get("/tools").json()[0]["id"]
 
     capsule = client.post(
         "/capsules",
@@ -664,19 +694,27 @@ def test_capsules_reference_global_objects_and_snapshot_health(client):
                 {"target_type": "note", "target_id": note["id"], "role": "core"},
                 {"target_type": "source", "target_id": imported["source"]["id"], "role": "primary_source", "export_policy": "metadata_and_quotes"},
                 {"target_type": "claim", "target_id": claim_id, "role": "core", "auto_include_evidence": True},
+                {"target_type": "kg_node", "target_id": concept_id, "role": "core"},
+                {"target_type": "learning_item", "target_id": loose_learning_id, "role": "learning"},
+                {"target_type": "tool", "target_id": tool_id, "role": "reference"},
                 {"target_type": "claim", "target_id": claim_id, "role": "core"},
             ]
         },
     ).json()
 
-    assert added["added"] == 3
+    assert added["added"] == 6
     assert added["skipped_duplicates"] == 1
     assert {item["target_type"] for item in added["auto_included"]} == {"evidence_link", "source_block"}
     detail = client.get(f"/capsules/{capsule['id']}").json()
     assert detail["counts"]["notes"] == 1
     assert detail["counts"]["sources"] == 1
     assert detail["counts"]["claims"] == 1
+    assert detail["counts"]["concepts"] == 1
+    assert detail["counts"]["tools"] == 1
     assert any(item["target_type"] == "claim" and item["target_id"] == claim_id for item in detail["items"])
+    assert any(item["target_type"] == "kg_node" and item["target_id"] == concept_id for item in detail["items"])
+    assert any(item["target_type"] == "learning_item" and item["target_id"] == loose_learning_id for item in detail["items"])
+    assert any(item["target_type"] == "tool" and item["target_id"] == tool_id for item in detail["items"])
 
     health = client.post(f"/capsules/{capsule['id']}/health/run").json()
     assert health["counts"]["approved_claims"] == 1
@@ -727,6 +765,9 @@ def test_capsules_reference_global_objects_and_snapshot_health(client):
     assert preview["status"] == "ready"
     assert preview["privacy_report"]["exact_quote_count"] >= 1
     assert preview["manifest"]["object_counts"]["claims"] == 1
+    assert preview["manifest"]["object_counts"]["kg_nodes"] >= 2
+    assert preview["manifest"]["object_counts"]["learning_items"] >= 1
+    assert preview["manifest"]["object_counts"]["tools"] == 1
 
     exported = client.post(f"/capsules/{capsule['id']}/export", json={"export_mode": "sanitized"}).json()
     export_path = Path(exported["file_path"])
