@@ -160,6 +160,7 @@ from vault_core.capsules.service import (
     approve_capsule_import_review_item,
     add_capsule_items,
     archive_capsule,
+    capsule_assistant_scope,
     attach_capsule_learning_items,
     capsule_learning_deck_payload,
     capsule_overview_note_input,
@@ -2464,17 +2465,35 @@ def register_routes(app: FastAPI) -> None:
         db: VaultDatabase = Depends(get_db),
     ) -> dict[str, Any]:
         source_ids = _scope_string_list(req.scope.get("source_ids"))
+        source_block_ids = _scope_string_list(req.scope.get("source_block_ids"))
         claim_ids = _scope_string_list(req.scope.get("claim_ids"))
         claim_statuses = _scope_string_list(req.scope.get("claim_statuses")) or ["supported", "user_confirmed", "verified"]
         evidence_mode = str(req.scope.get("evidence_mode") or "").strip()
         include_source_blocks = _scope_bool(req.scope.get("include_source_blocks"), default=evidence_mode != "approved_claims")
+        capsule_id = str(req.scope.get("capsule_id") or "").strip()
+        capsule_context: dict[str, Any] | None = None
+        restrict_to_scope = False
+        if capsule_id:
+            capsule_scope = capsule_assistant_scope(db, capsule_id)
+            capsule_context = {
+                "id": capsule_scope["capsule"]["id"],
+                "name": capsule_scope["capsule"]["name"],
+                "slug": capsule_scope["capsule"]["slug"],
+                "item_count": capsule_scope["item_count"],
+            }
+            source_ids = list(dict.fromkeys([*source_ids, *capsule_scope["source_ids"]]))
+            source_block_ids = list(dict.fromkeys([*source_block_ids, *capsule_scope["source_block_ids"]]))
+            claim_ids = list(dict.fromkeys([*claim_ids, *capsule_scope["claim_ids"]]))
+            restrict_to_scope = True
         quote_pack = collect_grounded_answer_quote_pack(
             db,
             source_ids=source_ids,
+            source_block_ids=source_block_ids,
             claim_ids=claim_ids,
             query=req.question,
             claim_statuses=claim_statuses,
             include_source_blocks=include_source_blocks,
+            restrict_to_scope=restrict_to_scope,
             limit=6,
         )
         if not quote_pack:
@@ -2491,6 +2510,8 @@ def register_routes(app: FastAPI) -> None:
                 "review_item_id": review_item_id,
                 "evidence_quality": "missing",
                 "scope_policy": evidence_mode or ("claims_and_storage" if include_source_blocks else "approved_claims"),
+                "scope_context": "capsule" if capsule_context else "vault",
+                "capsule": capsule_context,
             }
 
         has_claim_evidence = any(item.get("evidence_kind") == "approved_claim_evidence" for item in quote_pack)
@@ -2563,6 +2584,8 @@ def register_routes(app: FastAPI) -> None:
             "review_item_id": review_item_id,
             "evidence_quality": "approved_claims" if has_claim_evidence else "source_blocks",
             "scope_policy": evidence_mode or ("claims_and_storage" if include_source_blocks else "approved_claims"),
+            "scope_context": "capsule" if capsule_context else "vault",
+            "capsule": capsule_context,
             "ai_run_id": run.run_id,
             "provider": run.provider_id,
             "model_id": run.model_id,
@@ -4748,11 +4771,18 @@ def collect_grounded_answer_quote_pack(
     claim_ids: list[str],
     query: str,
     claim_statuses: list[str],
+    source_block_ids: list[str] | None = None,
     include_source_blocks: bool = True,
+    restrict_to_scope: bool = False,
     limit: int = 6,
 ) -> list[dict[str, Any]]:
     results: list[dict[str, Any]] = []
     seen: set[str] = set()
+    source_block_ids = list(dict.fromkeys(source_block_ids or []))
+    source_ids = list(dict.fromkeys(source_ids))
+    claim_ids = list(dict.fromkeys(claim_ids))
+    if restrict_to_scope and not source_ids and not source_block_ids and not claim_ids:
+        return []
 
     def add_result(item: dict[str, Any]) -> None:
         key = f"{item.get('source_block_id')}:{item.get('snippet')}"
@@ -4764,11 +4794,9 @@ def collect_grounded_answer_quote_pack(
     with db.connect() as conn:
         if claim_ids:
             placeholders = ",".join("?" for _ in claim_ids)
-            source_clause = ""
-            args: list[Any] = [*claim_ids]
-            if source_ids:
-                source_clause = " AND s.id IN (" + ",".join("?" for _ in source_ids) + ")"
-                args.extend(source_ids)
+            status_values = claim_statuses or ["supported", "user_confirmed", "verified"]
+            status_placeholders = ",".join("?" for _ in status_values)
+            args: list[Any] = [*claim_ids, *status_values]
             rows = conn.execute(
                 f"""
                 SELECT
@@ -4784,7 +4812,7 @@ def collect_grounded_answer_quote_pack(
                 JOIN kg_nodes k ON k.id=c.node_id
                 JOIN source_blocks b ON b.id=e.source_block_id
                 JOIN sources s ON s.id=b.source_id
-                WHERE e.claim_id IN ({placeholders}){source_clause}
+                WHERE e.claim_id IN ({placeholders}) AND c.status IN ({status_placeholders})
                 ORDER BY e.created_at DESC
                 LIMIT ?
                 """,
@@ -4793,14 +4821,20 @@ def collect_grounded_answer_quote_pack(
             for row in rows:
                 add_result(_assistant_quote_row(row, "approved_claim_evidence"))
 
-        if len(results) < limit:
+        if len(results) < limit and (not restrict_to_scope or source_ids or source_block_ids):
             status_values = claim_statuses or ["supported", "user_confirmed", "verified"]
             status_placeholders = ",".join("?" for _ in status_values)
             clauses = [f"c.status IN ({status_placeholders})"]
             args = [*status_values]
+            evidence_scope_clauses = []
             if source_ids:
-                clauses.append("s.id IN (" + ",".join("?" for _ in source_ids) + ")")
+                evidence_scope_clauses.append("s.id IN (" + ",".join("?" for _ in source_ids) + ")")
                 args.extend(source_ids)
+            if source_block_ids:
+                evidence_scope_clauses.append("e.source_block_id IN (" + ",".join("?" for _ in source_block_ids) + ")")
+                args.extend(source_block_ids)
+            if evidence_scope_clauses:
+                clauses.append("(" + " OR ".join(evidence_scope_clauses) + ")")
             terms = _query_terms(query)
             if terms:
                 clauses.append(
@@ -4842,9 +4876,17 @@ def collect_grounded_answer_quote_pack(
         if include_source_blocks and len(results) < limit:
             clauses = []
             args = []
+            evidence_scope_clauses = []
             if source_ids:
-                clauses.append("s.id IN (" + ",".join("?" for _ in source_ids) + ")")
+                evidence_scope_clauses.append("s.id IN (" + ",".join("?" for _ in source_ids) + ")")
                 args.extend(source_ids)
+            if source_block_ids:
+                evidence_scope_clauses.append("b.id IN (" + ",".join("?" for _ in source_block_ids) + ")")
+                args.extend(source_block_ids)
+            if evidence_scope_clauses:
+                clauses.append("(" + " OR ".join(evidence_scope_clauses) + ")")
+            if restrict_to_scope and not evidence_scope_clauses:
+                return results[:limit]
             terms = _query_terms(query)
             if terms:
                 clauses.append("(" + " OR ".join("b.text LIKE ?" for _ in terms[:4]) + ")")

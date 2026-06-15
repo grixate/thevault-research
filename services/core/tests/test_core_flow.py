@@ -1798,6 +1798,60 @@ def test_assistant_approved_claim_mode_does_not_fallback_to_raw_source_blocks(cl
     assert broad_answer["review_item_id"]
 
 
+def test_assistant_capsule_scope_uses_capsule_items_without_global_fallback(client):
+    inside = client.post(
+        "/sources/import-text",
+        json={
+            "title": "Capsule Resonance Source",
+            "type": "text",
+            "text": "Resonance in this capsule is supported by a tuned chamber example.",
+        },
+    ).json()
+    outside = client.post(
+        "/sources/import-text",
+        json={
+            "title": "Outside Resonance Source",
+            "type": "text",
+            "text": "Resonance outside the capsule mentions an unrelated instrument example.",
+        },
+    ).json()
+    inside_block = client.get(f"/sources/{inside['source']['id']}/blocks").json()[0]
+    capsule = client.post(
+        "/capsules",
+        json={"name": "Resonance Capsule", "capsule_type": "domain", "purpose": "Keep scoped resonance evidence."},
+    ).json()
+    client.post(
+        f"/capsules/{capsule['id']}/items",
+        json={"items": [{"target_type": "source_block", "target_id": inside_block["id"], "role": "evidence"}]},
+    ).json()
+
+    answer = client.post(
+        "/assistant/ask",
+        json={
+            "question": "What resonance evidence is in this capsule?",
+            "scope": {
+                "capsule_id": capsule["id"],
+                "claim_statuses": ["supported"],
+                "evidence_mode": "claims_and_storage",
+                "include_source_blocks": True,
+            },
+            "require_citations": True,
+        },
+    ).json()
+
+    assert answer["scope_context"] == "capsule"
+    assert answer["capsule"]["id"] == capsule["id"]
+    assert answer["capsule"]["name"] == "Resonance Capsule"
+    assert answer["scope_policy"] == "claims_and_storage"
+    assert answer["evidence_quality"] == "source_blocks"
+    assert answer["citations"][0]["source_id"] == inside["source"]["id"]
+    assert answer["citations"][0]["source_block_id"] == inside_block["id"]
+    assert answer["citations"][0]["source_id"] != outside["source"]["id"]
+    assert "tuned chamber" in answer["answer_markdown"]
+    assert "unrelated instrument" not in answer["answer_markdown"]
+    assert answer["review_item_id"]
+
+
 def test_assistant_prefers_approved_claim_evidence_and_logs_grounded_answer_run(client):
     imported = client.post(
         "/sources/import-text",

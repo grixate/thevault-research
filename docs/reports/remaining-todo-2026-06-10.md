@@ -246,6 +246,19 @@ Latest capsule fork/dependency verification on 2026-06-15:
 - Electron route test: passed.
 - Desktop production build: passed.
 
+Latest capsule Assistant verification on 2026-06-15:
+
+- Added capsule-scoped Assistant evidence mode through `scope.capsule_id` on `/assistant/ask`.
+- Capsule Assistant scope resolves canonical capsule sources, explicit source blocks, and approved claims without creating a mini-vault.
+- Strict capsule scope prevents global fallback when a matching source block exists outside the selected capsule.
+- Assistant responses now report `scope_context: capsule` plus capsule id/name/slug/item count when scoped to a capsule.
+- Desktop Assistant keeps the modern chat layout and adds a compact Vault/Capsule context selector in the composer.
+- Saved Assistant answer notes now retain scope context plus capsule id/name metadata.
+- Focused backend Assistant capsule-scope test: passed.
+- Focused desktop Assistant context test path: passed.
+- Python lint: passed.
+- Desktop production build: passed.
+
 Latest focused verification on 2026-06-11 before the current claim-grammar slice:
 
 - Python core tests: 125 passed.
@@ -2573,6 +2586,7 @@ Current good state:
 - Capsules can generate reviewed-claims-only learning items into Review: course outline, first lesson, quiz, explain-back prompt, and flashcards. Approved items attach back to the capsule as `learning_item` references.
 - Capsules can diff the latest two snapshots and show added, removed, and changed capsule references.
 - Capsules can be forked into a new draft/project/course capsule while preserving global references and recording a `forked_from` dependency.
+- Assistant can answer inside a selected capsule context, using capsule canonical items first and citing canonical evidence without global fallback.
 - Desktop Capsules can curate richer global references from the compact add panel: concepts from the graph, practice items from Learning, and installed local tools.
 - Compact capsule attach entry points exist in the real workflows:
   - current Note,
@@ -2606,7 +2620,6 @@ Remaining tasks:
   - add an explicit enable step for reviewed imported tools,
   - expose import history/details beyond the latest import result,
   - add invalid-package UI states.
-- Add capsule-scoped Assistant mode that uses capsule items first and cites canonical evidence.
 - Update workspace export to include capsule tables once the capsule alpha stabilizes.
 - Generate/update OpenAPI contract after routes settle.
 
@@ -2617,14 +2630,15 @@ Acceptance evidence:
 - Export cannot proceed through unsafe modes when privacy blockers are unresolved.
 - Generated capsule notes and learning items stay reviewable and evidence-linked.
 - Forked capsules preserve canonical references and expose their parent dependency without creating a separate mini-vault.
+- Capsule-scoped Assistant answers cite canonical capsule evidence and do not silently pull matching evidence from outside the selected capsule.
 - Browser screenshots show Capsules as a calm knowledge curation surface, not an overloaded management console.
-- Backend tests cover note/source/claim/concept/practice/tool item references, evidence auto-inclusion, health, generated overview notes, reviewed capsule outline/lesson/quiz/explain-back/flashcard generation, snapshots, version diff, fork/dependency creation, export preview, export manifest/checksum files, export privacy blocking, import quarantine, import review-item creation, and selective merge approval for existing local objects.
-- Desktop tests cover create, concept/practice/tool selector data hydration, attach note/source/claim, snapshot, version diff, fork, health, export preview/package creation, export blocking, import quarantine inspection, and the Review handoff.
+- Backend tests cover note/source/claim/concept/practice/tool item references, evidence auto-inclusion, health, generated overview notes, reviewed capsule outline/lesson/quiz/explain-back/flashcard generation, snapshots, version diff, fork/dependency creation, capsule-scoped Assistant evidence, export preview, export manifest/checksum files, export privacy blocking, import quarantine, import review-item creation, and selective merge approval for existing local objects.
+- Desktop tests cover create, concept/practice/tool selector data hydration, attach note/source/claim, snapshot, version diff, fork, capsule Assistant context, health, export preview/package creation, export blocking, import quarantine inspection, and the Review handoff.
 
 ## Recommended Next Session Steps
 
 1. If continuing UX, keep the Notion/Obsidian/Apple Notes reset active: inspect Notes, Storage, Quick Note, Review, Assistant, Capsules, and Settings screenshots, then simplify the most overloaded flow first.
-2. If continuing Capsules, polish the alpha surface and attach dialog first, then continue from import review items into conflict-aware merge decisions or capsule-scoped Assistant.
+2. If continuing Capsules, polish the alpha surface and attach dialog first, then continue from import review items into conflict-aware merge decisions or workspace export coverage for capsule tables.
 3. If continuing local AI production, pick the first real approved runtime/model candidate set and run the release-packet tooling.
 4. If stabilizing before bigger registry edits, stage or commit the current v1 state.
 5. After any slice:

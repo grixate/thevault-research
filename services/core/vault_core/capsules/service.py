@@ -835,6 +835,55 @@ def capsule_overview_note_input(db: VaultDatabase, capsule_id: str) -> dict[str,
         }
 
 
+def capsule_assistant_scope(db: VaultDatabase, capsule_id: str) -> dict[str, Any]:
+    with db.connect() as conn:
+        row = conn.execute("SELECT * FROM capsules WHERE id=? AND workspace_id=?", (capsule_id, db.workspace_id)).fetchone()
+        if not row:
+            raise HTTPException(404, "Capsule not found")
+        capsule = inflate_capsule(row)
+        claim_ids = capsule_approved_claim_ids_for_overview(conn, db.workspace_id, capsule_id)
+        source_rows = conn.execute(
+            """
+            SELECT DISTINCT sources.id
+            FROM capsule_items
+            JOIN sources ON sources.id=capsule_items.target_id
+            WHERE capsule_items.workspace_id=? AND capsule_items.capsule_id=?
+              AND capsule_items.target_type='source' AND capsule_items.status='active'
+            UNION
+            SELECT DISTINCT notes.source_id
+            FROM capsule_items
+            JOIN notes ON notes.id=capsule_items.target_id
+            WHERE capsule_items.workspace_id=? AND capsule_items.capsule_id=?
+              AND capsule_items.target_type='note' AND capsule_items.status='active'
+              AND notes.source_id IS NOT NULL
+            ORDER BY 1
+            """,
+            (db.workspace_id, capsule_id, db.workspace_id, capsule_id),
+        ).fetchall()
+        source_ids = [row["id"] for row in source_rows]
+        source_block_rows = conn.execute(
+            """
+            SELECT DISTINCT source_blocks.id
+            FROM capsule_items
+            JOIN source_blocks ON source_blocks.id=capsule_items.target_id
+            JOIN sources ON sources.id=source_blocks.source_id
+            WHERE capsule_items.workspace_id=? AND capsule_items.capsule_id=?
+              AND capsule_items.target_type='source_block' AND capsule_items.status='active'
+              AND sources.workspace_id=?
+            ORDER BY source_blocks.id
+            """,
+            (db.workspace_id, capsule_id, db.workspace_id),
+        ).fetchall()
+        source_block_ids = [row["id"] for row in source_block_rows]
+        return {
+            "capsule": capsule,
+            "source_ids": source_ids,
+            "source_block_ids": source_block_ids,
+            "claim_ids": claim_ids,
+            "item_count": count_capsule_items(conn, capsule_id, status="active"),
+        }
+
+
 def record_capsule_generated_note(db: VaultDatabase, capsule_id: str, note_id: str, payload: dict[str, Any]) -> None:
     ts = now_iso()
     with db.connect() as conn:

@@ -630,6 +630,7 @@ describe("App", () => {
       selectedSourceBlockId: undefined,
       selectedReviewItemId: undefined,
       selectedClaimId: undefined,
+      selectedCapsuleId: undefined,
       quickNoteRequestId: 0,
       sourceDialogRequestId: 0,
       sourceDialogDraftText: ""
@@ -5185,6 +5186,92 @@ describe("App", () => {
     expect((await screen.findAllByText("Approved claims")).length).toBeGreaterThan(0);
     expect(await screen.findByText("I do not have enough approved source evidence to answer that as fact.")).toBeTruthy();
     expect(await screen.findByText("No matching source block or approved claim evidence was found.")).toBeTruthy();
+  });
+
+  it("asks the assistant inside the selected capsule context", async () => {
+    const capsule = {
+      id: "cap_resonance",
+      name: "Resonance Capsule",
+      slug: "resonance-capsule",
+      description: null,
+      purpose: "Keep resonance evidence scoped.",
+      capsule_type: "domain",
+      status: "draft",
+      version: "0.1.0",
+      language: "en",
+      domains: ["physics"],
+      tags: ["resonance"],
+      epistemic_strictness: "balanced",
+      default_source_policy: "reference_only",
+      updated_at: "2026-06-15T12:00:00Z",
+      counts: { sources: 1, notes: 0, claims: 1, concepts: 0, tools: 0 },
+      health: { score: 0.8, status: "healthy", warnings: [] }
+    };
+    const request = vi.fn(async (route: string, payload?: any) => {
+      if (route === "health.get") return { ok: true, version: "0.1.0", db_ready: true, workspace_id: "wrk_default" };
+      if (route === "stats.get") {
+        return {
+          sources: 1,
+          source_blocks: 1,
+          notes: 0,
+          claims: 1,
+          claims_without_evidence: 0,
+          contradicted_claims: 0,
+          pending_review_items: 0,
+          generated_notes_pending_review: 0,
+          installed_tools: 1,
+          failed_jobs: 0,
+          learning_items: 0
+        };
+      }
+      if (route === "jobs.list" || route === "events.list") return [];
+      if (route === "capsules.list") return { items: [capsule], total: 1 };
+      if (route === "assistant.ask") {
+        expect(payload.scope).toEqual(
+          expect.objectContaining({
+            capsule_id: "cap_resonance",
+            evidence_mode: "approved_claims",
+            include_source_blocks: false
+          })
+        );
+        return {
+          answer_markdown: "The capsule keeps resonance evidence constrained to its approved claims [1].",
+          evidence_quality: "approved_claims",
+          provider: "mock_llm",
+          model_id: "mock-local-llm",
+          capability: "grounded_answer",
+          sent_off_device: false,
+          scope_context: "capsule",
+          capsule: { id: "cap_resonance", name: "Resonance Capsule", slug: "resonance-capsule", item_count: 2 },
+          citations: [
+            {
+              marker: "[1]",
+              source_block_id: "blk_resonance",
+              source_id: "src_resonance",
+              claim_id: "clm_resonance",
+              exact_quote: "Resonance evidence stays inside the capsule.",
+              title: "Capsule Resonance Source",
+              evidence_kind: "approved_claim_evidence"
+            }
+          ]
+        };
+      }
+      return [];
+    });
+    window.vault = { request, selectFiles: vi.fn(async () => []) };
+
+    useUIStore.setState({ surface: "assistant", selectedCapsuleId: "cap_resonance" });
+    renderApp();
+    expect(await screen.findByLabelText("Assistant context")).toBeTruthy();
+    expect((await screen.findAllByText("Resonance Capsule")).length).toBeGreaterThan(0);
+    fireEvent.change(await screen.findByLabelText("Assistant question"), {
+      target: { value: "What is in this capsule?" }
+    });
+    fireEvent.click(await screen.findByRole("button", { name: /^ask$/i }));
+
+    const answerContext = await screen.findByLabelText("Answer context");
+    expect(within(answerContext).getByText("Resonance Capsule")).toBeTruthy();
+    expect(await screen.findByText("The capsule keeps resonance evidence constrained to its approved claims [1].")).toBeTruthy();
   });
 
   it("runs an Assistant starter with the matching evidence policy", async () => {

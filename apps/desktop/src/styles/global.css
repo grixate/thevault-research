@@ -3966,6 +3966,11 @@ blockquote span {
   color: var(--foreground);
 }
 
+.assistant-context-select {
+  width: min(210px, 100%);
+  min-height: 34px;
+}
+
 .assistant-starter-row {
   min-width: 0;
   display: flex;

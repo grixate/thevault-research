@@ -354,6 +354,12 @@ const assistantPromptStarters: AssistantPromptStarter[] = [
   }
 ];
 
+function assistantScopeFor(mode: AssistantEvidenceMode, contextId: string): Record<string, unknown> {
+  const scope: Record<string, unknown> = { ...assistantEvidencePolicies[mode].scope };
+  if (contextId && contextId !== "vault") scope.capsule_id = contextId;
+  return scope;
+}
+
 export function App() {
   const surface = useUIStore((state) => state.surface);
   const setSurface = useUIStore((state) => state.setSurface);
@@ -424,6 +430,7 @@ type CommandAction = {
 type AssistantAskInput = {
   question: string;
   mode: AssistantEvidenceMode;
+  contextId: string;
 };
 
 type AssistantPromptStarter = {
@@ -7362,6 +7369,7 @@ function GraphView() {
 
 function AssistantView() {
   const queryClient = useQueryClient();
+  const selectedCapsuleId = useUIStore((state) => state.selectedCapsuleId);
   const setSurface = useUIStore((state) => state.setSurface);
   const setSelectedNoteId = useUIStore((state) => state.setSelectedNoteId);
   const setSelectedSourceId = useUIStore((state) => state.setSelectedSourceId);
@@ -7371,6 +7379,8 @@ function AssistantView() {
   const [question, setQuestion] = useState("");
   const [evidenceMode, setEvidenceMode] = useState<AssistantEvidenceMode>("approved_claims");
   const [submittedEvidenceMode, setSubmittedEvidenceMode] = useState<AssistantEvidenceMode>("approved_claims");
+  const [assistantContextId, setAssistantContextId] = useState(selectedCapsuleId ?? "vault");
+  const [submittedContextId, setSubmittedContextId] = useState(selectedCapsuleId ?? "vault");
   const [answer, setAnswer] = useState<any>();
   const [voiceQuestionResult, setVoiceQuestionResult] = useState<any | null>(null);
   const [voiceQuestionRecordingState, setVoiceQuestionRecordingState] = useState<RecordingState>("idle");
@@ -7379,11 +7389,15 @@ function AssistantView() {
   const voiceQuestionRecordingStreamRef = useRef<MediaStream | null>(null);
   const voiceQuestionRecordingChunksRef = useRef<BlobPart[]>([]);
   const voiceQuestionRecordingStateRef = useRef<RecordingState>(voiceQuestionRecordingState);
+  const capsules = useQuery({
+    queryKey: ["capsules", "assistant-context"],
+    queryFn: () => vaultRequest<CapsuleListResponse>("capsules.list", { limit: 50 })
+  });
   const ask = useMutation<any, Error, AssistantAskInput>({
-    mutationFn: ({ question: questionText, mode }) =>
+    mutationFn: ({ question: questionText, mode, contextId }) =>
       vaultRequest("assistant.ask", {
         question: questionText,
-        scope: assistantEvidencePolicies[mode].scope,
+        scope: assistantScopeFor(mode, contextId),
         answer_style: "concise_research_memo",
         require_citations: true
     }),
@@ -7423,6 +7437,9 @@ function AssistantView() {
   });
   const citations = answer?.citations ?? [];
   const uncertainties = answer?.uncertainties ?? [];
+  const assistantCapsules = capsules.data?.items ?? [];
+  const activeCapsule = assistantCapsules.find((capsule) => capsule.id === assistantContextId);
+  const submittedCapsule = answer?.capsule ?? assistantCapsules.find((capsule) => capsule.id === submittedContextId);
   const activeEvidencePolicy = assistantEvidencePolicies[evidenceMode];
   const answerEvidencePolicy = assistantEvidencePolicies[answer ? submittedEvidenceMode : evidenceMode];
   const ActiveEvidencePolicyIcon = activeEvidencePolicy.icon;
@@ -7432,6 +7449,14 @@ function AssistantView() {
   const groundingDetail = assistantGroundingDetail(answer, answerEvidencePolicy, citations.length);
   const localityLabel = assistantLocalityLabel(answer);
   const modelLabel = assistantModelLabel(answer, ask.isPending);
+  const contextLabel = assistantContextLabel(answer, submittedContextId, submittedCapsule);
+
+  useEffect(() => {
+    if (selectedCapsuleId && assistantContextId === "vault") {
+      setAssistantContextId(selectedCapsuleId);
+      setSubmittedContextId(selectedCapsuleId);
+    }
+  }, [assistantContextId, selectedCapsuleId]);
 
   useEffect(
     () => () => {
@@ -7468,7 +7493,8 @@ function AssistantView() {
     const nextQuestion = String(questionOverride ?? question).trim();
     if (!nextQuestion) return;
     setSubmittedEvidenceMode(modeOverride);
-    ask.mutate({ question: nextQuestion, mode: modeOverride });
+    setSubmittedContextId(assistantContextId);
+    ask.mutate({ question: nextQuestion, mode: modeOverride, contextId: assistantContextId });
   }
   function runStarter(starter: AssistantPromptStarter) {
     setQuestion(starter.question);
@@ -7623,6 +7649,7 @@ function AssistantView() {
                   </div>
                   <div className="assistant-grounding-meta" aria-label="Answer context">
                     <span>{answerEvidencePolicy.label}</span>
+                    <span>{contextLabel}</span>
                     <span>{assistantCitationCountLabel(citations.length)}</span>
                     <span>{localityLabel}</span>
                     <span title={String(answer?.model_id ?? "")}>{modelLabel}</span>
@@ -7698,7 +7725,23 @@ function AssistantView() {
                 Evidence
               </Badge>
               <strong>{activeEvidencePolicy.label}</strong>
+              <span>{activeCapsule?.name ?? (assistantContextId === "vault" ? "Vault" : "Capsule")}</span>
             </div>
+            {assistantCapsules.length > 0 && (
+              <SelectRoot value={assistantContextId} onValueChange={setAssistantContextId}>
+                <SelectTrigger className="assistant-context-select" aria-label="Assistant context">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="vault">Vault</SelectItem>
+                  {assistantCapsules.map((capsule) => (
+                    <SelectItem key={capsule.id} value={capsule.id}>
+                      {capsule.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </SelectRoot>
+            )}
           </div>
           <Textarea
             aria-label="Assistant question"
@@ -7786,6 +7829,12 @@ function assistantModelLabel(answer: any, pending: boolean): string {
   return "Local model";
 }
 
+function assistantContextLabel(answer: any, contextId: string, capsule?: Partial<Capsule> | null): string {
+  if (answer?.scope_context === "capsule") return String(answer?.capsule?.name || capsule?.name || "Capsule");
+  if (contextId && contextId !== "vault") return String(capsule?.name || "Capsule");
+  return "Vault";
+}
+
 function modelRunProviderLabel(run: Pick<AIModelRun, "provider" | "sent_off_device">): string {
   if (run.sent_off_device) return "Off-device model";
   return "Local model";
@@ -7857,6 +7906,9 @@ function assistantAnswerNoteContent(questionText: string, answer: any, mode: Ass
     capture_mode: "assistant_answer",
     assistant_question: questionText,
     evidence_mode: mode,
+    scope_context: answer?.scope_context ?? "vault",
+    capsule_id: answer?.capsule?.id,
+    capsule_name: answer?.capsule?.name,
     evidence_policy: policy.scope,
     evidence_quality: answer?.evidence_quality ?? "missing",
     generated_by: answer?.provider ?? "assistant",
