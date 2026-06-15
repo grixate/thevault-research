@@ -686,7 +686,10 @@ describe("App", () => {
       counts: { sources: 0, notes: 0, claims: 0, concepts: 0, tools: 0 },
       health: { score: 0, status: "needs_review", warnings: ["No capsule items yet."] },
       items: [],
-      versions: [],
+      versions: [
+        { id: "capver_02", version: "0.2.0", title: "Current", changelog: null, created_at: "2026-06-14T12:10:00Z" },
+        { id: "capver_01", version: "0.1.0", title: "Baseline", changelog: null, created_at: "2026-06-14T12:00:00Z" }
+      ],
       activity: []
     };
     let capsuleRows: any[] = [];
@@ -701,6 +704,17 @@ describe("App", () => {
           return capsule;
         }
         if (route === "capsules.get") return capsule;
+        if (route === "capsules.versionDiff") {
+          return {
+            capsule_id: capsule.id,
+            from: capsule.versions[1],
+            to: capsule.versions[0],
+            counts: { added: 1, removed: 0, changed: 0 },
+            added: [{ target_type: "note", target_id: "note_added", role: "overview", include_mode: "reference", status: "active" }],
+            removed: [],
+            changed: []
+          };
+        }
         if (route === "capsules.exportPreview") {
           return {
             capsule_id: capsule.id,
@@ -807,6 +821,9 @@ describe("App", () => {
     await waitFor(() => expect(window.vault.request).toHaveBeenCalledWith("graph.nodes", { limit: 100 }));
     expect(window.vault.request).toHaveBeenCalledWith("learning.items", undefined);
     expect(window.vault.request).toHaveBeenCalledWith("tools.list", undefined);
+    fireEvent.click(await screen.findByRole("button", { name: "Diff" }));
+    expect(await screen.findByLabelText("Capsule version diff")).toBeTruthy();
+    expect(await screen.findByText("1 added")).toBeTruthy();
     fireEvent.click(await screen.findByRole("button", { name: "Export" }));
     const dialog = await screen.findByRole("dialog", { name: "Export capsule" });
     expect(await within(dialog).findByLabelText("Capsule export preview")).toBeTruthy();

@@ -133,6 +133,7 @@ function mapRoute(route: string, payload?: any): { method: string; path: string;
     "capsules.learning.generate": { method: "POST", path: `/capsules/${payload?.capsuleId}/learning/generate`, body: payload?.data ?? {} },
     "capsules.snapshot": { method: "POST", path: `/capsules/${payload?.capsuleId}/versions`, body: payload?.data ?? {} },
     "capsules.versions": { method: "GET", path: `/capsules/${payload?.capsuleId}/versions` },
+    "capsules.versionDiff": { method: "GET", path: `/capsules/${payload?.capsuleId}/versions/diff?from_version_id=${encodeURIComponent(payload?.fromVersionId ?? "")}&to_version_id=${encodeURIComponent(payload?.toVersionId ?? "")}` },
     "capsules.exportPreview": { method: "POST", path: `/capsules/${payload?.capsuleId}/export/preview`, body: payload?.data ?? {} },
     "capsules.export": { method: "POST", path: `/capsules/${payload?.capsuleId}/export`, body: payload?.data ?? {} },
     "capsules.imports": { method: "GET", path: `/capsules/imports?limit=${payload?.limit ?? 50}&offset=${payload?.offset ?? 0}` },

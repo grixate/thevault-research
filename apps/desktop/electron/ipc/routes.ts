@@ -15,6 +15,7 @@ export type VaultRoute =
   | "capsules.learning.generate"
   | "capsules.snapshot"
   | "capsules.versions"
+  | "capsules.versionDiff"
   | "capsules.exportPreview"
   | "capsules.export"
   | "capsules.imports"
@@ -161,6 +162,10 @@ export const allowedRoutes: Record<VaultRoute, RouteSpec> = {
   "capsules.learning.generate": { method: "POST", path: (p) => `/capsules/${p.capsuleId}/learning/generate`, body: (p) => p.data ?? {} },
   "capsules.snapshot": { method: "POST", path: (p) => `/capsules/${p.capsuleId}/versions`, body: (p) => p.data ?? {} },
   "capsules.versions": { method: "GET", path: (p) => `/capsules/${p.capsuleId}/versions` },
+  "capsules.versionDiff": {
+    method: "GET",
+    path: (p) => `/capsules/${p.capsuleId}/versions/diff?from_version_id=${encodeURIComponent(p?.fromVersionId ?? "")}&to_version_id=${encodeURIComponent(p?.toVersionId ?? "")}`
+  },
   "capsules.exportPreview": { method: "POST", path: (p) => `/capsules/${p.capsuleId}/export/preview`, body: (p) => p.data ?? {} },
   "capsules.export": { method: "POST", path: (p) => `/capsules/${p.capsuleId}/export`, body: (p) => p.data ?? {} },
   "capsules.imports": { method: "GET", path: (p) => `/capsules/imports?limit=${p?.limit ?? 50}&offset=${p?.offset ?? 0}` },

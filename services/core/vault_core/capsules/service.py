@@ -409,6 +409,93 @@ def list_capsule_versions(db: VaultDatabase, capsule_id: str) -> list[dict[str, 
         return rows_to_dicts(rows)
 
 
+def diff_capsule_versions(db: VaultDatabase, capsule_id: str, from_version_id: str, to_version_id: str) -> dict[str, Any]:
+    with db.connect() as conn:
+        ensure_capsule(conn, db.workspace_id, capsule_id)
+        from_row = capsule_version_row(conn, db.workspace_id, capsule_id, from_version_id)
+        to_row = capsule_version_row(conn, db.workspace_id, capsule_id, to_version_id)
+        from_items = version_item_map(loads(from_row["item_snapshot_json"], []))
+        to_items = version_item_map(loads(to_row["item_snapshot_json"], []))
+        added_keys = sorted(set(to_items) - set(from_items))
+        removed_keys = sorted(set(from_items) - set(to_items))
+        shared_keys = sorted(set(from_items) & set(to_items))
+        changed = []
+        for key in shared_keys:
+            changes = version_item_changes(from_items[key], to_items[key])
+            if changes:
+                changed.append({"key": key, "before": version_item_summary(from_items[key]), "after": version_item_summary(to_items[key]), "changes": changes})
+        return {
+            "capsule_id": capsule_id,
+            "from": version_summary(from_row),
+            "to": version_summary(to_row),
+            "counts": {"added": len(added_keys), "removed": len(removed_keys), "changed": len(changed)},
+            "added": [version_item_summary(to_items[key]) for key in added_keys],
+            "removed": [version_item_summary(from_items[key]) for key in removed_keys],
+            "changed": changed,
+        }
+
+
+def capsule_version_row(conn: sqlite3.Connection, workspace_id: str, capsule_id: str, version_id: str) -> sqlite3.Row:
+    row = conn.execute(
+        """
+        SELECT *
+        FROM capsule_versions
+        WHERE workspace_id=? AND capsule_id=? AND id=?
+        """,
+        (workspace_id, capsule_id, version_id),
+    ).fetchone()
+    if not row:
+        raise HTTPException(404, "Capsule version not found")
+    return row
+
+
+def version_summary(row: sqlite3.Row) -> dict[str, Any]:
+    return {
+        "id": row["id"],
+        "version": row["version"],
+        "title": row["title"],
+        "changelog": row["changelog"],
+        "created_at": row["created_at"],
+    }
+
+
+def version_item_map(items: Any) -> dict[str, dict[str, Any]]:
+    if not isinstance(items, list):
+        return {}
+    mapped: dict[str, dict[str, Any]] = {}
+    for item in items:
+        if not isinstance(item, dict):
+            continue
+        target_type = str(item.get("target_type") or "")
+        target_id = str(item.get("target_id") or "")
+        if target_type and target_id:
+            mapped[f"{target_type}:{target_id}"] = item
+    return mapped
+
+
+def version_item_summary(item: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "target_type": item.get("target_type"),
+        "target_id": item.get("target_id"),
+        "role": item.get("role"),
+        "include_mode": item.get("include_mode"),
+        "status": item.get("status"),
+        "export_policy": item.get("export_policy"),
+        "private_flag": item.get("private_flag"),
+    }
+
+
+def version_item_changes(before: dict[str, Any], after: dict[str, Any]) -> dict[str, dict[str, Any]]:
+    fields = ["role", "include_mode", "status", "export_policy", "private_flag", "metadata"]
+    changes: dict[str, dict[str, Any]] = {}
+    for field in fields:
+        before_value = before.get(field)
+        after_value = after.get(field)
+        if before_value != after_value:
+            changes[field] = {"from": before_value, "to": after_value}
+    return changes
+
+
 def preview_capsule_export(db: VaultDatabase, capsule_id: str, payload: dict[str, Any] | None = None) -> dict[str, Any]:
     export_mode = normalize_export_mode((payload or {}).get("export_mode"))
     with db.connect() as conn:

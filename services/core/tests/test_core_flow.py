@@ -721,6 +721,12 @@ def test_capsules_reference_global_objects_and_snapshot_health(client):
     assert health["counts"]["unsupported_claims"] == 0
     assert health["status"] == "healthy"
 
+    baseline_snapshot = client.post(
+        f"/capsules/{capsule['id']}/versions",
+        json={"version": "0.1.1", "title": "Before generated learning"},
+    ).json()
+    assert baseline_snapshot["version"] == "0.1.1"
+
     overview = client.post(f"/capsules/{capsule['id']}/overview-note").json()
     assert overview["status"] == "generated_pending_review"
     assert overview["capsule_id"] == capsule["id"]
@@ -763,6 +769,14 @@ def test_capsules_reference_global_objects_and_snapshot_health(client):
     assert snapshot["item_count"] >= 5
     versions = client.get(f"/capsules/{capsule['id']}/versions").json()
     assert versions[0]["version"] == "0.2.0"
+    diff = client.get(
+        f"/capsules/{capsule['id']}/versions/diff",
+        params={"from_version_id": baseline_snapshot["version_id"], "to_version_id": snapshot["version_id"]},
+    ).json()
+    assert diff["from"]["version"] == "0.1.1"
+    assert diff["to"]["version"] == "0.2.0"
+    assert diff["counts"]["added"] >= len(learning["items"]) + 1
+    assert {item["target_type"] for item in diff["added"]} >= {"note", "learning_item"}
 
     preview = client.post(f"/capsules/{capsule['id']}/export/preview", json={"export_mode": "sanitized"}).json()
     assert preview["status"] == "ready"

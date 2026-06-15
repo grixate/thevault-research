@@ -912,6 +912,43 @@ textarea:not(.ui-textarea) {
   line-height: 1.3;
 }
 
+.capsule-version-diff {
+  display: grid;
+  gap: 10px;
+  padding-block: 10px;
+  border-top: 1px solid var(--line);
+}
+
+.capsule-version-diff-head,
+.capsule-version-diff-list {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  min-width: 0;
+}
+
+.capsule-version-diff-head span,
+.capsule-version-diff-list span,
+.capsule-version-diff-list small {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.3;
+}
+
+.capsule-version-diff-list strong {
+  color: var(--foreground);
+  font-size: 12px;
+  line-height: 1.3;
+}
+
+.capsule-version-diff-list span {
+  max-width: 280px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .capsule-purpose {
   display: grid;
   gap: 4px;

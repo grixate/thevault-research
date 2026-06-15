@@ -164,6 +164,7 @@ from vault_core.capsules.service import (
     capsule_overview_note_input,
     create_capsule,
     create_capsule_snapshot,
+    diff_capsule_versions,
     export_capsule_package,
     create_capsule_import_review_items,
     get_capsule_import_detail,
@@ -489,6 +490,10 @@ def register_routes(app: FastAPI) -> None:
     @app.get("/capsules/{capsule_id}/versions", dependencies=[auth])
     def capsule_versions(capsule_id: str, db: VaultDatabase = Depends(get_db)) -> list[dict[str, Any]]:
         return list_capsule_versions(db, capsule_id)
+
+    @app.get("/capsules/{capsule_id}/versions/diff", dependencies=[auth])
+    def capsule_version_diff(capsule_id: str, from_version_id: str, to_version_id: str, db: VaultDatabase = Depends(get_db)) -> dict[str, Any]:
+        return diff_capsule_versions(db, capsule_id, from_version_id, to_version_id)
 
     @app.post("/capsules/{capsule_id}/export/preview", dependencies=[auth])
     def capsule_export_preview(capsule_id: str, req: CapsuleExportRequest, db: VaultDatabase = Depends(get_db)) -> dict[str, Any]:

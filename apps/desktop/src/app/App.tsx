@@ -113,6 +113,7 @@ import type {
   CapsuleListResponse,
   CapsuleOverviewNoteResult,
   CapsuleItem,
+  CapsuleVersionDiff,
   Claim,
   HardwareProfile,
   Health,
@@ -6757,6 +6758,7 @@ function CapsuleDetail({ capsule, onOpenTarget }: { capsule: Capsule; onOpenTarg
   const [autoIncludeEvidence, setAutoIncludeEvidence] = useState(true);
   const [snapshotVersion, setSnapshotVersion] = useState(nextCapsulePatchVersion(capsule.version));
   const [exportOpen, setExportOpen] = useState(false);
+  const versions = capsule.versions ?? [];
   const targetOptions = capsuleTargetOptions(targetType, {
     notes: notes.data ?? [],
     sources: sources.data ?? [],
@@ -6824,6 +6826,10 @@ function CapsuleDetail({ capsule, onOpenTarget }: { capsule: Capsule; onOpenTarg
       setSurface("review");
     }
   });
+  const versionDiff = useMutation({
+    mutationFn: ({ fromVersionId, toVersionId }: { fromVersionId: string; toVersionId: string }) =>
+      vaultRequest<CapsuleVersionDiff>("capsules.versionDiff", { capsuleId: capsule.id, fromVersionId, toVersionId })
+  });
   const snapshot = useMutation({
     mutationFn: () =>
       vaultRequest("capsules.snapshot", {
@@ -6833,8 +6839,13 @@ function CapsuleDetail({ capsule, onOpenTarget }: { capsule: Capsule; onOpenTarg
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["capsules"] });
       queryClient.invalidateQueries({ queryKey: ["capsule", capsule.id] });
+      versionDiff.reset();
     }
   });
+  function compareLatestVersions() {
+    if (versions.length < 2) return;
+    versionDiff.mutate({ fromVersionId: versions[1].id, toVersionId: versions[0].id });
+  }
   return (
     <>
       <SectionHeader
@@ -6931,8 +6942,10 @@ function CapsuleDetail({ capsule, onOpenTarget }: { capsule: Capsule; onOpenTarg
           <Input aria-label="Snapshot version" value={snapshotVersion} onChange={(event) => setSnapshotVersion(event.target.value)} />
         </section>
       </div>
-      {(addItem.error || runHealth.error || generateOverview.error || generateLearning.error || snapshot.error) && (
-        <small className="model-test-error">{addItem.error?.message || runHealth.error?.message || generateOverview.error?.message || generateLearning.error?.message || snapshot.error?.message}</small>
+      {(addItem.error || runHealth.error || generateOverview.error || generateLearning.error || snapshot.error || versionDiff.error) && (
+        <small className="model-test-error">
+          {addItem.error?.message || runHealth.error?.message || generateOverview.error?.message || generateLearning.error?.message || snapshot.error?.message || versionDiff.error?.message}
+        </small>
       )}
       <div className="capsule-health-row">
         {visibleCapsuleWarnings(capsule).slice(0, 3).map((warning) => (
@@ -6953,16 +6966,59 @@ function CapsuleDetail({ capsule, onOpenTarget }: { capsule: Capsule; onOpenTarg
           </article>
         ))}
       </section>
-      {(capsule.versions ?? []).length > 0 && (
+      {versions.length > 0 && (
         <section className="capsule-versions" aria-label="Capsule versions">
-          {(capsule.versions ?? []).slice(0, 4).map((version) => (
+          {versions.slice(0, 4).map((version) => (
             <span key={version.id}>{version.version} · {compactDate(version.created_at)}</span>
           ))}
+          {versions.length >= 2 && (
+            <Button size="sm" variant="quiet" disabled={versionDiff.isPending} onClick={compareLatestVersions}>
+              Diff
+            </Button>
+          )}
         </section>
       )}
+      {versionDiff.data && <CapsuleVersionDiffSummary diff={versionDiff.data} />}
       <CapsuleExportDialog capsule={capsule} open={exportOpen} onOpenChange={setExportOpen} />
     </>
   );
+}
+
+function CapsuleVersionDiffSummary({ diff }: { diff: CapsuleVersionDiff }) {
+  return (
+    <section className="capsule-version-diff" aria-label="Capsule version diff">
+      <div className="capsule-version-diff-head">
+        <span>{diff.from.version} to {diff.to.version}</span>
+        <span>{diff.counts.added} added</span>
+        <span>{diff.counts.removed} removed</span>
+        <span>{diff.counts.changed} changed</span>
+      </div>
+      <CapsuleVersionDiffList label="Added" items={diff.added.map((item) => capsuleVersionDiffItemLabel(item))} />
+      <CapsuleVersionDiffList label="Removed" items={diff.removed.map((item) => capsuleVersionDiffItemLabel(item))} />
+      <CapsuleVersionDiffList
+        label="Changed"
+        items={diff.changed.map((item) => `${capsuleVersionDiffItemLabel(item.after)} · ${Object.keys(item.changes).map(capsuleOptionLabel).join(", ")}`)}
+      />
+      {diff.counts.added + diff.counts.removed + diff.counts.changed === 0 && <p className="empty-copy">No changes</p>}
+    </section>
+  );
+}
+
+function CapsuleVersionDiffList({ label, items }: { label: string; items: string[] }) {
+  if (!items.length) return null;
+  return (
+    <div className="capsule-version-diff-list">
+      <strong>{label}</strong>
+      {items.slice(0, 6).map((item) => (
+        <span key={item} title={item}>{item}</span>
+      ))}
+      {items.length > 6 && <small>{items.length - 6} more</small>}
+    </div>
+  );
+}
+
+function capsuleVersionDiffItemLabel(item: CapsuleVersionDiff["added"][number]): string {
+  return `${capsuleOptionLabel(item.target_type)} · ${middleTruncate(String(item.target_id ?? ""), 18)} · ${capsuleOptionLabel(item.role)}`;
 }
 
 function CapsuleExportDialog({ capsule, open, onOpenChange }: { capsule: Capsule; open: boolean; onOpenChange: (open: boolean) => void }) {

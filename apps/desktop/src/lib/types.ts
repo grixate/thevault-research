@@ -256,6 +256,26 @@ export type CapsuleExportResult = CapsuleExportPreview & {
   created_at: string;
 };
 
+export type CapsuleVersionDiff = {
+  capsule_id: string;
+  from: { id: string; version: string; title?: string | null; changelog?: string | null; created_at: string };
+  to: { id: string; version: string; title?: string | null; changelog?: string | null; created_at: string };
+  counts: { added: number; removed: number; changed: number };
+  added: CapsuleVersionDiffItem[];
+  removed: CapsuleVersionDiffItem[];
+  changed: Array<{ key: string; before: CapsuleVersionDiffItem; after: CapsuleVersionDiffItem; changes: Record<string, { from: unknown; to: unknown }> }>;
+};
+
+export type CapsuleVersionDiffItem = {
+  target_type?: string;
+  target_id?: string;
+  role?: string;
+  include_mode?: string;
+  status?: string;
+  export_policy?: string | null;
+  private_flag?: number | boolean;
+};
+
 export type CapsuleImportResult = {
   import_id: string;
   status: "quarantined" | "invalid" | string;
