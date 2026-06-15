@@ -786,6 +786,19 @@ def test_capsules_reference_global_objects_and_snapshot_health(client):
     assert preview["manifest"]["object_counts"]["learning_items"] >= 1
     assert preview["manifest"]["object_counts"]["tools"] == 1
 
+    forked = client.post(
+        f"/capsules/{capsule['id']}/fork",
+        json={"name": "Acoustics Teaching Fork", "capsule_type": "course"},
+    ).json()
+    assert forked["name"] == "Acoustics Teaching Fork"
+    assert forked["capsule_type"] == "course"
+    assert forked["counts"] == capsule_after_learning["counts"]
+    assert forked["fork"]["parent_capsule_id"] == capsule["id"]
+    assert forked["fork"]["copied_items"] == len([item for item in capsule_after_learning["items"] if item["status"] == "active"])
+    assert forked["dependencies"][0]["dependency_type"] == "forked_from"
+    assert forked["dependencies"][0]["target_capsule_id"] == capsule["id"]
+    assert {item["target_id"] for item in forked["items"]} == {item["target_id"] for item in capsule_after_learning["items"]}
+
     exported = client.post(f"/capsules/{capsule['id']}/export", json={"export_mode": "sanitized"}).json()
     export_path = Path(exported["file_path"])
     assert export_path.exists()
@@ -837,7 +850,7 @@ def test_capsules_reference_global_objects_and_snapshot_health(client):
     assert imports["total"] == 1
     import_detail = client.get(f"/capsules/imports/{imported_capsule['import_id']}").json()
     assert import_detail["status"] == "quarantined"
-    assert client.get("/capsules").json()["total"] == 1
+    assert client.get("/capsules").json()["total"] == 2
 
     review_result = client.post(f"/capsules/imports/{imported_capsule['import_id']}/review-items").json()
     assert review_result["status"] == "review_ready"
@@ -884,7 +897,7 @@ def test_capsules_reference_global_objects_and_snapshot_health(client):
     duplicate_review_result = client.post(f"/capsules/imports/{imported_capsule['import_id']}/review-items").json()
     assert duplicate_review_result["created_review_items"] == 0
     assert duplicate_review_result["skipped_duplicates"] >= review_result["created_review_items"]
-    assert client.get("/capsules").json()["total"] == 1
+    assert client.get("/capsules").json()["total"] == 2
 
 
 def test_bulk_review_rejects_pending_items_with_shared_decision_note(client):

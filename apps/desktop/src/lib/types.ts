@@ -194,6 +194,19 @@ export type CapsuleItem = {
   target?: CapsuleTargetSummary;
 };
 
+export type CapsuleDependency = {
+  id: string;
+  capsule_id: string;
+  dependency_type: string;
+  target_capsule_id?: string | null;
+  target_capsule_name?: string | null;
+  target_capsule_slug?: string | null;
+  target_capsule_version?: string | null;
+  version_constraint?: string | null;
+  metadata?: Record<string, any>;
+  created_at: string;
+};
+
 export type Capsule = {
   id: string;
   name: string;
@@ -213,6 +226,7 @@ export type Capsule = {
   health: CapsuleHealth;
   items?: CapsuleItem[];
   versions?: Array<{ id: string; version: string; title?: string | null; changelog?: string | null; created_at: string }>;
+  dependencies?: CapsuleDependency[];
   activity?: Array<Record<string, any>>;
   key_claims?: Claim[];
   core_concepts?: Array<Record<string, any>>;

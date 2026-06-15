@@ -6746,6 +6746,7 @@ function CapsuleDetail({ capsule, onOpenTarget }: { capsule: Capsule; onOpenTarg
   const queryClient = useQueryClient();
   const setSurface = useUIStore((state) => state.setSurface);
   const setSelectedNoteId = useUIStore((state) => state.setSelectedNoteId);
+  const setSelectedCapsuleId = useUIStore((state) => state.setSelectedCapsuleId);
   const notes = useQuery({ queryKey: ["notes"], queryFn: () => vaultRequest<Note[]>("notes.list") });
   const sources = useQuery({ queryKey: ["sources"], queryFn: () => vaultRequest<Source[]>("sources.list") });
   const claims = useQuery({ queryKey: ["claims"], queryFn: () => vaultRequest<Claim[]>("claims.list") });
@@ -6799,6 +6800,27 @@ function CapsuleDetail({ capsule, onOpenTarget }: { capsule: Capsule; onOpenTarg
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["capsules"] });
       queryClient.invalidateQueries({ queryKey: ["capsule", capsule.id] });
+    }
+  });
+  const forkCapsule = useMutation({
+    mutationFn: () =>
+      vaultRequest<Capsule>("capsules.fork", {
+        capsuleId: capsule.id,
+        data: { name: `${capsule.name} Fork`, capsule_type: "project" }
+      }),
+    onSuccess: (forked) => {
+      queryClient.setQueryData(["capsule", forked.id], forked);
+      queryClient.setQueriesData<CapsuleListResponse>({ queryKey: ["capsules"] }, (current) => {
+        if (!current) return current;
+        const items = current.items.some((item) => item.id === forked.id)
+          ? current.items.map((item) => (item.id === forked.id ? forked : item))
+          : [forked, ...current.items];
+        return { ...current, items, total: Math.max(current.total ?? 0, items.length) };
+      });
+      setSelectedCapsuleId(forked.id);
+      queryClient.invalidateQueries({ queryKey: ["capsules"] });
+      queryClient.invalidateQueries({ queryKey: ["capsule", forked.id] });
+      queryClient.invalidateQueries({ queryKey: ["stats"] });
     }
   });
   const generateOverview = useMutation({
@@ -6861,6 +6883,9 @@ function CapsuleDetail({ capsule, onOpenTarget }: { capsule: Capsule; onOpenTarg
             <Button icon={<Brain size={15} />} variant="quiet" disabled={generateLearning.isPending} onClick={() => generateLearning.mutate()}>
               Practice
             </Button>
+            <Button icon={<GitBranch size={15} />} variant="quiet" disabled={forkCapsule.isPending} onClick={() => forkCapsule.mutate()}>
+              Fork
+            </Button>
             <Button icon={<Save size={15} />} variant="secondary" disabled={!snapshotVersion.trim() || snapshot.isPending} onClick={() => snapshot.mutate()}>
               Snapshot
             </Button>
@@ -6875,6 +6900,7 @@ function CapsuleDetail({ capsule, onOpenTarget }: { capsule: Capsule; onOpenTarg
         <span>{capsuleOptionLabel(capsule.capsule_type)}</span>
         <span>{capsule.version}</span>
         <span>{Math.round((capsule.health?.score ?? 0) * 100)}%</span>
+        {capsuleForkParent(capsule) && <span>Fork of {capsuleForkParent(capsule)}</span>}
       </div>
       {(capsule.purpose || capsule.description) && (
         <div className="capsule-purpose">
@@ -6942,9 +6968,15 @@ function CapsuleDetail({ capsule, onOpenTarget }: { capsule: Capsule; onOpenTarg
           <Input aria-label="Snapshot version" value={snapshotVersion} onChange={(event) => setSnapshotVersion(event.target.value)} />
         </section>
       </div>
-      {(addItem.error || runHealth.error || generateOverview.error || generateLearning.error || snapshot.error || versionDiff.error) && (
+      {(addItem.error || runHealth.error || forkCapsule.error || generateOverview.error || generateLearning.error || snapshot.error || versionDiff.error) && (
         <small className="model-test-error">
-          {addItem.error?.message || runHealth.error?.message || generateOverview.error?.message || generateLearning.error?.message || snapshot.error?.message || versionDiff.error?.message}
+          {addItem.error?.message ||
+            runHealth.error?.message ||
+            forkCapsule.error?.message ||
+            generateOverview.error?.message ||
+            generateLearning.error?.message ||
+            snapshot.error?.message ||
+            versionDiff.error?.message}
         </small>
       )}
       <div className="capsule-health-row">
@@ -7143,6 +7175,11 @@ function capsuleHealthLabel(status?: string): string {
 
 function visibleCapsuleWarnings(capsule: Capsule): string[] {
   return (capsule.health?.warnings ?? []).filter((warning) => warning !== "No capsule items yet.");
+}
+
+function capsuleForkParent(capsule: Capsule): string {
+  const dependency = (capsule.dependencies ?? []).find((item) => item.dependency_type === "forked_from");
+  return String(dependency?.target_capsule_name || dependency?.target_capsule_slug || dependency?.target_capsule_id || "");
 }
 
 function capsuleOptionLabel(value?: string): string {

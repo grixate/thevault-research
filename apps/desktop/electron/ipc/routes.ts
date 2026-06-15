@@ -4,6 +4,7 @@ export type VaultRoute =
   | "events.list"
   | "capsules.list"
   | "capsules.create"
+  | "capsules.fork"
   | "capsules.get"
   | "capsules.update"
   | "capsules.archive"
@@ -147,6 +148,7 @@ export const allowedRoutes: Record<VaultRoute, RouteSpec> = {
       `/capsules?query=${encodeURIComponent(p?.query ?? "")}&status=${encodeURIComponent(p?.status ?? "")}&domain=${encodeURIComponent(p?.domain ?? "")}&tag=${encodeURIComponent(p?.tag ?? "")}&limit=${p?.limit ?? 50}&offset=${p?.offset ?? 0}`
   },
   "capsules.create": { method: "POST", path: () => "/capsules", body: (p) => p ?? {} },
+  "capsules.fork": { method: "POST", path: (p) => `/capsules/${p.capsuleId}/fork`, body: (p) => p.data ?? {} },
   "capsules.get": { method: "GET", path: (p) => `/capsules/${p.capsuleId}` },
   "capsules.update": { method: "PUT", path: (p) => `/capsules/${p.capsuleId}`, body: (p) => p.data ?? {} },
   "capsules.archive": { method: "POST", path: (p) => `/capsules/${p.capsuleId}/archive` },

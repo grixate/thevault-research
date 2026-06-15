@@ -158,7 +158,106 @@ def get_capsule_detail(db: VaultDatabase, capsule_id: str) -> dict[str, Any]:
         ]
         capsule["key_claims"] = capsule_key_claims(conn, capsule_id)
         capsule["core_concepts"] = capsule_core_concepts(conn, capsule_id)
+        capsule["dependencies"] = capsule_dependencies(conn, db.workspace_id, capsule_id)
         return capsule
+
+
+def fork_capsule(db: VaultDatabase, capsule_id: str, payload: dict[str, Any]) -> dict[str, Any]:
+    ts = now_iso()
+    with db.connect() as conn:
+        parent_row = ensure_capsule(conn, db.workspace_id, capsule_id)
+        parent = inflate_capsule(parent_row)
+        name = str(payload.get("name") or f"{parent['name']} Fork").strip()
+        if not name:
+            raise HTTPException(422, "Fork name is required")
+        fork_id = new_id("cap")
+        fork_slug = unique_capsule_slug_in_conn(conn, db.workspace_id, name)
+        purpose = nullable_text(payload.get("purpose")) or parent.get("purpose")
+        capsule_type = str(payload.get("capsule_type") or parent.get("capsule_type") or "project")
+        conn.execute(
+            """
+            INSERT INTO capsules
+              (id, workspace_id, name, slug, description, purpose, capsule_type, status, version,
+               language, domains_json, tags_json, epistemic_strictness, default_source_policy,
+               metadata_json, created_by, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, 'draft', '0.1.0', ?, ?, ?, ?, ?, ?, 'user', ?, ?)
+            """,
+            (
+                fork_id,
+                db.workspace_id,
+                name,
+                fork_slug,
+                parent.get("description"),
+                purpose,
+                capsule_type,
+                parent.get("language"),
+                dumps(parent.get("domains") or []),
+                dumps(parent.get("tags") or []),
+                parent.get("epistemic_strictness") or "balanced",
+                parent.get("default_source_policy") or "reference_only",
+                dumps({"forked_from_capsule_id": capsule_id, "forked_from_version": parent.get("version")}),
+                ts,
+                ts,
+            ),
+        )
+        parent_items = rows_to_dicts(
+            conn.execute(
+                """
+                SELECT *
+                FROM capsule_items
+                WHERE capsule_id=? AND status='active'
+                ORDER BY sort_order, created_at, id
+                """,
+                (capsule_id,),
+            ).fetchall()
+        )
+        copied = 0
+        for index, item in enumerate(parent_items, start=1):
+            inflated = inflate_json(item, "metadata_json")
+            result = insert_capsule_item(
+                conn,
+                db,
+                fork_id,
+                {
+                    "target_type": inflated["target_type"],
+                    "target_id": inflated["target_id"],
+                    "role": inflated.get("role"),
+                    "include_mode": inflated.get("include_mode"),
+                    "export_policy": inflated.get("export_policy"),
+                    "private_flag": bool(inflated.get("private_flag")),
+                    "added_by": "fork",
+                    "metadata": {**(inflated.get("metadata") or {}), "forked_from_capsule_item_id": inflated["id"]},
+                },
+                sort_order=index,
+                ts=ts,
+            )
+            if result == "added":
+                copied += 1
+        dependency_id = new_id("capdep")
+        conn.execute(
+            """
+            INSERT INTO capsule_dependencies
+              (id, capsule_id, workspace_id, dependency_type, target_capsule_id, external_capsule_ref,
+               version_constraint, status, metadata_json, created_at, updated_at)
+            VALUES (?, ?, ?, 'forked_from', ?, NULL, ?, 'active', ?, ?, ?)
+            """,
+            (
+                dependency_id,
+                fork_id,
+                db.workspace_id,
+                capsule_id,
+                parent.get("version"),
+                dumps({"parent_name": parent["name"], "parent_slug": parent["slug"]}),
+                ts,
+                ts,
+            ),
+        )
+        insert_changelog(conn, db, fork_id, "created", summary=f"Forked from {parent['name']}", payload={"parent_capsule_id": capsule_id, "copied_items": copied})
+        insert_changelog(conn, db, capsule_id, "fork_created", target_type="capsule", target_id=fork_id, summary=f"Forked to {name}", payload={"fork_capsule_id": fork_id})
+        db.event(conn, "capsule.forked", "capsule", fork_id, {"parent_capsule_id": capsule_id, "copied_items": copied}, "user")
+    result = get_capsule_detail(db, fork_id)
+    result["fork"] = {"parent_capsule_id": capsule_id, "copied_items": copied, "dependency_id": dependency_id}
+    return result
 
 
 def update_capsule(db: VaultDatabase, capsule_id: str, payload: dict[str, Any]) -> dict[str, Any]:
@@ -494,6 +593,24 @@ def version_item_changes(before: dict[str, Any], after: dict[str, Any]) -> dict[
         if before_value != after_value:
             changes[field] = {"from": before_value, "to": after_value}
     return changes
+
+
+def capsule_dependencies(conn: sqlite3.Connection, workspace_id: str, capsule_id: str) -> list[dict[str, Any]]:
+    rows = rows_to_dicts(
+        conn.execute(
+            """
+            SELECT capsule_dependencies.*, capsules.name AS target_capsule_name, capsules.slug AS target_capsule_slug,
+                   capsules.version AS target_capsule_version
+            FROM capsule_dependencies
+            LEFT JOIN capsules ON capsules.id=capsule_dependencies.target_capsule_id
+            WHERE capsule_dependencies.workspace_id=? AND capsule_dependencies.capsule_id=?
+              AND capsule_dependencies.status='active'
+            ORDER BY capsule_dependencies.created_at DESC
+            """,
+            (workspace_id, capsule_id),
+        ).fetchall()
+    )
+    return [inflate_json(row, "metadata_json") for row in rows]
 
 
 def preview_capsule_export(db: VaultDatabase, capsule_id: str, payload: dict[str, Any] | None = None) -> dict[str, Any]:
@@ -1961,25 +2078,29 @@ def capsule_note_markdown(note: dict[str, Any]) -> str:
 
 
 def unique_capsule_slug(db: VaultDatabase, name: str, ignore_capsule_id: str | None = None) -> str:
-    base = slugify(name)
     with db.connect() as conn:
-        slug = base
-        index = 2
-        while True:
-            if ignore_capsule_id:
-                row = conn.execute(
-                    "SELECT id FROM capsules WHERE workspace_id=? AND slug=? AND id!=?",
-                    (db.workspace_id, slug, ignore_capsule_id),
-                ).fetchone()
-            else:
-                row = conn.execute(
-                    "SELECT id FROM capsules WHERE workspace_id=? AND slug=?",
-                    (db.workspace_id, slug),
-                ).fetchone()
-            if not row:
-                return slug
-            slug = f"{base}-{index}"
-            index += 1
+        return unique_capsule_slug_in_conn(conn, db.workspace_id, name, ignore_capsule_id=ignore_capsule_id)
+
+
+def unique_capsule_slug_in_conn(conn: sqlite3.Connection, workspace_id: str, name: str, ignore_capsule_id: str | None = None) -> str:
+    base = slugify(name)
+    slug = base
+    index = 2
+    while True:
+        if ignore_capsule_id:
+            row = conn.execute(
+                "SELECT id FROM capsules WHERE workspace_id=? AND slug=? AND id!=?",
+                (workspace_id, slug, ignore_capsule_id),
+            ).fetchone()
+        else:
+            row = conn.execute(
+                "SELECT id FROM capsules WHERE workspace_id=? AND slug=?",
+                (workspace_id, slug),
+            ).fetchone()
+        if not row:
+            return slug
+        slug = f"{base}-{index}"
+        index += 1
 
 
 def slugify(value: str) -> str:

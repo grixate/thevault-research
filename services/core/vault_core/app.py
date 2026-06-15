@@ -60,6 +60,7 @@ from vault_core.api.schemas import (
     BulkReviewRequest,
     CapsuleCreate,
     CapsuleExportRequest,
+    CapsuleForkRequest,
     CapsuleImportRequest,
     CapsuleItemsAddRequest,
     CapsuleLearningGenerateRequest,
@@ -167,6 +168,7 @@ from vault_core.capsules.service import (
     diff_capsule_versions,
     export_capsule_package,
     create_capsule_import_review_items,
+    fork_capsule,
     get_capsule_import_detail,
     get_capsule_detail,
     import_capsule_quarantine,
@@ -429,6 +431,10 @@ def register_routes(app: FastAPI) -> None:
     @app.post("/capsules", dependencies=[auth])
     def capsule_create(req: CapsuleCreate, db: VaultDatabase = Depends(get_db)) -> dict[str, Any]:
         return create_capsule(db, req.model_dump())
+
+    @app.post("/capsules/{capsule_id}/fork", dependencies=[auth])
+    def capsule_fork(capsule_id: str, req: CapsuleForkRequest, db: VaultDatabase = Depends(get_db)) -> dict[str, Any]:
+        return fork_capsule(db, capsule_id, req.model_dump())
 
     @app.get("/capsules/imports", dependencies=[auth])
     def capsule_imports(limit: int = 50, offset: int = 0, db: VaultDatabase = Depends(get_db)) -> dict[str, Any]:

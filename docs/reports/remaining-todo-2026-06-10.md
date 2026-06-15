@@ -198,7 +198,7 @@ Latest capsule alpha verification on 2026-06-14:
 - Added backend capsule services/routes for create, list, detail, update, archive, add/remove referenced global items, auto-include claim evidence, run health, create snapshots, and list versions.
 - Added desktop route wiring in browser dev mode and Electron IPC.
 - Added `Capsules` to the Knowledge navigation and a minimal first UI slice: capsule index, create dialog, selected capsule detail, health/status, add existing note/source/claim, auto evidence inclusion for claims, and manual snapshots.
-- The UI slice intentionally does not fake the full future tab system. Export/import quarantine, diff, fork, learning generation, tool attachment review, and capsule assistant context remain follow-up work.
+- The UI slice intentionally does not fake the full future tab system. Export/import quarantine, diff, learning generation, tool attachment review, and capsule assistant context remain follow-up work.
 - Focused backend capsule test: 1 passed.
 - Focused desktop capsule test: passed; desktop test count is now 62.
 - Desktop production build: passed.
@@ -233,6 +233,17 @@ Latest capsule import quarantine verification on 2026-06-15:
 - Added a compact desktop `Import` action on Capsules and a quarantine inspection view with status, source/quarantine paths, object counts, checksum summary, and merge-plan actions.
 - Focused backend capsule test: passed.
 - Desktop capsule import/export test path: passed.
+- Desktop production build: passed.
+
+Latest capsule fork/dependency verification on 2026-06-15:
+
+- Added backend capsule fork creation with copied active capsule item references and a `forked_from` row in `capsule_dependencies`.
+- Capsule detail now returns active dependency records with target capsule name, slug, and version context.
+- Added desktop/browser and Electron IPC route wiring for `capsules.fork`.
+- Desktop capsule detail has a compact `Fork` action; after success the UI opens the new fork immediately and shows its parent capsule in the metadata line.
+- Focused backend capsule test: passed.
+- Desktop capsule/fork test path: passed.
+- Electron route test: passed.
 - Desktop production build: passed.
 
 Latest focused verification on 2026-06-11 before the current claim-grammar slice:
@@ -2561,6 +2572,7 @@ Current good state:
 - Generated capsule overview notes enter Notes as `generated_pending_review`, keep normal generated-note metadata, and attach back to the capsule with role `overview`.
 - Capsules can generate reviewed-claims-only learning items into Review: course outline, first lesson, quiz, explain-back prompt, and flashcards. Approved items attach back to the capsule as `learning_item` references.
 - Capsules can diff the latest two snapshots and show added, removed, and changed capsule references.
+- Capsules can be forked into a new draft/project/course capsule while preserving global references and recording a `forked_from` dependency.
 - Desktop Capsules can curate richer global references from the compact add panel: concepts from the graph, practice items from Learning, and installed local tools.
 - Compact capsule attach entry points exist in the real workflows:
   - current Note,
@@ -2594,7 +2606,6 @@ Remaining tasks:
   - add an explicit enable step for reviewed imported tools,
   - expose import history/details beyond the latest import result,
   - add invalid-package UI states.
-- Add fork/dependency workflows.
 - Add capsule-scoped Assistant mode that uses capsule items first and cites canonical evidence.
 - Update workspace export to include capsule tables once the capsule alpha stabilizes.
 - Generate/update OpenAPI contract after routes settle.
@@ -2605,14 +2616,15 @@ Acceptance evidence:
 - Imported package objects enter Review before canonical merge; imported tools stay disabled until reviewed.
 - Export cannot proceed through unsafe modes when privacy blockers are unresolved.
 - Generated capsule notes and learning items stay reviewable and evidence-linked.
+- Forked capsules preserve canonical references and expose their parent dependency without creating a separate mini-vault.
 - Browser screenshots show Capsules as a calm knowledge curation surface, not an overloaded management console.
-- Backend tests cover note/source/claim/concept/practice/tool item references, evidence auto-inclusion, health, generated overview notes, reviewed capsule outline/lesson/quiz/explain-back/flashcard generation, snapshots, version diff, export preview, export manifest/checksum files, export privacy blocking, import quarantine, import review-item creation, and selective merge approval for existing local objects.
-- Desktop tests cover create, concept/practice/tool selector data hydration, attach note/source/claim, snapshot, version diff, health, export preview/package creation, export blocking, import quarantine inspection, and the Review handoff.
+- Backend tests cover note/source/claim/concept/practice/tool item references, evidence auto-inclusion, health, generated overview notes, reviewed capsule outline/lesson/quiz/explain-back/flashcard generation, snapshots, version diff, fork/dependency creation, export preview, export manifest/checksum files, export privacy blocking, import quarantine, import review-item creation, and selective merge approval for existing local objects.
+- Desktop tests cover create, concept/practice/tool selector data hydration, attach note/source/claim, snapshot, version diff, fork, health, export preview/package creation, export blocking, import quarantine inspection, and the Review handoff.
 
 ## Recommended Next Session Steps
 
 1. If continuing UX, keep the Notion/Obsidian/Apple Notes reset active: inspect Notes, Storage, Quick Note, Review, Assistant, Capsules, and Settings screenshots, then simplify the most overloaded flow first.
-2. If continuing Capsules, polish the alpha surface and attach dialog first, then continue from import review items into selective merge decisions before diff/fork.
+2. If continuing Capsules, polish the alpha surface and attach dialog first, then continue from import review items into conflict-aware merge decisions or capsule-scoped Assistant.
 3. If continuing local AI production, pick the first real approved runtime/model candidate set and run the release-packet tooling.
 4. If stabilizing before bigger registry edits, stage or commit the current v1 state.
 5. After any slice:

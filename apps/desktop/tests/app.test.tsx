@@ -640,7 +640,7 @@ describe("App", () => {
 
   it("renders the lab shell", async () => {
     window.vault = {
-      request: vi.fn(async (route: string) => {
+      request: vi.fn(async (route: string, payload?: any) => {
         if (route === "health.get") return { ok: true, version: "0.1.0", db_ready: true, workspace_id: "wrk_default" };
         if (route === "jobs.list") return [];
         if (route === "stats.get") {
@@ -690,12 +690,34 @@ describe("App", () => {
         { id: "capver_02", version: "0.2.0", title: "Current", changelog: null, created_at: "2026-06-14T12:10:00Z" },
         { id: "capver_01", version: "0.1.0", title: "Baseline", changelog: null, created_at: "2026-06-14T12:00:00Z" }
       ],
+      dependencies: [],
       activity: []
+    };
+    const forkedCapsule = {
+      ...capsule,
+      id: "cap_acoustics_fork",
+      name: "Acoustic Science Foundations Fork",
+      slug: "acoustic-science-foundations-fork",
+      capsule_type: "project",
+      versions: [],
+      dependencies: [
+        {
+          id: "capdep_fork",
+          capsule_id: "cap_acoustics_fork",
+          dependency_type: "forked_from",
+          target_capsule_id: "cap_acoustics",
+          target_capsule_name: "Acoustic Science Foundations",
+          target_capsule_slug: "acoustic-science-foundations",
+          target_capsule_version: "0.1.0",
+          version_constraint: "0.1.0",
+          created_at: "2026-06-14T12:12:00Z"
+        }
+      ]
     };
     let capsuleRows: any[] = [];
     const selectFiles = vi.fn(async () => ["/tmp/acoustic-science-foundations.vaultcapsule"]);
     window.vault = {
-      request: vi.fn(async (route: string) => {
+      request: vi.fn(async (route: string, payload?: any) => {
         if (route === "health.get") return { ok: true, version: "0.1.0", db_ready: true, workspace_id: "wrk_default" };
         if (route === "jobs.list") return [];
         if (route === "capsules.list") return { items: capsuleRows, total: capsuleRows.length };
@@ -703,7 +725,11 @@ describe("App", () => {
           capsuleRows = [capsule];
           return capsule;
         }
-        if (route === "capsules.get") return capsule;
+        if (route === "capsules.fork") {
+          capsuleRows = [forkedCapsule, capsule];
+          return forkedCapsule;
+        }
+        if (route === "capsules.get") return payload?.capsuleId === forkedCapsule.id ? forkedCapsule : capsule;
         if (route === "capsules.versionDiff") {
           return {
             capsule_id: capsule.id,
@@ -824,6 +850,9 @@ describe("App", () => {
     fireEvent.click(await screen.findByRole("button", { name: "Diff" }));
     expect(await screen.findByLabelText("Capsule version diff")).toBeTruthy();
     expect(await screen.findByText("1 added")).toBeTruthy();
+    fireEvent.click(await screen.findByRole("button", { name: "Fork" }));
+    expect(await screen.findByRole("heading", { name: "Acoustic Science Foundations Fork" })).toBeTruthy();
+    expect(await screen.findByText("Fork of Acoustic Science Foundations")).toBeTruthy();
     fireEvent.click(await screen.findByRole("button", { name: "Export" }));
     const dialog = await screen.findByRole("dialog", { name: "Export capsule" });
     expect(await within(dialog).findByLabelText("Capsule export preview")).toBeTruthy();

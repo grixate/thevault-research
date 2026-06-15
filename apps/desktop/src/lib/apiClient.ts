@@ -122,6 +122,7 @@ function mapRoute(route: string, payload?: any): { method: string; path: string;
     "events.list": { method: "GET", path: `/events?limit=${payload?.limit ?? 50}` },
     "capsules.list": { method: "GET", path: `/capsules?query=${encodeURIComponent(payload?.query ?? "")}&status=${encodeURIComponent(payload?.status ?? "")}&domain=${encodeURIComponent(payload?.domain ?? "")}&tag=${encodeURIComponent(payload?.tag ?? "")}&limit=${payload?.limit ?? 50}&offset=${payload?.offset ?? 0}` },
     "capsules.create": { method: "POST", path: "/capsules", body: payload ?? {} },
+    "capsules.fork": { method: "POST", path: `/capsules/${payload?.capsuleId}/fork`, body: payload?.data ?? {} },
     "capsules.get": { method: "GET", path: `/capsules/${payload?.capsuleId}` },
     "capsules.update": { method: "PUT", path: `/capsules/${payload?.capsuleId}`, body: payload?.data ?? {} },
     "capsules.archive": { method: "POST", path: `/capsules/${payload?.capsuleId}/archive` },

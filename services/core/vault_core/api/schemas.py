@@ -163,6 +163,12 @@ class CapsuleUpdate(BaseModel):
     default_source_policy: str | None = None
 
 
+class CapsuleForkRequest(BaseModel):
+    name: str | None = None
+    purpose: str | None = None
+    capsule_type: str | None = None
+
+
 class CapsuleItemCreate(BaseModel):
     target_type: str
     target_id: str
