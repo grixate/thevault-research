@@ -750,6 +750,19 @@ def test_capsules_reference_global_objects_and_snapshot_health(client):
     assert import_detail["status"] == "quarantined"
     assert client.get("/capsules").json()["total"] == 1
 
+    review_result = client.post(f"/capsules/imports/{imported_capsule['import_id']}/review-items").json()
+    assert review_result["status"] == "review_ready"
+    assert review_result["created_review_items"] >= 3
+    assert review_result["skipped_duplicates"] == 0
+    pending_reviews = client.get("/review/items").json()
+    imported_reviews = [item for item in pending_reviews if item["item_type"].startswith("capsule_import_")]
+    assert {item["item_type"] for item in imported_reviews} >= {"capsule_import_claim", "capsule_import_note", "capsule_import_source"}
+    assert all(item["payload"]["canonical_mutation"] == "none" for item in imported_reviews)
+    duplicate_review_result = client.post(f"/capsules/imports/{imported_capsule['import_id']}/review-items").json()
+    assert duplicate_review_result["created_review_items"] == 0
+    assert duplicate_review_result["skipped_duplicates"] >= review_result["created_review_items"]
+    assert client.get("/capsules").json()["total"] == 1
+
 
 def test_bulk_review_rejects_pending_items_with_shared_decision_note(client):
     for index in range(2):

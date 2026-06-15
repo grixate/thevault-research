@@ -1197,6 +1197,31 @@ textarea:not(.ui-textarea) {
   border-block: 1px solid var(--line);
 }
 
+.capsule-import-review-result {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding-block: 10px;
+  border-bottom: 1px solid var(--line);
+}
+
+.capsule-import-review-result span {
+  min-width: 0;
+  color: var(--foreground);
+  font-size: 13px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.capsule-import-review-result small {
+  color: var(--muted);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
 .capsule-import-plan {
   display: grid;
   gap: 0;

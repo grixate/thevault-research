@@ -160,6 +160,7 @@ from vault_core.capsules.service import (
     create_capsule,
     create_capsule_snapshot,
     export_capsule_package,
+    create_capsule_import_review_items,
     get_capsule_import_detail,
     get_capsule_detail,
     import_capsule_quarantine,
@@ -434,6 +435,10 @@ def register_routes(app: FastAPI) -> None:
     def capsule_import(req: CapsuleImportRequest, request: Request, db: VaultDatabase = Depends(get_db)) -> dict[str, Any]:
         settings: Settings = request.app.state.settings
         return import_capsule_quarantine(db, settings.data_dir / "capsules" / "imports", req.model_dump())
+
+    @app.post("/capsules/imports/{import_id}/review-items", dependencies=[auth])
+    def capsule_import_review_items(import_id: str, db: VaultDatabase = Depends(get_db)) -> dict[str, Any]:
+        return create_capsule_import_review_items(db, import_id)
 
     @app.get("/capsules/{capsule_id}", dependencies=[auth])
     def capsule_detail(capsule_id: str, db: VaultDatabase = Depends(get_db)) -> dict[str, Any]:

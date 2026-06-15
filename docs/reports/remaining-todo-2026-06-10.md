@@ -2551,6 +2551,9 @@ Current good state:
 - Desktop capsule detail has a compact Export dialog with preview and package creation.
 - Backend `.vaultcapsule` import quarantine exists with safe zip/path/checksum validation, quarantine file output, `capsule_imports` audit rows, and no canonical graph mutation.
 - Desktop Capsules has a compact Import action and quarantine inspection view.
+- Quarantined imports can now create pending Review items for imported claims, notes, sources, concepts, and tools without mutating canonical graph objects.
+- Import review-item creation is idempotent: repeated runs skip already-created targets and keep the import in `review_ready`.
+- Desktop quarantine inspection now has a compact `Review items` handoff and `Open Review` action.
 - Compact capsule attach entry points exist in the real workflows:
   - current Note,
   - selected Storage source,
@@ -2580,8 +2583,8 @@ Remaining tasks:
   - add version-specific export,
   - add package format contract docs once import stabilizes.
 - Complete import merge workflow:
-  - create review items from quarantined notes, sources, claims, concepts, and tools,
   - add selective merge decisions,
+  - add approval handlers that can merge selected imported notes, sources, claims, concepts, and tools safely,
   - keep imported tools disabled until reviewed,
   - expose import history/details beyond the latest import result,
   - add invalid-package UI states.
@@ -2594,17 +2597,17 @@ Remaining tasks:
 Acceptance evidence:
 
 - Capsules can be created, curated, health-checked, snapshotted, exported, imported into quarantine, and selectively merged without duplicating canonical graph objects.
-- Imported tools stay disabled until reviewed.
+- Imported package objects enter Review before canonical merge; imported tools stay disabled until reviewed.
 - Export cannot proceed through unsafe modes when privacy blockers are unresolved.
 - Generated capsule notes and learning items stay reviewable and evidence-linked.
 - Browser screenshots show Capsules as a calm knowledge curation surface, not an overloaded management console.
-- Backend tests cover item references, evidence auto-inclusion, health, snapshots, export preview, export manifest/checksum files, export privacy blocking, and import quarantine.
-- Desktop tests cover create, attach note/source/claim, snapshot, health, export preview/package creation, export blocking, and import quarantine inspection.
+- Backend tests cover item references, evidence auto-inclusion, health, snapshots, export preview, export manifest/checksum files, export privacy blocking, import quarantine, and import review-item creation.
+- Desktop tests cover create, attach note/source/claim, snapshot, health, export preview/package creation, export blocking, import quarantine inspection, and the Review handoff.
 
 ## Recommended Next Session Steps
 
 1. If continuing UX, keep the Notion/Obsidian/Apple Notes reset active: inspect Notes, Storage, Quick Note, Review, Assistant, Capsules, and Settings screenshots, then simplify the most overloaded flow first.
-2. If continuing Capsules, polish the alpha surface and attach dialog first, then start export preview/package/import quarantine before diff/fork.
+2. If continuing Capsules, polish the alpha surface and attach dialog first, then continue from import review items into selective merge decisions before diff/fork.
 3. If continuing local AI production, pick the first real approved runtime/model candidate set and run the release-packet tooling.
 4. If stabilizing before bigger registry edits, stage or commit the current v1 state.
 5. After any slice:

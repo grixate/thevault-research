@@ -257,6 +257,15 @@ export type CapsuleImportResult = {
   created_at: string;
 };
 
+export type CapsuleImportReviewItemsResult = {
+  import_id: string;
+  status: "review_ready" | string;
+  created_review_items: number;
+  skipped_duplicates: number;
+  review_item_ids: string[];
+  merge_plan: Record<string, any>;
+};
+
 export type AIProviderInfo = {
   id: string;
   display_name: string;

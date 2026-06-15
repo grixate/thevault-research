@@ -136,6 +136,7 @@ function mapRoute(route: string, payload?: any): { method: string; path: string;
     "capsules.imports": { method: "GET", path: `/capsules/imports?limit=${payload?.limit ?? 50}&offset=${payload?.offset ?? 0}` },
     "capsules.import": { method: "POST", path: "/capsules/imports", body: payload ?? {} },
     "capsules.import.get": { method: "GET", path: `/capsules/imports/${payload?.importId}` },
+    "capsules.import.reviewItems": { method: "POST", path: `/capsules/imports/${payload?.importId}/review-items`, body: {} },
     "notes.list": { method: "GET", path: "/notes" },
     "notes.create": { method: "POST", path: "/notes", body: payload },
     "notes.get": { method: "GET", path: `/notes/${payload?.noteId}` },

@@ -18,6 +18,7 @@ export type VaultRoute =
   | "capsules.imports"
   | "capsules.import"
   | "capsules.import.get"
+  | "capsules.import.reviewItems"
   | "notes.list"
   | "notes.create"
   | "notes.get"
@@ -160,6 +161,7 @@ export const allowedRoutes: Record<VaultRoute, RouteSpec> = {
   "capsules.imports": { method: "GET", path: (p) => `/capsules/imports?limit=${p?.limit ?? 50}&offset=${p?.offset ?? 0}` },
   "capsules.import": { method: "POST", path: () => "/capsules/imports", body: (p) => p ?? {} },
   "capsules.import.get": { method: "GET", path: (p) => `/capsules/imports/${p.importId}` },
+  "capsules.import.reviewItems": { method: "POST", path: (p) => `/capsules/imports/${p.importId}/review-items` },
   "notes.list": { method: "GET", path: () => "/notes" },
   "notes.create": { method: "POST", path: () => "/notes", body: (p) => p },
   "notes.get": { method: "GET", path: (p) => `/notes/${p.noteId}` },

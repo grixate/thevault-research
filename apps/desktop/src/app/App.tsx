@@ -107,6 +107,7 @@ import type {
   Capsule,
   CapsuleExportPreview,
   CapsuleExportResult,
+  CapsuleImportReviewItemsResult,
   CapsuleImportResult,
   CapsuleListResponse,
   CapsuleItem,
@@ -6644,21 +6645,42 @@ function CapsuleEmptyDetail({ onCreate }: { onCreate: () => void }) {
 }
 
 function CapsuleImportDetail({ result, onClose }: { result: CapsuleImportResult; onClose: () => void }) {
+  const queryClient = useQueryClient();
+  const setSurface = useUIStore((state) => state.setSurface);
   const capsule = result.manifest?.capsule ?? {};
   const mergePlan = result.merge_plan ?? {};
   const counts = (mergePlan.object_counts ?? {}) as Record<string, number>;
   const actions = Array.isArray(mergePlan.actions) ? mergePlan.actions : [];
   const validation = result.validation_report ?? {};
   const checksumResults = Array.isArray(validation.checksum_results) ? validation.checksum_results : [];
+  const createReviewItems = useMutation({
+    mutationFn: () => vaultRequest<CapsuleImportReviewItemsResult>("capsules.import.reviewItems", { importId: result.import_id }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["review"] });
+      queryClient.invalidateQueries({ queryKey: ["stats"] });
+      queryClient.invalidateQueries({ queryKey: ["events"] });
+    }
+  });
+  const reviewResult = createReviewItems.data;
   return (
     <>
       <SectionHeader
         title={capsule.name ?? "Imported capsule"}
         eyebrow="quarantine"
         actions={
-          <Button icon={<X size={15} />} variant="quiet" onClick={onClose}>
-            Close
-          </Button>
+          <>
+            <Button icon={<Check size={15} />} variant="secondary" disabled={result.status === "invalid" || createReviewItems.isPending} onClick={() => createReviewItems.mutate()}>
+              {createReviewItems.isPending ? "Creating" : "Review items"}
+            </Button>
+            {reviewResult && (
+              <Button icon={<Link2 size={15} />} variant="quiet" onClick={() => setSurface("review")}>
+                Open Review
+              </Button>
+            )}
+            <Button icon={<X size={15} />} variant="quiet" onClick={onClose}>
+              Close
+            </Button>
+          </>
         }
       />
       <div className="capsule-import-summary" aria-label="Capsule import quarantine">
@@ -6686,6 +6708,14 @@ function CapsuleImportDetail({ result, onClose }: { result: CapsuleImportResult;
         <span>{String(validation.file_count ?? 0)} files</span>
         <span>{formatBytes(Number(validation.unpacked_bytes ?? 0))}</span>
       </div>
+      {reviewResult && (
+        <div className="capsule-import-review-result" aria-label="Capsule import review items">
+          <Badge tone="good">review</Badge>
+          <span>{reviewResult.created_review_items} created</span>
+          <small>{reviewResult.skipped_duplicates} skipped</small>
+        </div>
+      )}
+      {createReviewItems.error && <small className="model-test-error">{createReviewItems.error.message}</small>}
       {Array.isArray(result.warnings) && result.warnings.length > 0 && (
         <div className="capsule-export-list" aria-label="Capsule import warnings">
           {result.warnings.map((warning, index) => (

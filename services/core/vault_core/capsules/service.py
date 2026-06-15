@@ -606,6 +606,78 @@ def list_capsule_imports(db: VaultDatabase, limit: int = 50, offset: int = 0) ->
         return {"items": items, "total": total}
 
 
+def create_capsule_import_review_items(db: VaultDatabase, import_id: str) -> dict[str, Any]:
+    ts = now_iso()
+    with db.connect() as conn:
+        row = conn.execute("SELECT * FROM capsule_imports WHERE id=? AND workspace_id=?", (import_id, db.workspace_id)).fetchone()
+        if not row:
+            raise HTTPException(404, "Capsule import not found")
+        if row["status"] not in {"quarantined", "review_ready"}:
+            raise HTTPException(409, "Only quarantined capsule imports can create review items")
+        quarantine_path = Path(row["quarantine_path"] or "")
+        package_path = quarantine_path / "original.vaultcapsule"
+        if not package_path.exists():
+            raise HTTPException(404, "Quarantined capsule package not found")
+        manifest = loads(row["manifest_json"], {})
+        records = capsule_import_records_for_review(package_path)
+        existing = existing_import_review_targets(conn, db.workspace_id, import_id)
+        created_ids: list[str] = []
+        skipped = 0
+        for proposal in capsule_import_review_proposals(import_id, manifest, records):
+            key = (proposal["item_type"], proposal["payload"]["import_target_type"], proposal["payload"]["import_target_id"])
+            if key in existing:
+                skipped += 1
+                continue
+            review_id = new_id("rev")
+            conn.execute(
+                """
+                INSERT INTO review_items
+                  (id, workspace_id, item_type, title, summary, payload_json, status, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?, 'pending', ?, ?)
+                """,
+                (
+                    review_id,
+                    db.workspace_id,
+                    proposal["item_type"],
+                    proposal["title"],
+                    proposal["summary"],
+                    dumps(proposal["payload"]),
+                    ts,
+                    ts,
+                ),
+            )
+            created_ids.append(review_id)
+            existing.add(key)
+        merge_plan = loads(row["merge_plan_json"], {})
+        merge_plan["status"] = "review_items_created" if created_ids or skipped else merge_plan.get("status", "ready_for_review")
+        merge_plan["review_item_ids"] = sorted(set([*merge_plan.get("review_item_ids", []), *created_ids]))
+        merge_plan["created_review_item_count"] = len(merge_plan["review_item_ids"])
+        conn.execute(
+            """
+            UPDATE capsule_imports
+            SET status='review_ready', merge_plan_json=?, warnings_json=?, validated_at=?
+            WHERE id=?
+            """,
+            (dumps(merge_plan), row["warnings_json"], ts, import_id),
+        )
+        db.event(
+            conn,
+            "capsule.import_review_items_created",
+            "capsule_import",
+            import_id,
+            {"created_review_items": len(created_ids), "skipped_duplicates": skipped},
+            "user",
+        )
+        return {
+            "import_id": import_id,
+            "status": "review_ready",
+            "created_review_items": len(created_ids),
+            "skipped_duplicates": skipped,
+            "review_item_ids": created_ids,
+            "merge_plan": merge_plan,
+        }
+
+
 def preview_from_package(capsule_id: str, export_mode: str, package: dict[str, Any]) -> dict[str, Any]:
     return {
         "capsule_id": capsule_id,
@@ -734,6 +806,149 @@ def write_import_quarantine_files(quarantine_dir: Path, manifest: dict[str, Any]
     (quarantine_dir / "manifest.json").write_bytes(stable_json_bytes(manifest))
     (quarantine_dir / "validation_report.json").write_bytes(stable_json_bytes(validation))
     (quarantine_dir / "merge_plan.json").write_bytes(stable_json_bytes(merge_plan))
+
+
+def capsule_import_records_for_review(package_path: Path) -> dict[str, list[dict[str, Any]]]:
+    with zipfile.ZipFile(package_path) as archive:
+        return {
+            "claims": read_zip_jsonl(archive, "data/claims.jsonl"),
+            "sources": read_zip_json(archive, "data/sources.json", []),
+            "notes": read_zip_jsonl(archive, "data/notes.jsonl"),
+            "kg_nodes": read_zip_jsonl(archive, "data/kg_nodes.jsonl"),
+            "tools": read_zip_jsonl(archive, "data/tools.jsonl"),
+        }
+
+
+def read_zip_json(archive: zipfile.ZipFile, path: str, fallback: Any) -> Any:
+    if path not in archive.namelist():
+        return fallback
+    return json.loads(archive.read(path).decode("utf-8"))
+
+
+def read_zip_jsonl(archive: zipfile.ZipFile, path: str) -> list[dict[str, Any]]:
+    if path not in archive.namelist():
+        return []
+    text = archive.read(path).decode("utf-8")
+    return [json.loads(line) for line in text.splitlines() if line.strip()]
+
+
+def existing_import_review_targets(conn: sqlite3.Connection, workspace_id: str, import_id: str) -> set[tuple[str, str, str]]:
+    rows = conn.execute(
+        """
+        SELECT item_type, payload_json
+        FROM review_items
+        WHERE workspace_id=? AND item_type LIKE 'capsule_import_%'
+        """,
+        (workspace_id,),
+    ).fetchall()
+    existing: set[tuple[str, str, str]] = set()
+    for row in rows:
+        payload = loads(row["payload_json"], {})
+        if payload.get("capsule_import_id") != import_id:
+            continue
+        existing.add((row["item_type"], str(payload.get("import_target_type") or ""), str(payload.get("import_target_id") or "")))
+    return existing
+
+
+def capsule_import_review_proposals(import_id: str, manifest: dict[str, Any], records: dict[str, list[dict[str, Any]]]) -> list[dict[str, Any]]:
+    capsule = manifest.get("capsule") if isinstance(manifest, dict) else {}
+    capsule_name = capsule.get("name") if isinstance(capsule, dict) else "Imported capsule"
+    proposals: list[dict[str, Any]] = []
+    for claim in records.get("claims", []):
+        target_id = str(claim.get("id") or "")
+        body = str(claim.get("normalized_text") or claim.get("title") or target_id)
+        proposals.append(
+            import_review_proposal(
+                import_id,
+                "capsule_import_claim",
+                "claim",
+                target_id,
+                f"Imported claim: {compact_text(body, 72)}",
+                f"{capsule_name}: claim requires review before merge.",
+                body,
+                claim,
+            )
+        )
+    for note in records.get("notes", []):
+        title = str(note.get("title") or note.get("id") or "Imported note")
+        body = str(note.get("content_markdown") or "")
+        proposals.append(
+            import_review_proposal(import_id, "capsule_import_note", "note", str(note.get("id") or ""), f"Imported note: {title}", f"{capsule_name}: note requires review before merge.", body, note)
+        )
+    for source in records.get("sources", []):
+        title = str(source.get("title") or source.get("id") or "Imported source")
+        body = f"{source.get('type', 'source')} source"
+        proposals.append(
+            import_review_proposal(
+                import_id,
+                "capsule_import_source",
+                "source",
+                str(source.get("id") or ""),
+                f"Imported source: {title}",
+                f"{capsule_name}: source metadata requires review before merge.",
+                body,
+                source,
+            )
+        )
+    for node in records.get("kg_nodes", []):
+        title = str(node.get("title") or node.get("canonical_text") or node.get("id") or "Imported concept")
+        body = str(node.get("canonical_text") or title)
+        proposals.append(
+            import_review_proposal(
+                import_id,
+                "capsule_import_concept",
+                "kg_node",
+                str(node.get("id") or ""),
+                f"Imported concept: {title}",
+                f"{capsule_name}: concept requires review before merge.",
+                body,
+                node,
+            )
+        )
+    for tool in records.get("tools", []):
+        title = str(tool.get("name") or tool.get("id") or "Imported tool")
+        body = "Imported tools remain disabled until reviewed."
+        record = {**tool, "status": "disabled_imported", "import_default_status": "disabled_imported"}
+        proposals.append(
+            import_review_proposal(
+                import_id,
+                "capsule_import_tool",
+                "tool",
+                str(tool.get("id") or ""),
+                f"Imported tool: {title}",
+                f"{capsule_name}: tool is disabled until reviewed.",
+                body,
+                record,
+            )
+        )
+    return [proposal for proposal in proposals if proposal["payload"]["import_target_id"]]
+
+
+def import_review_proposal(
+    import_id: str,
+    item_type: str,
+    target_type: str,
+    target_id: str,
+    title: str,
+    summary: str,
+    body: str,
+    record: dict[str, Any],
+) -> dict[str, Any]:
+    return {
+        "item_type": item_type,
+        "title": title,
+        "summary": summary,
+        "payload": {
+            "type": "capsule_import",
+            "capsule_import_id": import_id,
+            "import_target_type": target_type,
+            "import_target_id": target_id,
+            "body": compact_text(body, 1200),
+            "record": record,
+            "actions": ["Review imported data", "Create merge decision later"],
+            "canonical_mutation": "none",
+        },
+    }
 
 
 def normalize_export_mode(value: Any) -> str:
@@ -911,6 +1126,7 @@ def write_capsule_export_zip(output_path: Path, package: dict[str, Any]) -> dict
         "data/health.json": stable_json_bytes(package["health"]),
         "privacy_report.json": stable_json_bytes(package["privacy_report"]),
         "validation_report.json": stable_json_bytes(package["validation_report"]),
+        "data/notes.jsonl": jsonl_bytes(package["records"]["notes"]),
         "data/source_blocks.jsonl": jsonl_bytes(package["records"]["source_blocks"]),
         "data/claims.jsonl": jsonl_bytes(package["records"]["claims"]),
         "data/evidence_links.jsonl": jsonl_bytes(package["records"]["evidence_links"]),

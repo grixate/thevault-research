@@ -768,9 +768,23 @@ describe("App", () => {
             created_at: "2026-06-14T12:00:00Z"
           };
         }
+        if (route === "capsules.import.reviewItems") {
+          return {
+            import_id: "capimp_test",
+            status: "review_ready",
+            created_review_items: 2,
+            skipped_duplicates: 0,
+            review_item_ids: ["rev_import_claim", "rev_import_source"],
+            merge_plan: {
+              status: "review_items_created",
+              review_item_ids: ["rev_import_claim", "rev_import_source"]
+            }
+          };
+        }
         if (route === "notes.list") return [];
         if (route === "sources.list") return [];
         if (route === "claims.list") return [];
+        if (route === "review.list") return [];
         return [];
       }),
       selectFiles
@@ -797,6 +811,11 @@ describe("App", () => {
     expect(await screen.findByText("quarantined")).toBeTruthy();
     expect(await screen.findByText("Claims")).toBeTruthy();
     expect(await screen.findByText("1 · Create Review Items")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: /review items/i }));
+    expect(await screen.findByLabelText("Capsule import review items")).toBeTruthy();
+    expect(await screen.findByText("2 created")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: /open review/i }));
+    await waitFor(() => expect(useUIStore.getState().surface).toBe("review"));
   });
 
   it("adds the current note to a capsule from the note editor", async () => {
