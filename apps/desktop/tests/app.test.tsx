@@ -700,6 +700,46 @@ describe("App", () => {
           return capsule;
         }
         if (route === "capsules.get") return capsule;
+        if (route === "capsules.exportPreview") {
+          return {
+            capsule_id: capsule.id,
+            export_mode: "reference_only",
+            status: "ready",
+            filename: "acoustic-science-foundations.vaultcapsule",
+            manifest: { object_counts: { claims: 0, sources: 0, notes: 0 } },
+            privacy_report: {
+              status: "ready",
+              export_mode: "reference_only",
+              private_item_count: 0,
+              full_source_private_count: 0,
+              disabled_tool_count: 0,
+              unsupported_claim_count: 0,
+              exact_quote_count: 0,
+              estimated_record_count: 1,
+              checksum_status: "ready",
+              warnings: [],
+              blockers: []
+            },
+            validation_report: { status: "ready" }
+          };
+        }
+        if (route === "capsules.export") {
+          return {
+            export_id: "capexp_test",
+            capsule_id: capsule.id,
+            export_mode: "reference_only",
+            status: "completed",
+            filename: "acoustic-science-foundations.vaultcapsule",
+            file_path: "/tmp/acoustic-science-foundations.vaultcapsule",
+            mime_type: "application/vnd.thevault.capsule+zip",
+            size_bytes: 2048,
+            sha256: "a".repeat(64),
+            created_at: "2026-06-14T12:00:00Z",
+            manifest: {},
+            privacy_report: {},
+            validation_report: {}
+          };
+        }
         if (route === "notes.list") return [];
         if (route === "sources.list") return [];
         if (route === "claims.list") return [];
@@ -718,6 +758,11 @@ describe("App", () => {
 
     expect(await screen.findByText("Acoustic Science Foundations")).toBeTruthy();
     expect(await screen.findByLabelText("Capsule counts")).toBeTruthy();
+    fireEvent.click(await screen.findByRole("button", { name: "Export" }));
+    const dialog = await screen.findByRole("dialog", { name: "Export capsule" });
+    expect(await within(dialog).findByLabelText("Capsule export preview")).toBeTruthy();
+    fireEvent.click(within(dialog).getByRole("button", { name: /^export$/i }));
+    expect(await within(dialog).findByText("acoustic-science-foundations.vaultcapsule")).toBeTruthy();
   });
 
   it("adds the current note to a capsule from the note editor", async () => {

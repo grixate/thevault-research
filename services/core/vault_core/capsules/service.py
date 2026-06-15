@@ -1,7 +1,11 @@
 from __future__ import annotations
 
+import hashlib
+import json
 import re
 import sqlite3
+import zipfile
+from pathlib import Path
 from typing import Any
 
 from fastapi import HTTPException
@@ -10,6 +14,7 @@ from vault_core.db.session import VaultDatabase, dumps, loads, new_id, now_iso, 
 
 APPROVED_CLAIM_STATUSES = {"supported", "user_confirmed", "verified"}
 UNREVIEWED_CLAIM_STATUSES = {"proposed", "needs_review", "weakly_supported"}
+CAPSULE_EXPORT_MODES = {"reference_only", "sanitized", "private_full", "learning", "tool", "public"}
 SUPPORTED_TARGET_TYPES = {
     "source",
     "source_block",
@@ -400,6 +405,466 @@ def list_capsule_versions(db: VaultDatabase, capsule_id: str) -> list[dict[str, 
             (capsule_id,),
         ).fetchall()
         return rows_to_dicts(rows)
+
+
+def preview_capsule_export(db: VaultDatabase, capsule_id: str, payload: dict[str, Any] | None = None) -> dict[str, Any]:
+    export_mode = normalize_export_mode((payload or {}).get("export_mode"))
+    with db.connect() as conn:
+        package = build_capsule_export_payload(conn, db.workspace_id, capsule_id, export_mode)
+        return {
+            "capsule_id": capsule_id,
+            "export_mode": export_mode,
+            "status": "blocked" if package["privacy_report"]["blockers"] else "ready",
+            "filename": capsule_export_filename(package["capsule"]),
+            "manifest": package["manifest"],
+            "privacy_report": package["privacy_report"],
+            "validation_report": package["validation_report"],
+        }
+
+
+def export_capsule_package(db: VaultDatabase, capsule_id: str, output_dir: Path, payload: dict[str, Any] | None = None) -> dict[str, Any]:
+    export_mode = normalize_export_mode((payload or {}).get("export_mode"))
+    ts = now_iso()
+    export_id = new_id("capexp")
+    output_dir.mkdir(parents=True, exist_ok=True)
+    with db.connect() as conn:
+        package = build_capsule_export_payload(conn, db.workspace_id, capsule_id, export_mode)
+        privacy_report = package["privacy_report"]
+        validation_report = package["validation_report"]
+        if privacy_report["blockers"]:
+            conn.execute(
+                """
+                INSERT INTO capsule_exports
+                  (id, capsule_id, workspace_id, export_mode, status, manifest_json,
+                   privacy_report_json, validation_report_json, warnings_json, error,
+                   created_by, created_at, finished_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    export_id,
+                    capsule_id,
+                    db.workspace_id,
+                    export_mode,
+                    "blocked",
+                    dumps(package["manifest"]),
+                    dumps(privacy_report),
+                    dumps(validation_report),
+                    dumps(privacy_report["warnings"]),
+                    "Export blocked by privacy policy.",
+                    "user",
+                    ts,
+                    ts,
+                ),
+            )
+            raise HTTPException(409, {"message": "Capsule export blocked by privacy policy.", "preview": preview_from_package(capsule_id, export_mode, package)})
+
+        output_path = output_dir / capsule_export_filename(package["capsule"], export_id)
+        file_checksums = write_capsule_export_zip(output_path, package)
+        archive_sha = sha256_file(output_path)
+        manifest = {**package["manifest"], "checksums": file_checksums, "archive_sha256": archive_sha}
+        size_bytes = output_path.stat().st_size
+        conn.execute(
+            """
+            INSERT INTO capsule_exports
+              (id, capsule_id, workspace_id, export_mode, status, file_path,
+               file_size_bytes, sha256, manifest_json, privacy_report_json,
+               validation_report_json, warnings_json, created_by, created_at, finished_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                export_id,
+                capsule_id,
+                db.workspace_id,
+                export_mode,
+                "completed",
+                str(output_path),
+                size_bytes,
+                archive_sha,
+                dumps(manifest),
+                dumps(privacy_report),
+                dumps(validation_report),
+                dumps(privacy_report["warnings"]),
+                "user",
+                ts,
+                ts,
+            ),
+        )
+        insert_changelog(
+            conn,
+            db,
+            capsule_id,
+            "export_created",
+            summary=f"Exported {export_mode.replace('_', ' ')} capsule",
+            payload={"export_id": export_id, "file_size_bytes": size_bytes, "sha256": archive_sha},
+        )
+        db.event(conn, "capsule.export_created", "capsule", capsule_id, {"export_id": export_id, "export_mode": export_mode}, "user")
+        return {
+            "export_id": export_id,
+            "capsule_id": capsule_id,
+            "export_mode": export_mode,
+            "status": "completed",
+            "filename": output_path.name,
+            "file_path": str(output_path),
+            "mime_type": "application/vnd.thevault.capsule+zip",
+            "size_bytes": size_bytes,
+            "sha256": archive_sha,
+            "manifest": manifest,
+            "privacy_report": privacy_report,
+            "validation_report": validation_report,
+            "created_at": ts,
+        }
+
+
+def preview_from_package(capsule_id: str, export_mode: str, package: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "capsule_id": capsule_id,
+        "export_mode": export_mode,
+        "status": "blocked" if package["privacy_report"]["blockers"] else "ready",
+        "filename": capsule_export_filename(package["capsule"]),
+        "manifest": package["manifest"],
+        "privacy_report": package["privacy_report"],
+        "validation_report": package["validation_report"],
+    }
+
+
+def normalize_export_mode(value: Any) -> str:
+    text = str(value or "reference_only").strip().lower().replace(" ", "_").replace("-", "_")
+    aliases = {
+        "reference": "reference_only",
+        "reference_only_export": "reference_only",
+        "sanitized_export": "sanitized",
+        "private_full_export": "private_full",
+        "full_private": "private_full",
+        "learning_export": "learning",
+        "tool_export": "tool",
+        "public_capsule_export": "public",
+    }
+    mode = aliases.get(text, text)
+    if mode not in CAPSULE_EXPORT_MODES:
+        raise HTTPException(422, f"Unsupported capsule export mode: {value}")
+    return mode
+
+
+def build_capsule_export_payload(conn: sqlite3.Connection, workspace_id: str, capsule_id: str, export_mode: str) -> dict[str, Any]:
+    capsule = inflate_capsule(ensure_capsule(conn, workspace_id, capsule_id))
+    items = list_capsule_items_for_conn(conn, workspace_id, capsule_id, limit=10000)
+    records = collect_capsule_export_records(conn, workspace_id, capsule_id, items, export_mode)
+    health = summarize_health(compute_health_payload(conn, workspace_id, capsule_id))
+    privacy_report = capsule_export_privacy_report(conn, capsule_id, export_mode, items, records, health)
+    object_counts = {key: len(value) for key, value in records.items()}
+    manifest = {
+        "schema_version": 1,
+        "package_type": "the_vault_knowledge_capsule",
+        "workspace_id": workspace_id,
+        "capsule": capsule,
+        "export_mode": export_mode,
+        "created_at": now_iso(),
+        "counts": capsule_counts(conn, capsule_id),
+        "object_counts": object_counts,
+        "formats": {
+            "manifest": "JSON",
+            "items": "JSON",
+            "notes": "Markdown + JSONL metadata",
+            "sources": "JSON",
+            "source_blocks": "JSONL",
+            "claims": "JSONL",
+            "evidence_links": "JSONL",
+            "graph_edges": "JSONL",
+            "learning_items": "JSONL",
+            "tools": "JSONL",
+        },
+        "privacy": {
+            "status": "blocked" if privacy_report["blockers"] else "ready",
+            "warning_count": len(privacy_report["warnings"]),
+            "blocker_count": len(privacy_report["blockers"]),
+        },
+    }
+    validation_report = {
+        "status": "blocked" if privacy_report["blockers"] else "ready",
+        "checksums_ready": True,
+        "item_count": len(items),
+        "object_counts": object_counts,
+        "warnings": privacy_report["warnings"],
+        "blockers": privacy_report["blockers"],
+    }
+    return {
+        "capsule": capsule,
+        "items": items,
+        "records": records,
+        "health": health,
+        "manifest": manifest,
+        "privacy_report": privacy_report,
+        "validation_report": validation_report,
+    }
+
+
+def collect_capsule_export_records(
+    conn: sqlite3.Connection,
+    workspace_id: str,
+    capsule_id: str,
+    items: list[dict[str, Any]],
+    export_mode: str,
+) -> dict[str, list[dict[str, Any]]]:
+    ids: dict[str, set[str]] = {target_type: set() for target_type in SUPPORTED_TARGET_TYPES}
+    for item in items:
+        ids.setdefault(item["target_type"], set()).add(item["target_id"])
+
+    claim_ids = set(ids.get("claim", set()))
+    claim_rows = rows_by_ids(conn, "claims", "id", claim_ids, workspace_id=workspace_id)
+    ids.setdefault("kg_node", set()).update(str(row["node_id"]) for row in claim_rows if row.get("node_id"))
+
+    evidence_ids = set(ids.get("evidence_link", set()))
+    if claim_ids:
+        evidence_rows = rows_to_dicts(
+            conn.execute(
+                f"SELECT * FROM evidence_links WHERE claim_id IN ({sql_placeholders(claim_ids)})",
+                tuple(claim_ids),
+            ).fetchall()
+        )
+        evidence_ids.update(row["id"] for row in evidence_rows)
+    evidence_rows = rows_by_ids(conn, "evidence_links", "id", evidence_ids) if evidence_ids else []
+    ids.setdefault("source_block", set()).update(str(row["source_block_id"]) for row in evidence_rows if row.get("source_block_id"))
+
+    source_block_ids = set(ids.get("source_block", set()))
+    source_block_rows = source_blocks_by_ids(conn, source_block_ids, workspace_id)
+    ids.setdefault("source", set()).update(str(row["source_id"]) for row in source_block_rows if row.get("source_id"))
+
+    source_rows = rows_by_ids(conn, "sources", "id", ids.get("source", set()), workspace_id=workspace_id)
+    note_rows = rows_by_ids(conn, "notes", "id", ids.get("note", set()), workspace_id=workspace_id)
+    kg_node_rows = rows_by_ids(conn, "kg_nodes", "id", ids.get("kg_node", set()), workspace_id=workspace_id)
+    kg_edge_rows = capsule_edge_rows(conn, workspace_id, ids.get("kg_edge", set()), {row["id"] for row in kg_node_rows})
+    learning_rows = rows_by_ids(conn, "learning_items", "id", ids.get("learning_item", set()), workspace_id=workspace_id)
+    tool_rows = rows_by_ids(conn, "tool_registry", "id", ids.get("tool", set()), workspace_id=workspace_id)
+
+    return {
+        "items": items,
+        "sources": [sanitize_source_for_export(row, export_mode) for row in source_rows],
+        "source_blocks": [sanitize_source_block_for_export(row, export_mode) for row in source_block_rows],
+        "notes": [export_note_row(row, export_mode) for row in note_rows],
+        "kg_nodes": [export_json_fields(row, {"metadata_json": "metadata"}) for row in kg_node_rows],
+        "claims": [export_json_fields(row, {"metadata_json": "metadata"}) for row in claim_rows],
+        "evidence_links": [sanitize_evidence_link_for_export(row, export_mode) for row in evidence_rows],
+        "graph_edges": [export_json_fields(row, {"metadata_json": "metadata"}) for row in kg_edge_rows],
+        "learning_items": [export_json_fields(row, {"body_json": "body"}) for row in learning_rows],
+        "tools": [sanitize_tool_for_export(row) for row in tool_rows],
+    }
+
+
+def capsule_export_privacy_report(
+    conn: sqlite3.Connection,
+    capsule_id: str,
+    export_mode: str,
+    items: list[dict[str, Any]],
+    records: dict[str, list[dict[str, Any]]],
+    health: dict[str, Any],
+) -> dict[str, Any]:
+    private_items = [item for item in items if bool(item.get("private_flag"))]
+    full_source_items = [item for item in items if item.get("export_policy") == "full_sources_private"]
+    disabled_tools = [
+        tool
+        for tool in records.get("tools", [])
+        if tool.get("status") not in {None, "installed", "active", "enabled"}
+    ]
+    unsupported_claims = [claim for claim in records.get("claims", []) if claim.get("evidence_strength", 0) <= 0 or claim.get("status") in {"needs_review", "weakly_supported"}]
+    exact_quote_count = sum(1 for link in records.get("evidence_links", []) if link.get("exact_quote")) + sum(1 for block in records.get("source_blocks", []) if block.get("text"))
+    warnings: list[dict[str, Any]] = []
+    blockers: list[dict[str, Any]] = []
+    if private_items:
+        target = {"code": "private_items", "count": len(private_items), "message": f"{len(private_items)} private capsule items are included."}
+        (warnings if export_mode == "private_full" else blockers).append(target)
+    if full_source_items and export_mode != "private_full":
+        blockers.append({"code": "full_sources_private", "count": len(full_source_items), "message": "Full-source private export requires Private full export."})
+    if disabled_tools:
+        warnings.append({"code": "disabled_tools", "count": len(disabled_tools), "message": f"{len(disabled_tools)} tools are disabled or not installed."})
+    if unsupported_claims:
+        warnings.append({"code": "unsupported_claims", "count": len(unsupported_claims), "message": f"{len(unsupported_claims)} claims need stronger evidence."})
+    return {
+        "status": "blocked" if blockers else "ready",
+        "export_mode": export_mode,
+        "private_item_count": len(private_items),
+        "full_source_private_count": len(full_source_items),
+        "disabled_tool_count": len(disabled_tools),
+        "unsupported_claim_count": len(unsupported_claims),
+        "exact_quote_count": exact_quote_count,
+        "estimated_record_count": sum(len(value) for value in records.values()),
+        "health_status": health.get("status"),
+        "checksum_status": "ready",
+        "warnings": warnings,
+        "blockers": blockers,
+    }
+
+
+def write_capsule_export_zip(output_path: Path, package: dict[str, Any]) -> dict[str, str]:
+    files: dict[str, bytes] = {
+        "data/capsule.json": stable_json_bytes(package["capsule"]),
+        "data/items.json": stable_json_bytes(package["items"]),
+        "data/sources.json": stable_json_bytes(package["records"]["sources"]),
+        "data/health.json": stable_json_bytes(package["health"]),
+        "privacy_report.json": stable_json_bytes(package["privacy_report"]),
+        "validation_report.json": stable_json_bytes(package["validation_report"]),
+        "data/source_blocks.jsonl": jsonl_bytes(package["records"]["source_blocks"]),
+        "data/claims.jsonl": jsonl_bytes(package["records"]["claims"]),
+        "data/evidence_links.jsonl": jsonl_bytes(package["records"]["evidence_links"]),
+        "data/kg_nodes.jsonl": jsonl_bytes(package["records"]["kg_nodes"]),
+        "data/graph_edges.jsonl": jsonl_bytes(package["records"]["graph_edges"]),
+        "data/learning_items.jsonl": jsonl_bytes(package["records"]["learning_items"]),
+        "data/tools.jsonl": jsonl_bytes(package["records"]["tools"]),
+    }
+    for note in package["records"]["notes"]:
+        files[f"notes/{capsule_safe_filename(note.get('title') or 'untitled')}-{note['id']}.md"] = capsule_note_markdown(note).encode("utf-8")
+    checksums = {path: hashlib.sha256(content).hexdigest() for path, content in files.items()}
+    manifest = {**package["manifest"], "checksums": checksums}
+    manifest_bytes = stable_json_bytes(manifest)
+    files["manifest.json"] = manifest_bytes
+    files["manifest-sha256.txt"] = f"{hashlib.sha256(manifest_bytes).hexdigest()}  manifest.json\n".encode("utf-8")
+    with zipfile.ZipFile(output_path, "w", compression=zipfile.ZIP_DEFLATED) as archive:
+        for path, content in sorted(files.items()):
+            archive.writestr(path, content)
+    return checksums
+
+
+def capsule_export_filename(capsule: dict[str, Any], export_id: str | None = None) -> str:
+    suffix = f"-{export_id.removeprefix('capexp_')}" if export_id else ""
+    return f"{capsule_safe_filename(capsule.get('slug') or capsule.get('name') or 'capsule')}{suffix}.vaultcapsule"
+
+
+def capsule_safe_filename(value: str) -> str:
+    slug = re.sub(r"[^a-zA-Z0-9._-]+", "-", str(value or "").strip().lower()).strip("-._")
+    return (slug or "capsule")[:90]
+
+
+def stable_json_bytes(data: Any) -> bytes:
+    return json.dumps(data, ensure_ascii=False, indent=2, sort_keys=True).encode("utf-8")
+
+
+def jsonl_bytes(rows: list[dict[str, Any]]) -> bytes:
+    return ("\n".join(json.dumps(row, ensure_ascii=False, sort_keys=True) for row in rows) + ("\n" if rows else "")).encode("utf-8")
+
+
+def sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def sql_placeholders(values: set[str]) -> str:
+    return ",".join("?" for _ in values) or "?"
+
+
+def rows_by_ids(
+    conn: sqlite3.Connection,
+    table: str,
+    id_column: str,
+    ids: set[str] | None,
+    workspace_id: str | None = None,
+) -> list[dict[str, Any]]:
+    ids = ids or set()
+    if not ids:
+        return []
+    clauses = [f"{id_column} IN ({sql_placeholders(ids)})"]
+    args: list[Any] = list(ids)
+    if workspace_id:
+        clauses.append("workspace_id=?")
+        args.append(workspace_id)
+    return rows_to_dicts(conn.execute(f"SELECT * FROM {table} WHERE {' AND '.join(clauses)}", args).fetchall())
+
+
+def source_blocks_by_ids(conn: sqlite3.Connection, ids: set[str], workspace_id: str) -> list[dict[str, Any]]:
+    if not ids:
+        return []
+    return rows_to_dicts(
+        conn.execute(
+            f"""
+            SELECT source_blocks.*
+            FROM source_blocks
+            JOIN sources ON sources.id=source_blocks.source_id
+            WHERE source_blocks.id IN ({sql_placeholders(ids)}) AND sources.workspace_id=?
+            """,
+            (*ids, workspace_id),
+        ).fetchall()
+    )
+
+
+def capsule_edge_rows(conn: sqlite3.Connection, workspace_id: str, explicit_edge_ids: set[str], node_ids: set[str]) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    if explicit_edge_ids:
+        for row in rows_by_ids(conn, "kg_edges", "id", explicit_edge_ids, workspace_id=workspace_id):
+            rows.append(row)
+            seen.add(row["id"])
+    if node_ids:
+        related = rows_to_dicts(
+            conn.execute(
+                f"""
+                SELECT * FROM kg_edges
+                WHERE workspace_id=? AND (from_node_id IN ({sql_placeholders(node_ids)}) OR to_node_id IN ({sql_placeholders(node_ids)}))
+                """,
+                (workspace_id, *node_ids, *node_ids),
+            ).fetchall()
+        )
+        for row in related:
+            if row["id"] not in seen:
+                rows.append(row)
+                seen.add(row["id"])
+    return rows
+
+
+def export_json_fields(row: dict[str, Any], json_fields: dict[str, str]) -> dict[str, Any]:
+    record = dict(row)
+    for source_key, target_key in json_fields.items():
+        raw = record.pop(source_key, None)
+        record[target_key] = loads(raw, {} if raw != "[]" else [])
+    return record
+
+
+def sanitize_source_for_export(row: dict[str, Any], export_mode: str) -> dict[str, Any]:
+    record = export_json_fields(row, {"metadata_json": "metadata"})
+    if export_mode != "private_full":
+        record["raw_path"] = None
+    return record
+
+
+def sanitize_source_block_for_export(row: dict[str, Any], export_mode: str) -> dict[str, Any]:
+    record = dict(row)
+    if export_mode in {"reference_only", "public"}:
+        record["text"] = ""
+    return record
+
+
+def export_note_row(row: dict[str, Any], export_mode: str) -> dict[str, Any]:
+    record = export_json_fields(row, {"content_json": "content"})
+    if export_mode == "public":
+        record["content_markdown"] = ""
+    return record
+
+
+def sanitize_evidence_link_for_export(row: dict[str, Any], export_mode: str) -> dict[str, Any]:
+    record = export_json_fields(row, {"metadata_json": "metadata"})
+    if export_mode in {"reference_only", "public"}:
+        record["exact_quote"] = ""
+    return record
+
+
+def sanitize_tool_for_export(row: dict[str, Any]) -> dict[str, Any]:
+    record = export_json_fields(row, {"manifest_json": "manifest"})
+    record["import_default_status"] = "disabled_until_reviewed"
+    return record
+
+
+def capsule_note_markdown(note: dict[str, Any]) -> str:
+    frontmatter = {
+        "id": note["id"],
+        "title": note["title"],
+        "origin": note["origin"],
+        "status": note["status"],
+        "version": note["version"],
+        "source_id": note.get("source_id"),
+        "updated_at": note["updated_at"],
+    }
+    metadata = "\n".join(f"{key}: {json.dumps(value, ensure_ascii=False)}" for key, value in frontmatter.items())
+    return f"---\n{metadata}\n---\n\n{note.get('content_markdown') or ''}"
 
 
 def unique_capsule_slug(db: VaultDatabase, name: str, ignore_capsule_id: str | None = None) -> str:

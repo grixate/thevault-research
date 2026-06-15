@@ -59,6 +59,7 @@ from vault_core.api.schemas import (
     AssistantAskRequest,
     BulkReviewRequest,
     CapsuleCreate,
+    CapsuleExportRequest,
     CapsuleItemsAddRequest,
     CapsuleSnapshotRequest,
     CapsuleUpdate,
@@ -157,10 +158,12 @@ from vault_core.capsules.service import (
     archive_capsule,
     create_capsule,
     create_capsule_snapshot,
+    export_capsule_package,
     get_capsule_detail,
     list_capsule_items,
     list_capsule_versions,
     list_capsules,
+    preview_capsule_export,
     remove_capsule_item,
     run_capsule_health,
     update_capsule,
@@ -458,6 +461,15 @@ def register_routes(app: FastAPI) -> None:
     @app.get("/capsules/{capsule_id}/versions", dependencies=[auth])
     def capsule_versions(capsule_id: str, db: VaultDatabase = Depends(get_db)) -> list[dict[str, Any]]:
         return list_capsule_versions(db, capsule_id)
+
+    @app.post("/capsules/{capsule_id}/export/preview", dependencies=[auth])
+    def capsule_export_preview(capsule_id: str, req: CapsuleExportRequest, db: VaultDatabase = Depends(get_db)) -> dict[str, Any]:
+        return preview_capsule_export(db, capsule_id, req.model_dump())
+
+    @app.post("/capsules/{capsule_id}/export", dependencies=[auth])
+    def capsule_export(capsule_id: str, req: CapsuleExportRequest, request: Request, db: VaultDatabase = Depends(get_db)) -> dict[str, Any]:
+        settings: Settings = request.app.state.settings
+        return export_capsule_package(db, capsule_id, settings.data_dir / "capsules" / "exports", req.model_dump())
 
     @app.get("/ai/providers", dependencies=[auth])
     def ai_providers() -> list[dict[str, Any]]:

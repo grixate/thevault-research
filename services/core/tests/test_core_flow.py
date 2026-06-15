@@ -662,7 +662,7 @@ def test_capsules_reference_global_objects_and_snapshot_health(client):
         json={
             "items": [
                 {"target_type": "note", "target_id": note["id"], "role": "core"},
-                {"target_type": "source", "target_id": imported["source"]["id"], "role": "primary_source"},
+                {"target_type": "source", "target_id": imported["source"]["id"], "role": "primary_source", "export_policy": "metadata_and_quotes"},
                 {"target_type": "claim", "target_id": claim_id, "role": "core", "auto_include_evidence": True},
                 {"target_type": "claim", "target_id": claim_id, "role": "core"},
             ]
@@ -691,6 +691,49 @@ def test_capsules_reference_global_objects_and_snapshot_health(client):
     assert snapshot["item_count"] >= 5
     versions = client.get(f"/capsules/{capsule['id']}/versions").json()
     assert versions[0]["version"] == "0.2.0"
+
+    preview = client.post(f"/capsules/{capsule['id']}/export/preview", json={"export_mode": "sanitized"}).json()
+    assert preview["status"] == "ready"
+    assert preview["privacy_report"]["exact_quote_count"] >= 1
+    assert preview["manifest"]["object_counts"]["claims"] == 1
+
+    exported = client.post(f"/capsules/{capsule['id']}/export", json={"export_mode": "sanitized"}).json()
+    export_path = Path(exported["file_path"])
+    assert export_path.exists()
+    assert exported["filename"].endswith(".vaultcapsule")
+    assert exported["sha256"]
+    with zipfile.ZipFile(export_path) as archive:
+        names = set(archive.namelist())
+        assert "manifest.json" in names
+        assert "manifest-sha256.txt" in names
+        assert "data/items.json" in names
+        assert "data/claims.jsonl" in names
+        assert "data/evidence_links.jsonl" in names
+        assert "privacy_report.json" in names
+        manifest = json.loads(archive.read("manifest.json"))
+        assert manifest["package_type"] == "the_vault_knowledge_capsule"
+        assert manifest["export_mode"] == "sanitized"
+        assert manifest["checksums"]["data/claims.jsonl"]
+        assert "manifest.json" in archive.read("manifest-sha256.txt").decode("utf-8")
+        evidence_rows = [json.loads(line) for line in archive.read("data/evidence_links.jsonl").decode("utf-8").splitlines()]
+        assert any("Resonance in acoustics" in row["exact_quote"] for row in evidence_rows)
+
+    private_note = client.post(
+        "/notes",
+        json={
+            "title": "Private capsule note",
+            "content_json": {},
+            "content_markdown": "Private material should block non-private capsule export.",
+            "origin": "user_written",
+        },
+    ).json()
+    client.post(
+        f"/capsules/{capsule['id']}/items",
+        json={"items": [{"target_type": "note", "target_id": private_note["id"], "role": "private", "private_flag": True}]},
+    )
+    blocked_preview = client.post(f"/capsules/{capsule['id']}/export/preview", json={"export_mode": "reference_only"}).json()
+    assert blocked_preview["status"] == "blocked"
+    assert blocked_preview["privacy_report"]["blockers"][0]["code"] == "private_items"
 
 
 def test_bulk_review_rejects_pending_items_with_shared_decision_note(client):

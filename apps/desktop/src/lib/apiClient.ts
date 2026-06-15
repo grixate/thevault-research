@@ -131,6 +131,8 @@ function mapRoute(route: string, payload?: any): { method: string; path: string;
     "capsules.health.run": { method: "POST", path: `/capsules/${payload?.capsuleId}/health/run` },
     "capsules.snapshot": { method: "POST", path: `/capsules/${payload?.capsuleId}/versions`, body: payload?.data ?? {} },
     "capsules.versions": { method: "GET", path: `/capsules/${payload?.capsuleId}/versions` },
+    "capsules.exportPreview": { method: "POST", path: `/capsules/${payload?.capsuleId}/export/preview`, body: payload?.data ?? {} },
+    "capsules.export": { method: "POST", path: `/capsules/${payload?.capsuleId}/export`, body: payload?.data ?? {} },
     "notes.list": { method: "GET", path: "/notes" },
     "notes.create": { method: "POST", path: "/notes", body: payload },
     "notes.get": { method: "GET", path: `/notes/${payload?.noteId}` },

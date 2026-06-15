@@ -213,6 +213,17 @@ Latest capsule workflow verification on 2026-06-15:
 - Desktop tests: 63 passed.
 - Desktop production build: passed.
 
+Latest capsule export verification on 2026-06-15:
+
+- Added backend capsule export preview and `.vaultcapsule` package creation.
+- Export preview now reports mode, privacy status, private item count, full-source private policy count, disabled tools, unsupported claims, exact quote count, estimated records, warnings, blockers, and checksum readiness.
+- Non-private export modes are blocked when private capsule items or `full_sources_private` source policies are present.
+- `.vaultcapsule` export writes a zip package with `manifest.json`, `manifest-sha256.txt`, capsule/items/source/note/claim/evidence/graph/learning/tool records, health report, privacy report, validation report, note markdown, file checksums, and audit rows in `capsule_exports`.
+- Added a compact desktop Export dialog from capsule detail with mode selection, preview counters, blockers/warnings, disabled export when blocked, and saved package result.
+- Focused backend capsule test: passed.
+- Desktop capsule/export test path: passed.
+- Desktop production build: passed.
+
 Latest focused verification on 2026-06-11 before the current claim-grammar slice:
 
 - Python core tests: 125 passed.
@@ -2525,6 +2536,8 @@ Current good state:
   - add existing note/source/claim,
   - evidence auto-include toggle for claims,
   - manual snapshot action.
+- Backend capsule export preview and package creation exist for reference-only, sanitized, private-full, learning, tool, and public modes.
+- Desktop capsule detail has a compact Export dialog with preview and package creation.
 - Compact capsule attach entry points exist in the real workflows:
   - current Note,
   - selected Storage source,
@@ -2547,13 +2560,12 @@ Remaining tasks:
   - attached tools.
 - Add capsule overview generation as a generated pending-review note using reviewed claims/sources only.
 - Add capsule learning generation with default `reviewed_claims_only`.
-- Implement export preview before export:
-  - private item count,
-  - unsupported claims,
-  - exact quotes,
-  - tools included/disabled,
-  - size/checksum status.
-- Implement `.vaultcapsule` export package with manifest, referenced objects, item snapshot, health snapshot, and checksums.
+- Harden/export follow-ups:
+  - add richer copyrighted-file and secret scanning,
+  - add full source blob inclusion only for explicit private-full mode,
+  - add export history UI,
+  - add version-specific export,
+  - add package format contract docs once import stabilizes.
 - Implement import quarantine:
   - safe unzip,
   - path traversal protection,
@@ -2574,8 +2586,8 @@ Acceptance evidence:
 - Export cannot proceed through unsafe modes when privacy blockers are unresolved.
 - Generated capsule notes and learning items stay reviewable and evidence-linked.
 - Browser screenshots show Capsules as a calm knowledge curation surface, not an overloaded management console.
-- Backend tests cover item references, evidence auto-inclusion, health, snapshots, export manifest checksums, import quarantine, and selective merge.
-- Desktop tests cover create, attach note/source/claim, snapshot, health, export preview blocking, and import quarantine inspection.
+- Backend tests cover item references, evidence auto-inclusion, health, snapshots, export preview, export manifest/checksum files, export privacy blocking, import quarantine, and selective merge.
+- Desktop tests cover create, attach note/source/claim, snapshot, health, export preview/package creation, export blocking, and import quarantine inspection.
 
 ## Recommended Next Session Steps
 

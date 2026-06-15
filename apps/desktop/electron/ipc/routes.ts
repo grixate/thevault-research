@@ -13,6 +13,8 @@ export type VaultRoute =
   | "capsules.health.run"
   | "capsules.snapshot"
   | "capsules.versions"
+  | "capsules.exportPreview"
+  | "capsules.export"
   | "notes.list"
   | "notes.create"
   | "notes.get"
@@ -150,6 +152,8 @@ export const allowedRoutes: Record<VaultRoute, RouteSpec> = {
   "capsules.health.run": { method: "POST", path: (p) => `/capsules/${p.capsuleId}/health/run` },
   "capsules.snapshot": { method: "POST", path: (p) => `/capsules/${p.capsuleId}/versions`, body: (p) => p.data ?? {} },
   "capsules.versions": { method: "GET", path: (p) => `/capsules/${p.capsuleId}/versions` },
+  "capsules.exportPreview": { method: "POST", path: (p) => `/capsules/${p.capsuleId}/export/preview`, body: (p) => p.data ?? {} },
+  "capsules.export": { method: "POST", path: (p) => `/capsules/${p.capsuleId}/export`, body: (p) => p.data ?? {} },
   "notes.list": { method: "GET", path: () => "/notes" },
   "notes.create": { method: "POST", path: () => "/notes", body: (p) => p },
   "notes.get": { method: "GET", path: (p) => `/notes/${p.noteId}` },

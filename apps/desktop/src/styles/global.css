@@ -1094,6 +1094,84 @@ textarea:not(.ui-textarea) {
   padding-top: 2px;
 }
 
+.capsule-export-dialog {
+  width: min(500px, calc(100vw - 28px));
+}
+
+.capsule-export-head,
+.capsule-export-result {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding-block: 8px 10px;
+  border-bottom: 1px solid var(--line);
+}
+
+.capsule-export-head strong,
+.capsule-export-result span {
+  min-width: 0;
+  color: var(--foreground);
+  font-size: 13px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.capsule-export-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 10px;
+  padding-block: 10px;
+  border-block: 1px solid var(--line);
+}
+
+.capsule-export-grid span {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.2;
+}
+
+.capsule-export-grid strong {
+  color: var(--foreground);
+  font-size: 14px;
+}
+
+.capsule-export-list {
+  display: grid;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.capsule-export-list span {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.capsule-export-list.blocked span {
+  color: var(--danger);
+}
+
+.capsule-export-result {
+  margin-top: 10px;
+  padding-block: 10px;
+  border-top: 1px solid var(--line);
+  border-bottom: 0;
+}
+
+.capsule-export-result small {
+  margin-left: auto;
+  color: var(--muted);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
 .wide-panel,
 .detail-pane,
 .editor-pane,

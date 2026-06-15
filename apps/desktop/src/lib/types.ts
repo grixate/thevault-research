@@ -212,6 +212,39 @@ export type CapsuleListResponse = {
   total: number;
 };
 
+export type CapsuleExportReport = {
+  status: "ready" | "blocked" | string;
+  export_mode: string;
+  private_item_count: number;
+  full_source_private_count: number;
+  disabled_tool_count: number;
+  unsupported_claim_count: number;
+  exact_quote_count: number;
+  estimated_record_count: number;
+  checksum_status: string;
+  warnings: Array<{ code: string; count?: number; message: string }>;
+  blockers: Array<{ code: string; count?: number; message: string }>;
+};
+
+export type CapsuleExportPreview = {
+  capsule_id: string;
+  export_mode: string;
+  status: "ready" | "blocked" | string;
+  filename: string;
+  manifest: Record<string, any>;
+  privacy_report: CapsuleExportReport;
+  validation_report: Record<string, any>;
+};
+
+export type CapsuleExportResult = CapsuleExportPreview & {
+  export_id: string;
+  file_path: string;
+  mime_type: string;
+  size_bytes: number;
+  sha256: string;
+  created_at: string;
+};
+
 export type AIProviderInfo = {
   id: string;
   display_name: string;

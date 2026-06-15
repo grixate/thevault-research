@@ -183,6 +183,10 @@ class CapsuleSnapshotRequest(BaseModel):
     changelog: str | None = None
 
 
+class CapsuleExportRequest(BaseModel):
+    export_mode: str = "reference_only"
+
+
 class ToolProposeRequest(BaseModel):
     name: str
     description: str

@@ -105,6 +105,8 @@ import type {
   AIProviderInfo,
   CapabilityBinding,
   Capsule,
+  CapsuleExportPreview,
+  CapsuleExportResult,
   CapsuleListResponse,
   CapsuleItem,
   Claim,
@@ -6625,6 +6627,7 @@ function CapsuleDetail({ capsule, onOpenTarget }: { capsule: Capsule; onOpenTarg
   const [role, setRole] = useState("core");
   const [autoIncludeEvidence, setAutoIncludeEvidence] = useState(true);
   const [snapshotVersion, setSnapshotVersion] = useState(nextCapsulePatchVersion(capsule.version));
+  const [exportOpen, setExportOpen] = useState(false);
   const targetOptions = targetType === "note" ? notes.data ?? [] : targetType === "source" ? sources.data ?? [] : claims.data ?? [];
   useEffect(() => {
     setTargetId("");
@@ -6681,6 +6684,9 @@ function CapsuleDetail({ capsule, onOpenTarget }: { capsule: Capsule; onOpenTarg
             </Button>
             <Button icon={<Save size={15} />} variant="secondary" disabled={!snapshotVersion.trim() || snapshot.isPending} onClick={() => snapshot.mutate()}>
               Snapshot
+            </Button>
+            <Button icon={<Download size={15} />} variant="quiet" onClick={() => setExportOpen(true)}>
+              Export
             </Button>
           </>
         }
@@ -6783,7 +6789,105 @@ function CapsuleDetail({ capsule, onOpenTarget }: { capsule: Capsule; onOpenTarg
           ))}
         </section>
       )}
+      <CapsuleExportDialog capsule={capsule} open={exportOpen} onOpenChange={setExportOpen} />
     </>
+  );
+}
+
+function CapsuleExportDialog({ capsule, open, onOpenChange }: { capsule: Capsule; open: boolean; onOpenChange: (open: boolean) => void }) {
+  const queryClient = useQueryClient();
+  const [exportMode, setExportMode] = useState("reference_only");
+  const preview = useQuery({
+    queryKey: ["capsule-export-preview", capsule.id, exportMode],
+    queryFn: () => vaultRequest<CapsuleExportPreview>("capsules.exportPreview", { capsuleId: capsule.id, data: { export_mode: exportMode } }),
+    enabled: open
+  });
+  const exportCapsule = useMutation({
+    mutationFn: () => vaultRequest<CapsuleExportResult>("capsules.export", { capsuleId: capsule.id, data: { export_mode: exportMode } }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["capsule", capsule.id] });
+      queryClient.invalidateQueries({ queryKey: ["capsules"] });
+    }
+  });
+  const report = preview.data?.privacy_report;
+  const blocked = preview.data?.status === "blocked";
+  return (
+    <Dialog.Root open={open} onOpenChange={onOpenChange}>
+      <Dialog.Portal>
+        <Dialog.Overlay className="dialog-overlay" />
+        <Dialog.Content className="dialog-content capsule-export-dialog" aria-describedby={undefined}>
+          <div className="dialog-header">
+            <div>
+              <Dialog.Title>Export capsule</Dialog.Title>
+            </div>
+            <Dialog.Close asChild>
+              <button className="dialog-close" aria-label="Close export dialog">
+                <X size={16} />
+              </button>
+            </Dialog.Close>
+          </div>
+          <div className="capsule-export-head">
+            <strong title={capsule.name}>{capsule.name}</strong>
+            <Badge tone={blocked ? "bad" : preview.data ? "good" : "neutral"}>{blocked ? "blocked" : preview.data ? "ready" : "checking"}</Badge>
+          </div>
+          <label className="field">
+            <span>Mode</span>
+            <SelectRoot
+              value={exportMode}
+              onValueChange={(value) => {
+                setExportMode(value);
+                exportCapsule.reset();
+              }}
+            >
+              <SelectTrigger aria-label="Capsule export mode">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {["reference_only", "sanitized", "private_full", "learning", "tool", "public"].map((mode) => (
+                  <SelectItem key={mode} value={mode}>
+                    {capsuleOptionLabel(mode)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </SelectRoot>
+          </label>
+          {report && (
+            <div className="capsule-export-grid" aria-label="Capsule export preview">
+              <span><strong>{report.private_item_count}</strong> private</span>
+              <span><strong>{report.unsupported_claim_count}</strong> weak claims</span>
+              <span><strong>{report.exact_quote_count}</strong> quotes</span>
+              <span><strong>{report.estimated_record_count}</strong> records</span>
+            </div>
+          )}
+          {(report?.blockers.length ?? 0) > 0 && (
+            <div className="capsule-export-list blocked" aria-label="Export blockers">
+              {report?.blockers.map((item) => <span key={item.code}>{item.message}</span>)}
+            </div>
+          )}
+          {(report?.warnings.length ?? 0) > 0 && (
+            <div className="capsule-export-list" aria-label="Export warnings">
+              {report?.warnings.map((item) => <span key={item.code}>{item.message}</span>)}
+            </div>
+          )}
+          {exportCapsule.data && (
+            <div className="capsule-export-result" aria-label="Capsule export result">
+              <Badge tone="good">saved</Badge>
+              <span title={exportCapsule.data.file_path}>{exportCapsule.data.filename}</span>
+              <small>{formatBytes(exportCapsule.data.size_bytes)} · {middleTruncate(exportCapsule.data.sha256, 18)}</small>
+            </div>
+          )}
+          {(preview.error || exportCapsule.error) && <small className="model-test-error">{preview.error?.message || exportCapsule.error?.message}</small>}
+          <div className="capsule-attach-actions">
+            <Button type="button" variant="quiet" onClick={() => onOpenChange(false)}>
+              Close
+            </Button>
+            <Button type="button" variant="primary" disabled={!preview.data || blocked || exportCapsule.isPending} onClick={() => exportCapsule.mutate()}>
+              {exportCapsule.isPending ? "Exporting" : "Export"}
+            </Button>
+          </div>
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
   );
 }
 
