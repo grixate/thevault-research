@@ -15,6 +15,9 @@ export type VaultRoute =
   | "capsules.versions"
   | "capsules.exportPreview"
   | "capsules.export"
+  | "capsules.imports"
+  | "capsules.import"
+  | "capsules.import.get"
   | "notes.list"
   | "notes.create"
   | "notes.get"
@@ -154,6 +157,9 @@ export const allowedRoutes: Record<VaultRoute, RouteSpec> = {
   "capsules.versions": { method: "GET", path: (p) => `/capsules/${p.capsuleId}/versions` },
   "capsules.exportPreview": { method: "POST", path: (p) => `/capsules/${p.capsuleId}/export/preview`, body: (p) => p.data ?? {} },
   "capsules.export": { method: "POST", path: (p) => `/capsules/${p.capsuleId}/export`, body: (p) => p.data ?? {} },
+  "capsules.imports": { method: "GET", path: (p) => `/capsules/imports?limit=${p?.limit ?? 50}&offset=${p?.offset ?? 0}` },
+  "capsules.import": { method: "POST", path: () => "/capsules/imports", body: (p) => p ?? {} },
+  "capsules.import.get": { method: "GET", path: (p) => `/capsules/imports/${p.importId}` },
   "notes.list": { method: "GET", path: () => "/notes" },
   "notes.create": { method: "POST", path: () => "/notes", body: (p) => p },
   "notes.get": { method: "GET", path: (p) => `/notes/${p.noteId}` },

@@ -224,6 +224,17 @@ Latest capsule export verification on 2026-06-15:
 - Desktop capsule/export test path: passed.
 - Desktop production build: passed.
 
+Latest capsule import quarantine verification on 2026-06-15:
+
+- Added backend `.vaultcapsule` import quarantine.
+- Import now copies the original package into `capsules/imports/{import_id}/original.vaultcapsule`, validates safe zip paths, rejects absolute/path-traversal/symlink entries, enforces file-count and unpacked-size limits, validates `manifest-sha256.txt`, validates manifest file checksums, and writes `manifest.json`, `validation_report.json`, and `merge_plan.json` into the quarantine folder.
+- Import creates a `capsule_imports` audit row and a global event, but does not create canonical notes, sources, claims, tools, or capsules.
+- Merge plan currently reports review actions and keeps imported tools disabled by default; selective merge/review-item creation remains future work.
+- Added a compact desktop `Import` action on Capsules and a quarantine inspection view with status, source/quarantine paths, object counts, checksum summary, and merge-plan actions.
+- Focused backend capsule test: passed.
+- Desktop capsule import/export test path: passed.
+- Desktop production build: passed.
+
 Latest focused verification on 2026-06-11 before the current claim-grammar slice:
 
 - Python core tests: 125 passed.
@@ -2538,6 +2549,8 @@ Current good state:
   - manual snapshot action.
 - Backend capsule export preview and package creation exist for reference-only, sanitized, private-full, learning, tool, and public modes.
 - Desktop capsule detail has a compact Export dialog with preview and package creation.
+- Backend `.vaultcapsule` import quarantine exists with safe zip/path/checksum validation, quarantine file output, `capsule_imports` audit rows, and no canonical graph mutation.
+- Desktop Capsules has a compact Import action and quarantine inspection view.
 - Compact capsule attach entry points exist in the real workflows:
   - current Note,
   - selected Storage source,
@@ -2566,13 +2579,12 @@ Remaining tasks:
   - add export history UI,
   - add version-specific export,
   - add package format contract docs once import stabilizes.
-- Implement import quarantine:
-  - safe unzip,
-  - path traversal protection,
-  - manifest/checksum validation,
-  - disabled imported tools,
-  - merge plan/review items,
-  - no silent graph mutation.
+- Complete import merge workflow:
+  - create review items from quarantined notes, sources, claims, concepts, and tools,
+  - add selective merge decisions,
+  - keep imported tools disabled until reviewed,
+  - expose import history/details beyond the latest import result,
+  - add invalid-package UI states.
 - Add version diff.
 - Add fork/dependency workflows.
 - Add capsule-scoped Assistant mode that uses capsule items first and cites canonical evidence.
@@ -2586,7 +2598,7 @@ Acceptance evidence:
 - Export cannot proceed through unsafe modes when privacy blockers are unresolved.
 - Generated capsule notes and learning items stay reviewable and evidence-linked.
 - Browser screenshots show Capsules as a calm knowledge curation surface, not an overloaded management console.
-- Backend tests cover item references, evidence auto-inclusion, health, snapshots, export preview, export manifest/checksum files, export privacy blocking, import quarantine, and selective merge.
+- Backend tests cover item references, evidence auto-inclusion, health, snapshots, export preview, export manifest/checksum files, export privacy blocking, and import quarantine.
 - Desktop tests cover create, attach note/source/claim, snapshot, health, export preview/package creation, export blocking, and import quarantine inspection.
 
 ## Recommended Next Session Steps

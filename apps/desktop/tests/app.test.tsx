@@ -690,6 +690,7 @@ describe("App", () => {
       activity: []
     };
     let capsuleRows: any[] = [];
+    const selectFiles = vi.fn(async () => ["/tmp/acoustic-science-foundations.vaultcapsule"]);
     window.vault = {
       request: vi.fn(async (route: string) => {
         if (route === "health.get") return { ok: true, version: "0.1.0", db_ready: true, workspace_id: "wrk_default" };
@@ -740,12 +741,39 @@ describe("App", () => {
             validation_report: {}
           };
         }
+        if (route === "capsules.import") {
+          return {
+            import_id: "capimp_test",
+            status: "quarantined",
+            source_file_path: "/tmp/acoustic-science-foundations.vaultcapsule",
+            quarantine_path: "/tmp/capsules/imports/capimp_test",
+            manifest: { capsule, object_counts: { claims: 1, sources: 1, notes: 0, tools: 0 } },
+            validation_report: {
+              status: "valid",
+              file_count: 8,
+              unpacked_bytes: 4096,
+              checksum_results: [
+                { path: "manifest.json", status: "pass" },
+                { path: "data/claims.jsonl", status: "pass" }
+              ]
+            },
+            merge_plan: {
+              status: "ready_for_review",
+              capsule_name: "Acoustic Science Foundations",
+              canonical_mutation: "none",
+              object_counts: { claims: 1, sources: 1, notes: 0, tools: 0 },
+              actions: [{ target_type: "claims", count: 1, action: "create_review_items" }]
+            },
+            warnings: [],
+            created_at: "2026-06-14T12:00:00Z"
+          };
+        }
         if (route === "notes.list") return [];
         if (route === "sources.list") return [];
         if (route === "claims.list") return [];
         return [];
       }),
-      selectFiles: vi.fn(async () => [])
+      selectFiles
     };
     renderApp();
 
@@ -763,6 +791,12 @@ describe("App", () => {
     expect(await within(dialog).findByLabelText("Capsule export preview")).toBeTruthy();
     fireEvent.click(within(dialog).getByRole("button", { name: /^export$/i }));
     expect(await within(dialog).findByText("acoustic-science-foundations.vaultcapsule")).toBeTruthy();
+    fireEvent.click(within(dialog).getByRole("button", { name: "Close" }));
+    fireEvent.click(screen.getByRole("button", { name: "Import" }));
+    expect(await screen.findByLabelText("Capsule import quarantine")).toBeTruthy();
+    expect(await screen.findByText("quarantined")).toBeTruthy();
+    expect(await screen.findByText("Claims")).toBeTruthy();
+    expect(await screen.findByText("1 · Create Review Items")).toBeTruthy();
   });
 
   it("adds the current note to a capsule from the note editor", async () => {

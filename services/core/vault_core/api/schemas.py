@@ -187,6 +187,12 @@ class CapsuleExportRequest(BaseModel):
     export_mode: str = "reference_only"
 
 
+class CapsuleImportRequest(BaseModel):
+    file_path: str = Field(min_length=1)
+    max_file_count: int = Field(default=5000, ge=1, le=50000)
+    max_unpacked_bytes: int = Field(default=500 * 1024 * 1024, ge=1, le=5 * 1024 * 1024 * 1024)
+
+
 class ToolProposeRequest(BaseModel):
     name: str
     description: str

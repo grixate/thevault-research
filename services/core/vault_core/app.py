@@ -60,6 +60,7 @@ from vault_core.api.schemas import (
     BulkReviewRequest,
     CapsuleCreate,
     CapsuleExportRequest,
+    CapsuleImportRequest,
     CapsuleItemsAddRequest,
     CapsuleSnapshotRequest,
     CapsuleUpdate,
@@ -159,8 +160,11 @@ from vault_core.capsules.service import (
     create_capsule,
     create_capsule_snapshot,
     export_capsule_package,
+    get_capsule_import_detail,
     get_capsule_detail,
+    import_capsule_quarantine,
     list_capsule_items,
+    list_capsule_imports,
     list_capsule_versions,
     list_capsules,
     preview_capsule_export,
@@ -417,6 +421,19 @@ def register_routes(app: FastAPI) -> None:
     @app.post("/capsules", dependencies=[auth])
     def capsule_create(req: CapsuleCreate, db: VaultDatabase = Depends(get_db)) -> dict[str, Any]:
         return create_capsule(db, req.model_dump())
+
+    @app.get("/capsules/imports", dependencies=[auth])
+    def capsule_imports(limit: int = 50, offset: int = 0, db: VaultDatabase = Depends(get_db)) -> dict[str, Any]:
+        return list_capsule_imports(db, limit=limit, offset=offset)
+
+    @app.get("/capsules/imports/{import_id}", dependencies=[auth])
+    def capsule_import_detail(import_id: str, db: VaultDatabase = Depends(get_db)) -> dict[str, Any]:
+        return get_capsule_import_detail(db, import_id)
+
+    @app.post("/capsules/imports", dependencies=[auth])
+    def capsule_import(req: CapsuleImportRequest, request: Request, db: VaultDatabase = Depends(get_db)) -> dict[str, Any]:
+        settings: Settings = request.app.state.settings
+        return import_capsule_quarantine(db, settings.data_dir / "capsules" / "imports", req.model_dump())
 
     @app.get("/capsules/{capsule_id}", dependencies=[auth])
     def capsule_detail(capsule_id: str, db: VaultDatabase = Depends(get_db)) -> dict[str, Any]:

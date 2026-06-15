@@ -107,6 +107,7 @@ import type {
   Capsule,
   CapsuleExportPreview,
   CapsuleExportResult,
+  CapsuleImportResult,
   CapsuleListResponse,
   CapsuleItem,
   Claim,
@@ -6398,6 +6399,7 @@ function CapsulesView() {
   const setSelectedClaimId = useUIStore((state) => state.setSelectedClaimId);
   const [query, setQuery] = useState("");
   const [createOpen, setCreateOpen] = useState(false);
+  const [importResult, setImportResult] = useState<CapsuleImportResult | null>(null);
   const [draft, setDraft] = useState({
     name: "",
     description: "",
@@ -6455,6 +6457,19 @@ function CapsulesView() {
       queryClient.invalidateQueries({ queryKey: ["stats"] });
     }
   });
+  const importCapsule = useMutation({
+    mutationFn: async () => {
+      const files = await selectFiles();
+      if (!files[0]) return null;
+      return vaultRequest<CapsuleImportResult>("capsules.import", { file_path: files[0] });
+    },
+    onSuccess: (result) => {
+      if (!result) return;
+      setImportResult(result);
+      queryClient.invalidateQueries({ queryKey: ["capsule-imports"] });
+      queryClient.invalidateQueries({ queryKey: ["events"] });
+    }
+  });
   function openCapsuleTarget(item: CapsuleItem) {
     if (item.target_type === "note") {
       setSelectedNoteId(item.target_id);
@@ -6473,9 +6488,14 @@ function CapsulesView() {
         <SectionHeader
           title="Capsules"
           actions={
-            <Button icon={<Plus size={16} />} onClick={() => setCreateOpen(true)}>
-              New
-            </Button>
+            <>
+              <Button icon={<Import size={16} />} variant="quiet" disabled={importCapsule.isPending} onClick={() => importCapsule.mutate()}>
+                Import
+              </Button>
+              <Button icon={<Plus size={16} />} onClick={() => setCreateOpen(true)}>
+                New
+              </Button>
+            </>
           }
         />
         <label className="source-list-search">
@@ -6509,7 +6529,13 @@ function CapsulesView() {
         </div>
       </Panel>
       <Panel className="capsule-detail detail-pane">
-        {detail.data ? <CapsuleDetail capsule={detail.data} onOpenTarget={openCapsuleTarget} /> : <CapsuleEmptyDetail onCreate={() => setCreateOpen(true)} />}
+        {importResult ? (
+          <CapsuleImportDetail result={importResult} onClose={() => setImportResult(null)} />
+        ) : detail.data ? (
+          <CapsuleDetail capsule={detail.data} onOpenTarget={openCapsuleTarget} />
+        ) : (
+          <CapsuleEmptyDetail onCreate={() => setCreateOpen(true)} />
+        )}
       </Panel>
       <Dialog.Root open={createOpen} onOpenChange={setCreateOpen}>
         <Dialog.Portal>
@@ -6614,6 +6640,60 @@ function CapsuleEmptyDetail({ onCreate }: { onCreate: () => void }) {
         New
       </Button>
     </div>
+  );
+}
+
+function CapsuleImportDetail({ result, onClose }: { result: CapsuleImportResult; onClose: () => void }) {
+  const capsule = result.manifest?.capsule ?? {};
+  const mergePlan = result.merge_plan ?? {};
+  const counts = (mergePlan.object_counts ?? {}) as Record<string, number>;
+  const actions = Array.isArray(mergePlan.actions) ? mergePlan.actions : [];
+  const validation = result.validation_report ?? {};
+  const checksumResults = Array.isArray(validation.checksum_results) ? validation.checksum_results : [];
+  return (
+    <>
+      <SectionHeader
+        title={capsule.name ?? "Imported capsule"}
+        eyebrow="quarantine"
+        actions={
+          <Button icon={<X size={15} />} variant="quiet" onClick={onClose}>
+            Close
+          </Button>
+        }
+      />
+      <div className="capsule-import-summary" aria-label="Capsule import quarantine">
+        <Badge tone={result.status === "quarantined" ? "warn" : "bad"}>{result.status}</Badge>
+        <span title={result.source_file_path}>{middleTruncate(result.source_file_path, 64)}</span>
+        <small title={result.quarantine_path}>{middleTruncate(result.quarantine_path, 64)}</small>
+      </div>
+      <div className="capsule-export-grid" aria-label="Imported capsule counts">
+        <span><strong>{counts.claims ?? 0}</strong> claims</span>
+        <span><strong>{counts.sources ?? 0}</strong> sources</span>
+        <span><strong>{counts.notes ?? 0}</strong> notes</span>
+        <span><strong>{counts.tools ?? 0}</strong> tools</span>
+      </div>
+      <section className="capsule-import-plan" aria-label="Capsule import merge plan">
+        {actions.length === 0 && <p className="empty-copy">No merge actions.</p>}
+        {actions.map((action: any) => (
+          <article key={`${action.target_type}-${action.action}`}>
+            <strong>{capsuleOptionLabel(action.target_type)}</strong>
+            <span>{action.count} · {capsuleOptionLabel(action.action)}</span>
+          </article>
+        ))}
+      </section>
+      <div className="capsule-import-summary secondary" aria-label="Capsule import validation">
+        <span>{checksumResults.filter((item: any) => item.status === "pass").length}/{checksumResults.length} checksums</span>
+        <span>{String(validation.file_count ?? 0)} files</span>
+        <span>{formatBytes(Number(validation.unpacked_bytes ?? 0))}</span>
+      </div>
+      {Array.isArray(result.warnings) && result.warnings.length > 0 && (
+        <div className="capsule-export-list" aria-label="Capsule import warnings">
+          {result.warnings.map((warning, index) => (
+            <span key={typeof warning === "string" ? warning : warning.code ?? index}>{typeof warning === "string" ? warning : warning.message}</span>
+          ))}
+        </div>
+      )}
+    </>
   );
 }
 

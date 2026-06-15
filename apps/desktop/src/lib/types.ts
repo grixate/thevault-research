@@ -245,6 +245,18 @@ export type CapsuleExportResult = CapsuleExportPreview & {
   created_at: string;
 };
 
+export type CapsuleImportResult = {
+  import_id: string;
+  status: "quarantined" | "invalid" | string;
+  source_file_path: string;
+  quarantine_path: string;
+  manifest: Record<string, any>;
+  validation_report: Record<string, any>;
+  merge_plan: Record<string, any>;
+  warnings: Array<{ code?: string; message?: string } | string>;
+  created_at: string;
+};
+
 export type AIProviderInfo = {
   id: string;
   display_name: string;

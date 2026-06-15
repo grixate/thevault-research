@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 import re
+import shutil
 import sqlite3
 import zipfile
 from pathlib import Path
@@ -15,6 +16,7 @@ from vault_core.db.session import VaultDatabase, dumps, loads, new_id, now_iso, 
 APPROVED_CLAIM_STATUSES = {"supported", "user_confirmed", "verified"}
 UNREVIEWED_CLAIM_STATUSES = {"proposed", "needs_review", "weakly_supported"}
 CAPSULE_EXPORT_MODES = {"reference_only", "sanitized", "private_full", "learning", "tool", "public"}
+CAPSULE_IMPORT_REQUIRED_FILES = {"manifest.json", "manifest-sha256.txt"}
 SUPPORTED_TARGET_TYPES = {
     "source",
     "source_block",
@@ -515,6 +517,95 @@ def export_capsule_package(db: VaultDatabase, capsule_id: str, output_dir: Path,
         }
 
 
+def import_capsule_quarantine(db: VaultDatabase, imports_dir: Path, payload: dict[str, Any]) -> dict[str, Any]:
+    source_path = Path(str(payload.get("file_path") or "")).expanduser()
+    if not source_path.exists() or not source_path.is_file():
+        raise HTTPException(404, "Capsule package file not found")
+    if source_path.suffix != ".vaultcapsule":
+        raise HTTPException(422, "Capsule imports must use a .vaultcapsule package")
+    max_file_count = int(payload.get("max_file_count") or 5000)
+    max_unpacked_bytes = int(payload.get("max_unpacked_bytes") or 500 * 1024 * 1024)
+    import_id = new_id("capimp")
+    ts = now_iso()
+    quarantine_dir = imports_dir / import_id
+    quarantine_dir.mkdir(parents=True, exist_ok=True)
+    original_path = quarantine_dir / "original.vaultcapsule"
+    shutil.copyfile(source_path, original_path)
+    validation = validate_capsule_import_package(original_path, max_file_count=max_file_count, max_unpacked_bytes=max_unpacked_bytes)
+    manifest = validation.get("manifest") or {}
+    merge_plan = build_capsule_import_merge_plan(manifest, validation)
+    status = "quarantined" if validation["status"] == "valid" else "invalid"
+    warnings = validation["warnings"] + merge_plan.get("warnings", [])
+    write_import_quarantine_files(quarantine_dir, manifest, validation, merge_plan)
+    with db.connect() as conn:
+        conn.execute(
+            """
+            INSERT INTO capsule_imports
+              (id, workspace_id, source_file_path, quarantine_path, status,
+               manifest_json, validation_report_json, merge_plan_json,
+               warnings_json, error, created_at, validated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                import_id,
+                db.workspace_id,
+                str(source_path),
+                str(quarantine_dir),
+                status,
+                dumps(manifest),
+                dumps(validation),
+                dumps(merge_plan),
+                dumps(warnings),
+                None if status == "quarantined" else "; ".join(validation["errors"]),
+                ts,
+                ts,
+            ),
+        )
+        db.event(conn, "capsule.import_quarantined", "capsule_import", import_id, {"status": status, "source_file_path": str(source_path)}, "user")
+    return {
+        "import_id": import_id,
+        "status": status,
+        "source_file_path": str(source_path),
+        "quarantine_path": str(quarantine_dir),
+        "manifest": manifest,
+        "validation_report": validation,
+        "merge_plan": merge_plan,
+        "warnings": warnings,
+        "created_at": ts,
+    }
+
+
+def get_capsule_import_detail(db: VaultDatabase, import_id: str) -> dict[str, Any]:
+    with db.connect() as conn:
+        row = conn.execute("SELECT * FROM capsule_imports WHERE id=? AND workspace_id=?", (import_id, db.workspace_id)).fetchone()
+        if not row:
+            raise HTTPException(404, "Capsule import not found")
+        record = dict(row)
+        record["manifest"] = loads(record.pop("manifest_json"), {})
+        record["validation_report"] = loads(record.pop("validation_report_json"), {})
+        record["merge_plan"] = loads(record.pop("merge_plan_json"), {})
+        record["warnings"] = loads(record.pop("warnings_json"), [])
+        return record
+
+
+def list_capsule_imports(db: VaultDatabase, limit: int = 50, offset: int = 0) -> dict[str, Any]:
+    with db.connect() as conn:
+        rows = conn.execute(
+            "SELECT * FROM capsule_imports WHERE workspace_id=? ORDER BY created_at DESC LIMIT ? OFFSET ?",
+            (db.workspace_id, limit, offset),
+        ).fetchall()
+        total = int(conn.execute("SELECT COUNT(*) FROM capsule_imports WHERE workspace_id=?", (db.workspace_id,)).fetchone()[0])
+        items = []
+        for row in rows:
+            record = dict(row)
+            record["manifest"] = loads(record.pop("manifest_json"), {})
+            record["validation_report"] = loads(record.pop("validation_report_json"), {})
+            record["merge_plan"] = loads(record.pop("merge_plan_json"), {})
+            record["warnings"] = loads(record.pop("warnings_json"), [])
+            items.append(record)
+        return {"items": items, "total": total}
+
+
 def preview_from_package(capsule_id: str, export_mode: str, package: dict[str, Any]) -> dict[str, Any]:
     return {
         "capsule_id": capsule_id,
@@ -525,6 +616,124 @@ def preview_from_package(capsule_id: str, export_mode: str, package: dict[str, A
         "privacy_report": package["privacy_report"],
         "validation_report": package["validation_report"],
     }
+
+
+def validate_capsule_import_package(package_path: Path, max_file_count: int, max_unpacked_bytes: int) -> dict[str, Any]:
+    errors: list[str] = []
+    warnings: list[dict[str, Any]] = []
+    manifest: dict[str, Any] = {}
+    file_count = 0
+    unpacked_bytes = 0
+    checksum_results: list[dict[str, Any]] = []
+    try:
+        with zipfile.ZipFile(package_path) as archive:
+            infos = archive.infolist()
+            file_count = len([info for info in infos if not info.is_dir()])
+            if file_count > max_file_count:
+                errors.append(f"Package has {file_count} files, above the limit of {max_file_count}.")
+            names = {info.filename for info in infos if not info.is_dir()}
+            missing = sorted(CAPSULE_IMPORT_REQUIRED_FILES - names)
+            if missing:
+                errors.append(f"Package is missing required files: {', '.join(missing)}.")
+            for info in infos:
+                if info.is_dir():
+                    continue
+                unpacked_bytes += int(info.file_size)
+                path_error = validate_capsule_archive_path(info)
+                if path_error:
+                    errors.append(path_error)
+            if unpacked_bytes > max_unpacked_bytes:
+                errors.append(f"Package expands to {unpacked_bytes} bytes, above the limit of {max_unpacked_bytes}.")
+            if "manifest.json" in names:
+                manifest_bytes = archive.read("manifest.json")
+                try:
+                    manifest = json.loads(manifest_bytes.decode("utf-8"))
+                except json.JSONDecodeError as exc:
+                    errors.append(f"manifest.json is invalid JSON: {exc}")
+                if "manifest-sha256.txt" in names:
+                    expected = archive.read("manifest-sha256.txt").decode("utf-8", errors="replace").split()[0].strip()
+                    actual = hashlib.sha256(manifest_bytes).hexdigest()
+                    if expected != actual:
+                        errors.append("manifest-sha256.txt does not match manifest.json.")
+                    checksum_results.append({"path": "manifest.json", "status": "pass" if expected == actual else "failed", "sha256": actual})
+            checksums = manifest.get("checksums") if isinstance(manifest, dict) else {}
+            if isinstance(checksums, dict):
+                for path, expected_sha in checksums.items():
+                    if not isinstance(path, str) or not isinstance(expected_sha, str):
+                        errors.append("Manifest checksums must map paths to SHA-256 strings.")
+                        continue
+                    if path not in names:
+                        errors.append(f"Manifest checksum references missing file: {path}.")
+                        checksum_results.append({"path": path, "status": "missing"})
+                        continue
+                    actual_sha = hashlib.sha256(archive.read(path)).hexdigest()
+                    status = "pass" if actual_sha == expected_sha else "failed"
+                    if status == "failed":
+                        errors.append(f"Checksum mismatch for {path}.")
+                    checksum_results.append({"path": path, "status": status, "sha256": actual_sha})
+            else:
+                warnings.append({"code": "missing_file_checksums", "message": "Manifest does not include file checksums."})
+    except zipfile.BadZipFile as exc:
+        errors.append(f"Package is not a valid zip archive: {exc}")
+    return {
+        "status": "valid" if not errors else "invalid",
+        "package_path": str(package_path),
+        "file_count": file_count,
+        "unpacked_bytes": unpacked_bytes,
+        "manifest": manifest,
+        "checksum_results": checksum_results,
+        "warnings": warnings,
+        "errors": errors,
+    }
+
+
+def validate_capsule_archive_path(info: zipfile.ZipInfo) -> str | None:
+    name = info.filename
+    if name.startswith("/") or name.startswith("\\"):
+        return f"Archive path is absolute: {name}."
+    path = Path(name)
+    if any(part in {"..", ""} for part in path.parts):
+        return f"Archive path is unsafe: {name}."
+    if info.external_attr >> 16 & 0o170000 == 0o120000:
+        return f"Archive entry is a symlink: {name}."
+    return None
+
+
+def build_capsule_import_merge_plan(manifest: dict[str, Any], validation: dict[str, Any]) -> dict[str, Any]:
+    capsule = manifest.get("capsule") if isinstance(manifest, dict) else {}
+    object_counts = manifest.get("object_counts") if isinstance(manifest, dict) else {}
+    object_counts = object_counts if isinstance(object_counts, dict) else {}
+    actions = []
+    for key, label in (
+        ("notes", "notes"),
+        ("sources", "sources"),
+        ("claims", "claims"),
+        ("kg_nodes", "concepts"),
+        ("evidence_links", "evidence links"),
+        ("learning_items", "learning items"),
+        ("tools", "tools"),
+    ):
+        count = int(object_counts.get(key) or 0)
+        if count:
+            action = "review_imported_tools_disabled" if key == "tools" else "create_review_items"
+            actions.append({"target_type": key, "count": count, "action": action})
+    warnings = [{"code": "tools_disabled_until_reviewed", "message": "Imported tools stay disabled until reviewed."}] if int(object_counts.get("tools") or 0) else []
+    return {
+        "status": "ready_for_review" if validation["status"] == "valid" else "blocked",
+        "capsule_name": capsule.get("name") if isinstance(capsule, dict) else None,
+        "capsule_slug": capsule.get("slug") if isinstance(capsule, dict) else None,
+        "object_counts": object_counts,
+        "actions": actions,
+        "canonical_mutation": "none",
+        "tool_default_status": "disabled_imported",
+        "warnings": warnings,
+    }
+
+
+def write_import_quarantine_files(quarantine_dir: Path, manifest: dict[str, Any], validation: dict[str, Any], merge_plan: dict[str, Any]) -> None:
+    (quarantine_dir / "manifest.json").write_bytes(stable_json_bytes(manifest))
+    (quarantine_dir / "validation_report.json").write_bytes(stable_json_bytes(validation))
+    (quarantine_dir / "merge_plan.json").write_bytes(stable_json_bytes(merge_plan))
 
 
 def normalize_export_mode(value: Any) -> str:

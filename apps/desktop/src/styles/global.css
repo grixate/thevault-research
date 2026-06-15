@@ -1172,6 +1172,69 @@ textarea:not(.ui-textarea) {
   white-space: nowrap;
 }
 
+.capsule-import-summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding-block: 8px 10px;
+  border-bottom: 1px solid var(--line);
+}
+
+.capsule-import-summary span,
+.capsule-import-summary small {
+  min-width: 0;
+  color: var(--muted);
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.capsule-import-summary.secondary {
+  flex-wrap: wrap;
+  padding-block: 10px;
+  border-block: 1px solid var(--line);
+}
+
+.capsule-import-plan {
+  display: grid;
+  gap: 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.capsule-import-plan article {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: baseline;
+  min-width: 0;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.capsule-import-plan article:last-child {
+  border-bottom: 0;
+}
+
+.capsule-import-plan strong,
+.capsule-import-plan span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.capsule-import-plan strong {
+  color: var(--foreground);
+  font-size: 13px;
+}
+
+.capsule-import-plan span {
+  color: var(--muted);
+  font-size: 12px;
+}
+
 .wide-panel,
 .detail-pane,
 .editor-pane,

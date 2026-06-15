@@ -735,6 +735,21 @@ def test_capsules_reference_global_objects_and_snapshot_health(client):
     assert blocked_preview["status"] == "blocked"
     assert blocked_preview["privacy_report"]["blockers"][0]["code"] == "private_items"
 
+    imported_capsule = client.post("/capsules/imports", json={"file_path": str(export_path)}).json()
+    assert imported_capsule["status"] == "quarantined"
+    assert Path(imported_capsule["quarantine_path"]).exists()
+    assert imported_capsule["manifest"]["capsule"]["id"] == capsule["id"]
+    assert imported_capsule["validation_report"]["status"] == "valid"
+    assert imported_capsule["merge_plan"]["canonical_mutation"] == "none"
+    assert any(action["target_type"] == "claims" and action["action"] == "create_review_items" for action in imported_capsule["merge_plan"]["actions"])
+    assert (Path(imported_capsule["quarantine_path"]) / "original.vaultcapsule").exists()
+    assert (Path(imported_capsule["quarantine_path"]) / "validation_report.json").exists()
+    imports = client.get("/capsules/imports").json()
+    assert imports["total"] == 1
+    import_detail = client.get(f"/capsules/imports/{imported_capsule['import_id']}").json()
+    assert import_detail["status"] == "quarantined"
+    assert client.get("/capsules").json()["total"] == 1
+
 
 def test_bulk_review_rejects_pending_items_with_shared_decision_note(client):
     for index in range(2):
