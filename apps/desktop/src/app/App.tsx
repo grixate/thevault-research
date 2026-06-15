@@ -5689,18 +5689,21 @@ function sourceBlockNoteContent(source: Source, block: SourceBlock, title: strin
 function reviewItemTone(itemType: string): "good" | "warn" | "bad" | "info" | "neutral" {
   if (itemType === "extraction_quarantine") return "warn";
   if (itemType === "new_claim") return "info";
+  if (itemType.startsWith("capsule_import_")) return "info";
   if (itemType === "assistant_missing_evidence") return "bad";
   if (itemType === "learning_deck") return "good";
   return "neutral";
 }
 
 function reviewItemLabel(itemType: string): string {
+  if (itemType.startsWith("capsule_import_")) return "Import";
   return itemType.replace(/_/g, " ");
 }
 
 function reviewDecisionPrompt(item: ReviewItem): string {
   if (item.item_type === "new_claim") return "Approve only if the exact quote supports the claim.";
   if (item.item_type === "new_object" || item.item_type === "new_concept") return "Approve if this object should become active graph knowledge.";
+  if (item.item_type.startsWith("capsule_import_")) return "Approve to merge this imported item into the workspace. Imported claims stay weak until evidence is reviewed.";
   if (item.item_type === "assistant_missing_evidence") return "Reject after you have handled the missing-evidence follow-up, or leave pending.";
   if (item.item_type === "learning_deck") return "Approve to add these learning items.";
   return item.status === "pending" ? "Record why this proposal is accepted or rejected." : "Decision already recorded.";
@@ -5750,6 +5753,7 @@ function reviewScopeLabel(item: ReviewItem): string {
   const sourceId = String(payload.source_id ?? stringList(payload.source_ids)[0] ?? stringList(payload.source_refs)[0] ?? "");
   const claimId = String(payload.claim_id ?? "");
   if (item.created_by_job_id) return `job ${shortIdentifier(item.created_by_job_id)}`;
+  if (payload.capsule_import_id) return `import ${shortIdentifier(String(payload.capsule_import_id))}`;
   if (sourceId) return `source ${shortIdentifier(sourceId)}`;
   if (claimId) return `claim ${shortIdentifier(claimId)}`;
   return "manual";

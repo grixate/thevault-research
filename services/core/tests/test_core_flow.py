@@ -758,6 +758,38 @@ def test_capsules_reference_global_objects_and_snapshot_health(client):
     imported_reviews = [item for item in pending_reviews if item["item_type"].startswith("capsule_import_")]
     assert {item["item_type"] for item in imported_reviews} >= {"capsule_import_claim", "capsule_import_note", "capsule_import_source"}
     assert all(item["payload"]["canonical_mutation"] == "none" for item in imported_reviews)
+    counts_before_merge = {
+        "notes": len(client.get("/notes").json()),
+        "sources": len(client.get("/sources").json()),
+        "claims": len(client.get("/claims").json()),
+    }
+    imported_by_type = {item["item_type"]: item for item in imported_reviews}
+    approved_import_note = client.post(
+        f"/review/items/{imported_by_type['capsule_import_note']['id']}/approve",
+        json={"decision_note": "Keep this imported note linked to the existing note."},
+    ).json()
+    assert approved_import_note["created"]["merge_action"] == "linked_existing"
+    assert approved_import_note["created"]["note_id"] == note["id"]
+    approved_import_source = client.post(
+        f"/review/items/{imported_by_type['capsule_import_source']['id']}/approve",
+        json={"decision_note": "Keep this imported source linked to the existing source."},
+    ).json()
+    assert approved_import_source["created"]["merge_action"] == "linked_existing"
+    assert approved_import_source["created"]["source_id"] == imported["source"]["id"]
+    approved_import_claim = client.post(
+        f"/review/items/{imported_by_type['capsule_import_claim']['id']}/approve",
+        json={"decision_note": "Keep this imported claim linked to the existing claim."},
+    ).json()
+    assert approved_import_claim["created"]["merge_action"] == "linked_existing"
+    assert approved_import_claim["created"]["claim_id"] == claim_id
+    assert counts_before_merge == {
+        "notes": len(client.get("/notes").json()),
+        "sources": len(client.get("/sources").json()),
+        "claims": len(client.get("/claims").json()),
+    }
+    import_after_merge = client.get(f"/capsules/imports/{imported_capsule['import_id']}").json()
+    assert import_after_merge["status"] == "partially_applied"
+    assert import_after_merge["merge_plan"]["merged_item_count"] == 3
     duplicate_review_result = client.post(f"/capsules/imports/{imported_capsule['import_id']}/review-items").json()
     assert duplicate_review_result["created_review_items"] == 0
     assert duplicate_review_result["skipped_duplicates"] >= review_result["created_review_items"]

@@ -155,6 +155,7 @@ from vault_core.ai.rerankers.local_cross_encoder import LocalCrossEncoderReranke
 from vault_core.ai.setup import ai_setup_status
 from vault_core.ai.setup_runner import run_ai_setup
 from vault_core.capsules.service import (
+    approve_capsule_import_review_item,
     add_capsule_items,
     archive_capsule,
     create_capsule,
@@ -2150,6 +2151,8 @@ def register_routes(app: FastAPI) -> None:
                     raise HTTPException(404, "Claim not found")
                 conn.execute("UPDATE claims SET status=?, updated_at=? WHERE id=?", (suggested, ts, claim_id))
                 created = {"claim_id": claim_id, "status": suggested}
+            elif str(item["item_type"]).startswith("capsule_import_"):
+                created = approve_capsule_import_review_item(conn, db, payload, req.decision_note, ts)
             else:
                 created = {"approved_payload": payload}
             conn.execute(

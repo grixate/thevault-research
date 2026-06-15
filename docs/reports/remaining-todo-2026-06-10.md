@@ -2554,6 +2554,9 @@ Current good state:
 - Quarantined imports can now create pending Review items for imported claims, notes, sources, concepts, and tools without mutating canonical graph objects.
 - Import review-item creation is idempotent: repeated runs skip already-created targets and keep the import in `review_ready`.
 - Desktop quarantine inspection now has a compact `Review items` handoff and `Open Review` action.
+- Review approval can now selectively merge individual imported notes, sources, claims, concepts, and tools.
+- Imported objects link to an existing local object when the original ID already exists, instead of duplicating canonical graph objects.
+- Imported claims are merged as `weakly_supported` unless they already exist locally; imported tools are created disabled.
 - Compact capsule attach entry points exist in the real workflows:
   - current Note,
   - selected Storage source,
@@ -2583,9 +2586,9 @@ Remaining tasks:
   - add version-specific export,
   - add package format contract docs once import stabilizes.
 - Complete import merge workflow:
-  - add selective merge decisions,
-  - add approval handlers that can merge selected imported notes, sources, claims, concepts, and tools safely,
-  - keep imported tools disabled until reviewed,
+  - add conflict-aware selective merge UI for imported objects that do not already exist locally,
+  - add richer merge decisions for evidence links, source blocks, graph edges, and capsule membership,
+  - add an explicit enable step for reviewed imported tools,
   - expose import history/details beyond the latest import result,
   - add invalid-package UI states.
 - Add version diff.
@@ -2601,7 +2604,7 @@ Acceptance evidence:
 - Export cannot proceed through unsafe modes when privacy blockers are unresolved.
 - Generated capsule notes and learning items stay reviewable and evidence-linked.
 - Browser screenshots show Capsules as a calm knowledge curation surface, not an overloaded management console.
-- Backend tests cover item references, evidence auto-inclusion, health, snapshots, export preview, export manifest/checksum files, export privacy blocking, import quarantine, and import review-item creation.
+- Backend tests cover item references, evidence auto-inclusion, health, snapshots, export preview, export manifest/checksum files, export privacy blocking, import quarantine, import review-item creation, and selective merge approval for existing local objects.
 - Desktop tests cover create, attach note/source/claim, snapshot, health, export preview/package creation, export blocking, import quarantine inspection, and the Review handoff.
 
 ## Recommended Next Session Steps

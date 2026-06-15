@@ -612,7 +612,7 @@ def create_capsule_import_review_items(db: VaultDatabase, import_id: str) -> dic
         row = conn.execute("SELECT * FROM capsule_imports WHERE id=? AND workspace_id=?", (import_id, db.workspace_id)).fetchone()
         if not row:
             raise HTTPException(404, "Capsule import not found")
-        if row["status"] not in {"quarantined", "review_ready"}:
+        if row["status"] not in {"quarantined", "review_ready", "partially_applied"}:
             raise HTTPException(409, "Only quarantined capsule imports can create review items")
         quarantine_path = Path(row["quarantine_path"] or "")
         package_path = quarantine_path / "original.vaultcapsule"
@@ -649,16 +649,17 @@ def create_capsule_import_review_items(db: VaultDatabase, import_id: str) -> dic
             created_ids.append(review_id)
             existing.add(key)
         merge_plan = loads(row["merge_plan_json"], {})
-        merge_plan["status"] = "review_items_created" if created_ids or skipped else merge_plan.get("status", "ready_for_review")
+        next_status = "partially_applied" if row["status"] == "partially_applied" else "review_ready"
+        merge_plan["status"] = "partially_applied" if next_status == "partially_applied" else ("review_items_created" if created_ids or skipped else merge_plan.get("status", "ready_for_review"))
         merge_plan["review_item_ids"] = sorted(set([*merge_plan.get("review_item_ids", []), *created_ids]))
         merge_plan["created_review_item_count"] = len(merge_plan["review_item_ids"])
         conn.execute(
             """
             UPDATE capsule_imports
-            SET status='review_ready', merge_plan_json=?, warnings_json=?, validated_at=?
+            SET status=?, merge_plan_json=?, warnings_json=?, validated_at=?
             WHERE id=?
             """,
-            (dumps(merge_plan), row["warnings_json"], ts, import_id),
+            (next_status, dumps(merge_plan), row["warnings_json"], ts, import_id),
         )
         db.event(
             conn,
@@ -670,12 +671,305 @@ def create_capsule_import_review_items(db: VaultDatabase, import_id: str) -> dic
         )
         return {
             "import_id": import_id,
-            "status": "review_ready",
+            "status": next_status,
             "created_review_items": len(created_ids),
             "skipped_duplicates": skipped,
             "review_item_ids": created_ids,
             "merge_plan": merge_plan,
         }
+
+
+def approve_capsule_import_review_item(
+    conn: sqlite3.Connection,
+    db: VaultDatabase,
+    payload: dict[str, Any],
+    decision_note: str | None,
+    ts: str,
+) -> dict[str, Any]:
+    if payload.get("type") != "capsule_import":
+        raise HTTPException(422, "Review item is not a capsule import candidate")
+    import_id = str(payload.get("capsule_import_id") or "")
+    target_type = str(payload.get("import_target_type") or "")
+    original_id = str(payload.get("import_target_id") or "")
+    record = payload.get("record") if isinstance(payload.get("record"), dict) else {}
+    if not import_id or not target_type or not original_id:
+        raise HTTPException(422, "Capsule import review item is missing merge target metadata")
+    imported = conn.execute("SELECT id FROM capsule_imports WHERE id=? AND workspace_id=?", (import_id, db.workspace_id)).fetchone()
+    if not imported:
+        raise HTTPException(404, "Capsule import not found")
+
+    if target_type == "source":
+        created = merge_imported_source(conn, db, import_id, original_id, record, ts)
+    elif target_type == "note":
+        created = merge_imported_note(conn, db, import_id, original_id, record, ts)
+    elif target_type == "claim":
+        created = merge_imported_claim(conn, db, import_id, original_id, record, ts)
+    elif target_type == "kg_node":
+        created = merge_imported_kg_node(conn, db, import_id, original_id, record, ts)
+    elif target_type == "tool":
+        created = merge_imported_tool(conn, db, import_id, original_id, record, ts)
+    else:
+        raise HTTPException(422, f"Unsupported capsule import target type: {target_type}")
+
+    merge_record = {
+        "import_target_type": target_type,
+        "import_target_id": original_id,
+        "canonical_target_type": created["target_type"],
+        "canonical_target_id": created["target_id"],
+        "action": created["merge_action"],
+        "decision_note": decision_note,
+        "decided_at": ts,
+    }
+    record_capsule_import_merge_decision(conn, db.workspace_id, import_id, merge_record, ts)
+    return {"capsule_import_id": import_id, **created}
+
+
+def merge_imported_source(conn: sqlite3.Connection, db: VaultDatabase, import_id: str, original_id: str, record: dict[str, Any], ts: str) -> dict[str, Any]:
+    existing = local_row_by_original_id(conn, "sources", db.workspace_id, original_id)
+    if existing:
+        return {"target_type": "source", "target_id": existing["id"], "source_id": existing["id"], "merge_action": "linked_existing"}
+    source_id = new_id("src")
+    metadata = merge_import_metadata(record.get("metadata"), import_id, original_id, "source")
+    conn.execute(
+        """
+        INSERT INTO sources
+          (id, workspace_id, type, title, uri, content_hash, raw_path, extracted_text_path,
+           trust_level, language, metadata_json, status, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, NULL, NULL, ?, ?, ?, 'active', ?, ?)
+        """,
+        (
+            source_id,
+            db.workspace_id,
+            str(record.get("type") or "capsule_import"),
+            str(record.get("title") or "Imported source"),
+            record.get("uri"),
+            str(record.get("content_hash") or capsule_import_content_hash(record)),
+            str(record.get("trust_level") or "unknown"),
+            record.get("language"),
+            dumps(metadata),
+            ts,
+            ts,
+        ),
+    )
+    return {"target_type": "source", "target_id": source_id, "source_id": source_id, "merge_action": "created"}
+
+
+def merge_imported_note(conn: sqlite3.Connection, db: VaultDatabase, import_id: str, original_id: str, record: dict[str, Any], ts: str) -> dict[str, Any]:
+    existing = local_row_by_original_id(conn, "notes", db.workspace_id, original_id)
+    if existing:
+        return {"target_type": "note", "target_id": existing["id"], "note_id": existing["id"], "merge_action": "linked_existing"}
+    note_id = new_id("note")
+    source_id = new_id("src")
+    title = str(record.get("title") or "Imported note")
+    markdown = str(record.get("content_markdown") or title)
+    content = record.get("content") if isinstance(record.get("content"), dict) else {}
+    metadata = merge_import_metadata({"note_id": note_id}, import_id, original_id, "note")
+    conn.execute(
+        """
+        INSERT INTO sources
+          (id, workspace_id, type, title, content_hash, trust_level, metadata_json, status, created_at, updated_at)
+        VALUES (?, ?, 'note', ?, ?, 'unknown', ?, 'active', ?, ?)
+        """,
+        (source_id, db.workspace_id, title, capsule_import_content_hash(markdown), dumps(metadata), ts, ts),
+    )
+    conn.execute(
+        """
+        INSERT INTO notes
+          (id, workspace_id, source_id, title, content_json, content_markdown, origin, status,
+           parent_note_id, version, created_by, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, 'capsule_import', 'active', ?, 1, 'user', ?, ?)
+        """,
+        (note_id, db.workspace_id, source_id, title, dumps(content), markdown, original_id, ts, ts),
+    )
+    conn.execute(
+        """
+        INSERT INTO note_versions (id, note_id, version, content_json, content_markdown, created_by, created_at)
+        VALUES (?, ?, 1, ?, ?, 'user', ?)
+        """,
+        (new_id("ver"), note_id, dumps(content), markdown, ts),
+    )
+    insert_import_source_block(conn, source_id, title, markdown, ts)
+    return {"target_type": "note", "target_id": note_id, "note_id": note_id, "source_id": source_id, "merge_action": "created"}
+
+
+def merge_imported_claim(conn: sqlite3.Connection, db: VaultDatabase, import_id: str, original_id: str, record: dict[str, Any], ts: str) -> dict[str, Any]:
+    existing = local_row_by_original_id(conn, "claims", db.workspace_id, original_id)
+    if existing:
+        return {"target_type": "claim", "target_id": existing["id"], "claim_id": existing["id"], "merge_action": "linked_existing"}
+    body = str(record.get("normalized_text") or record.get("body") or record.get("title") or "Imported claim")
+    original_node_id = str(record.get("node_id") or "")
+    node_row = local_row_by_original_id(conn, "kg_nodes", db.workspace_id, original_node_id) if original_node_id else None
+    if node_row:
+        node_id = node_row["id"]
+    else:
+        node_id = new_id("node")
+        conn.execute(
+            """
+            INSERT INTO kg_nodes
+              (id, workspace_id, node_type, title, canonical_text, status, confidence, payload_json, created_at, updated_at)
+            VALUES (?, ?, 'claim', ?, ?, 'active', ?, ?, ?, ?)
+            """,
+            (
+                node_id,
+                db.workspace_id,
+                compact_text(body, 90),
+                body,
+                float(record.get("confidence") or 0),
+                dumps(merge_import_metadata(record.get("metadata"), import_id, original_node_id or original_id, "claim_node")),
+                ts,
+                ts,
+            ),
+        )
+    claim_id = new_id("clm")
+    conn.execute(
+        """
+        INSERT INTO claims
+          (id, node_id, workspace_id, normalized_text, language, domain, time_scope, status,
+           confidence, evidence_strength, source_trust_score, last_checked_at, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, 'weakly_supported', ?, 0, 0, NULL, ?, ?)
+        """,
+        (
+            claim_id,
+            node_id,
+            db.workspace_id,
+            body,
+            record.get("language"),
+            record.get("domain"),
+            record.get("time_scope"),
+            float(record.get("confidence") or 0),
+            ts,
+            ts,
+        ),
+    )
+    return {"target_type": "claim", "target_id": claim_id, "claim_id": claim_id, "node_id": node_id, "status": "weakly_supported", "merge_action": "created"}
+
+
+def merge_imported_kg_node(conn: sqlite3.Connection, db: VaultDatabase, import_id: str, original_id: str, record: dict[str, Any], ts: str) -> dict[str, Any]:
+    existing = local_row_by_original_id(conn, "kg_nodes", db.workspace_id, original_id)
+    if existing:
+        return {"target_type": "kg_node", "target_id": existing["id"], "node_id": existing["id"], "merge_action": "linked_existing"}
+    node_id = new_id("node")
+    title = str(record.get("title") or record.get("canonical_text") or "Imported concept")
+    conn.execute(
+        """
+        INSERT INTO kg_nodes
+          (id, workspace_id, node_type, title, canonical_text, status, confidence, payload_json, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, 'active', ?, ?, ?, ?)
+        """,
+        (
+            node_id,
+            db.workspace_id,
+            str(record.get("node_type") or "concept"),
+            title,
+            str(record.get("canonical_text") or title),
+            float(record.get("confidence") or 0),
+            dumps(merge_import_metadata(record.get("metadata"), import_id, original_id, "kg_node")),
+            ts,
+            ts,
+        ),
+    )
+    return {"target_type": "kg_node", "target_id": node_id, "node_id": node_id, "merge_action": "created"}
+
+
+def merge_imported_tool(conn: sqlite3.Connection, db: VaultDatabase, import_id: str, original_id: str, record: dict[str, Any], ts: str) -> dict[str, Any]:
+    existing = local_row_by_original_id(conn, "tool_registry", db.workspace_id, original_id)
+    if existing:
+        return {"target_type": "tool", "target_id": existing["id"], "tool_id": existing["id"], "status": existing["status"], "merge_action": "linked_existing"}
+    tool_id = new_id("tool")
+    manifest = record.get("manifest") if isinstance(record.get("manifest"), dict) else {}
+    name = str(record.get("name") or manifest.get("name") or "Imported tool")
+    slug = slugify(str(record.get("slug") or name))
+    manifest = {**manifest, "imported_from_capsule": True, "import_review_required": True}
+    conn.execute(
+        """
+        INSERT INTO tool_registry
+          (id, workspace_id, name, slug, version, status, manifest_json, install_path, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, 'disabled', ?, NULL, ?, ?)
+        """,
+        (
+            tool_id,
+            db.workspace_id,
+            name,
+            unique_import_slug(conn, db.workspace_id, slug),
+            str(record.get("version") or manifest.get("version") or "0.1.0"),
+            dumps(merge_import_metadata(manifest, import_id, original_id, "tool")),
+            ts,
+            ts,
+        ),
+    )
+    return {"target_type": "tool", "target_id": tool_id, "tool_id": tool_id, "status": "disabled", "merge_action": "created_disabled"}
+
+
+def local_row_by_original_id(conn: sqlite3.Connection, table: str, workspace_id: str, original_id: str) -> sqlite3.Row | None:
+    if not original_id:
+        return None
+    return conn.execute(f"SELECT * FROM {table} WHERE id=? AND workspace_id=?", (original_id, workspace_id)).fetchone()
+
+
+def merge_import_metadata(value: Any, import_id: str, original_id: str, target_type: str) -> dict[str, Any]:
+    metadata = dict(value) if isinstance(value, dict) else {}
+    metadata["capsule_import"] = {
+        "import_id": import_id,
+        "original_id": original_id,
+        "target_type": target_type,
+    }
+    return metadata
+
+
+def capsule_import_content_hash(value: Any) -> str:
+    return hashlib.sha256(json.dumps(value, ensure_ascii=False, sort_keys=True).encode("utf-8")).hexdigest()
+
+
+def insert_import_source_block(conn: sqlite3.Connection, source_id: str, title: str, text: str, ts: str) -> str:
+    block_text = text or title or "Imported note"
+    block_id = new_id("blk")
+    conn.execute(
+        """
+        INSERT INTO source_blocks
+          (id, source_id, block_index, locator, heading_path, text, text_hash, token_count, created_at)
+        VALUES (?, ?, 1, 'imported-note', NULL, ?, ?, ?, ?)
+        """,
+        (block_id, source_id, block_text, capsule_import_content_hash(block_text), estimate_import_tokens(block_text), ts),
+    )
+    conn.execute(
+        "INSERT INTO source_blocks_fts (text, title, source_id, source_block_id) VALUES (?, ?, ?, ?)",
+        (block_text, title, source_id, block_id),
+    )
+    return block_id
+
+
+def estimate_import_tokens(text: str) -> int:
+    return max(1, len(str(text or "").split()))
+
+
+def unique_import_slug(conn: sqlite3.Connection, workspace_id: str, base_slug: str) -> str:
+    slug = base_slug or "imported-tool"
+    candidate = slug
+    index = 2
+    while conn.execute("SELECT id FROM tool_registry WHERE workspace_id=? AND slug=?", (workspace_id, candidate)).fetchone():
+        candidate = f"{slug}-{index}"
+        index += 1
+    return candidate
+
+
+def record_capsule_import_merge_decision(conn: sqlite3.Connection, workspace_id: str, import_id: str, decision: dict[str, Any], ts: str) -> None:
+    row = conn.execute("SELECT merge_plan_json FROM capsule_imports WHERE id=? AND workspace_id=?", (import_id, workspace_id)).fetchone()
+    if not row:
+        return
+    merge_plan = loads(row["merge_plan_json"], {})
+    decisions = [item for item in merge_plan.get("merge_decisions", []) if isinstance(item, dict)]
+    decisions.append(decision)
+    merge_plan["merge_decisions"] = decisions
+    merge_plan["merged_item_count"] = len(decisions)
+    merge_plan["status"] = "partially_applied"
+    conn.execute(
+        """
+        UPDATE capsule_imports
+        SET status='partially_applied', merge_plan_json=?, decided_at=?, decision='partial_merge'
+        WHERE id=? AND workspace_id=?
+        """,
+        (dumps(merge_plan), ts, import_id, workspace_id),
+    )
 
 
 def preview_from_package(capsule_id: str, export_mode: str, package: dict[str, Any]) -> dict[str, Any]:
