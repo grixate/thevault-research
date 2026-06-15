@@ -12,6 +12,7 @@ export type VaultRoute =
   | "capsules.removeItem"
   | "capsules.health.run"
   | "capsules.overviewNote"
+  | "capsules.learning.generate"
   | "capsules.snapshot"
   | "capsules.versions"
   | "capsules.exportPreview"
@@ -156,6 +157,7 @@ export const allowedRoutes: Record<VaultRoute, RouteSpec> = {
   "capsules.removeItem": { method: "DELETE", path: (p) => `/capsules/${p.capsuleId}/items/${p.itemId}` },
   "capsules.health.run": { method: "POST", path: (p) => `/capsules/${p.capsuleId}/health/run` },
   "capsules.overviewNote": { method: "POST", path: (p) => `/capsules/${p.capsuleId}/overview-note` },
+  "capsules.learning.generate": { method: "POST", path: (p) => `/capsules/${p.capsuleId}/learning/generate`, body: (p) => p.data ?? {} },
   "capsules.snapshot": { method: "POST", path: (p) => `/capsules/${p.capsuleId}/versions`, body: (p) => p.data ?? {} },
   "capsules.versions": { method: "GET", path: (p) => `/capsules/${p.capsuleId}/versions` },
   "capsules.exportPreview": { method: "POST", path: (p) => `/capsules/${p.capsuleId}/export/preview`, body: (p) => p.data ?? {} },

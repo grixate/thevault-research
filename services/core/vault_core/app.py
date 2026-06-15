@@ -62,6 +62,7 @@ from vault_core.api.schemas import (
     CapsuleExportRequest,
     CapsuleImportRequest,
     CapsuleItemsAddRequest,
+    CapsuleLearningGenerateRequest,
     CapsuleSnapshotRequest,
     CapsuleUpdate,
     DecisionRequest,
@@ -158,6 +159,8 @@ from vault_core.capsules.service import (
     approve_capsule_import_review_item,
     add_capsule_items,
     archive_capsule,
+    attach_capsule_learning_items,
+    capsule_learning_deck_payload,
     capsule_overview_note_input,
     create_capsule,
     create_capsule_snapshot,
@@ -1685,6 +1688,50 @@ def register_routes(app: FastAPI) -> None:
         )
         return {"capsule_id": capsule_id, **generated, "attached": attached}
 
+    @app.post("/capsules/{capsule_id}/learning/generate", dependencies=[auth])
+    def capsule_learning_generate(capsule_id: str, req: CapsuleLearningGenerateRequest, db: VaultDatabase = Depends(get_db)) -> dict[str, Any]:
+        ts = now_iso()
+        deck = capsule_learning_deck_payload(db, capsule_id, req.model_dump())
+        with db.connect() as conn:
+            item_id = new_id("rev")
+            payload = {
+                "topic": deck["topic"],
+                "cards": deck["cards"],
+                "capsule_id": capsule_id,
+                "source_policy": deck["source_policy"],
+                "difficulty": deck["difficulty"],
+                "duration": deck["duration"],
+                "mode": deck["mode"],
+                "warnings": deck["warnings"],
+                "actions": ["Approve to add these cards to Practice."],
+                "tags": ["capsule", "learning"],
+            }
+            conn.execute(
+                """
+                INSERT INTO review_items
+                  (id, workspace_id, item_type, title, summary, payload_json, status, created_at, updated_at)
+                VALUES (?, ?, 'learning_deck', ?, ?, ?, 'pending', ?, ?)
+                """,
+                (
+                    item_id,
+                    db.workspace_id,
+                    f"Capsule learning: {deck['topic']}",
+                    f"{len(deck['cards'])} cards prepared from capsule claims.",
+                    dumps(payload),
+                    ts,
+                    ts,
+                ),
+            )
+            db.event(conn, "capsule.learning_review_created", "capsule", capsule_id, {"review_item_id": item_id, "cards": len(deck["cards"])}, "core")
+        return {
+            "capsule_id": capsule_id,
+            "review_item_id": item_id,
+            "cards": deck["cards"],
+            "status": "pending_review",
+            "source_policy": deck["source_policy"],
+            "warnings": deck["warnings"],
+        }
+
     @app.post("/notes/{note_id}/promote-generated", dependencies=[auth])
     def promote_generated(note_id: str, db: VaultDatabase = Depends(get_db)) -> dict[str, Any]:
         with db.connect() as conn:
@@ -2165,6 +2212,7 @@ def register_routes(app: FastAPI) -> None:
                 )
                 created = {"node_id": node_id}
             elif item["item_type"] == "learning_deck":
+                learning_item_ids: list[str] = []
                 for card in payload.get("cards", []):
                     item_id_new = new_id("learn")
                     conn.execute(
@@ -2183,7 +2231,10 @@ def register_routes(app: FastAPI) -> None:
                             ts,
                         ),
                     )
-                created = {"learning_items": len(payload.get("cards", []))}
+                    learning_item_ids.append(item_id_new)
+                created = {"learning_items": len(learning_item_ids), "learning_item_ids": learning_item_ids}
+                if payload.get("capsule_id"):
+                    created["capsule_attachment"] = attach_capsule_learning_items(conn, db, str(payload["capsule_id"]), learning_item_ids, ts)
             elif item["item_type"] == "claim_status_change":
                 claim_id = payload.get("claim_id")
                 suggested = payload.get("suggested_status", "weakly_supported")

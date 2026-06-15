@@ -109,6 +109,7 @@ import type {
   CapsuleExportResult,
   CapsuleImportReviewItemsResult,
   CapsuleImportResult,
+  CapsuleLearningGenerateResult,
   CapsuleListResponse,
   CapsuleOverviewNoteResult,
   CapsuleItem,
@@ -6791,6 +6792,19 @@ function CapsuleDetail({ capsule, onOpenTarget }: { capsule: Capsule; onOpenTarg
       setSurface("notes");
     }
   });
+  const generateLearning = useMutation({
+    mutationFn: () =>
+      vaultRequest<CapsuleLearningGenerateResult>("capsules.learning.generate", {
+        capsuleId: capsule.id,
+        data: { source_policy: "reviewed_claims_only", difficulty: "beginner", duration: "7_days", include_flashcards: true, include_quiz: true }
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["review"] });
+      queryClient.invalidateQueries({ queryKey: ["stats"] });
+      queryClient.invalidateQueries({ queryKey: ["events"] });
+      setSurface("review");
+    }
+  });
   const snapshot = useMutation({
     mutationFn: () =>
       vaultRequest("capsules.snapshot", {
@@ -6813,6 +6827,9 @@ function CapsuleDetail({ capsule, onOpenTarget }: { capsule: Capsule; onOpenTarg
             </Button>
             <Button icon={<Sparkles size={15} />} variant="quiet" disabled={generateOverview.isPending} onClick={() => generateOverview.mutate()}>
               Overview
+            </Button>
+            <Button icon={<Brain size={15} />} variant="quiet" disabled={generateLearning.isPending} onClick={() => generateLearning.mutate()}>
+              Practice
             </Button>
             <Button icon={<Save size={15} />} variant="secondary" disabled={!snapshotVersion.trim() || snapshot.isPending} onClick={() => snapshot.mutate()}>
               Snapshot
@@ -6892,8 +6909,8 @@ function CapsuleDetail({ capsule, onOpenTarget }: { capsule: Capsule; onOpenTarg
           <Input aria-label="Snapshot version" value={snapshotVersion} onChange={(event) => setSnapshotVersion(event.target.value)} />
         </section>
       </div>
-      {(addItem.error || runHealth.error || generateOverview.error || snapshot.error) && (
-        <small className="model-test-error">{addItem.error?.message || runHealth.error?.message || generateOverview.error?.message || snapshot.error?.message}</small>
+      {(addItem.error || runHealth.error || generateOverview.error || generateLearning.error || snapshot.error) && (
+        <small className="model-test-error">{addItem.error?.message || runHealth.error?.message || generateOverview.error?.message || generateLearning.error?.message || snapshot.error?.message}</small>
       )}
       <div className="capsule-health-row">
         {visibleCapsuleWarnings(capsule).slice(0, 3).map((warning) => (

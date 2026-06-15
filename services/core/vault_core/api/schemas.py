@@ -210,6 +210,16 @@ class LearningDeckRequest(BaseModel):
     deck_size: int = 8
 
 
+class CapsuleLearningGenerateRequest(BaseModel):
+    mode: str = "course_outline"
+    source_policy: Literal["approved_claims_only", "reviewed_claims_only", "include_unreviewed_with_warnings", "exploratory_mode"] = "reviewed_claims_only"
+    difficulty: str = "beginner"
+    duration: str = "7_days"
+    include_flashcards: bool = True
+    include_quiz: bool = True
+    deck_size: int = 8
+
+
 class AIProviderInfo(BaseModel):
     id: str
     display_name: str

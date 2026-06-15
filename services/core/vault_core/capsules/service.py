@@ -649,6 +649,72 @@ def record_capsule_generated_note(db: VaultDatabase, capsule_id: str, note_id: s
         db.event(conn, "capsule.note_generated", "capsule", capsule_id, {"note_id": note_id, **payload}, "user")
 
 
+def capsule_learning_deck_payload(db: VaultDatabase, capsule_id: str, payload: dict[str, Any]) -> dict[str, Any]:
+    with db.connect() as conn:
+        row = conn.execute("SELECT * FROM capsules WHERE id=? AND workspace_id=?", (capsule_id, db.workspace_id)).fetchone()
+        if not row:
+            raise HTTPException(404, "Capsule not found")
+        capsule = inflate_capsule(row)
+        source_policy = str(payload.get("source_policy") or "reviewed_claims_only")
+        deck_size = max(1, min(int(payload.get("deck_size") or 8), 24))
+        claims = capsule_claim_rows_for_learning(conn, db.workspace_id, capsule_id, source_policy, deck_size)
+        if not claims:
+            raise HTTPException(422, "Add reviewed capsule claims before generating learning items")
+        cards = capsule_learning_cards(capsule["name"], claims, payload)
+        warnings: list[str] = []
+        if source_policy in {"include_unreviewed_with_warnings", "exploratory_mode"}:
+            warnings.append("Some learning cards may come from unreviewed capsule claims.")
+        return {
+            "capsule": capsule,
+            "topic": capsule["name"],
+            "cards": cards,
+            "claims": [dict(row) for row in claims],
+            "source_policy": source_policy,
+            "difficulty": str(payload.get("difficulty") or "beginner"),
+            "duration": str(payload.get("duration") or "7_days"),
+            "mode": str(payload.get("mode") or "course_outline"),
+            "warnings": warnings,
+        }
+
+
+def attach_capsule_learning_items(conn: sqlite3.Connection, db: VaultDatabase, capsule_id: str, learning_item_ids: list[str], ts: str) -> dict[str, Any]:
+    ensure_capsule(conn, db.workspace_id, capsule_id)
+    max_sort = int(conn.execute("SELECT COALESCE(MAX(sort_order), 0) FROM capsule_items WHERE capsule_id=?", (capsule_id,)).fetchone()[0])
+    added = 0
+    skipped = 0
+    for index, learning_item_id in enumerate(learning_item_ids, start=1):
+        result = insert_capsule_item(
+            conn,
+            db,
+            capsule_id,
+            {
+                "target_type": "learning_item",
+                "target_id": learning_item_id,
+                "role": "learning",
+                "include_mode": "reference",
+                "metadata": {"generated_from_capsule": True},
+            },
+            max_sort + index,
+            ts,
+        )
+        if result == "added":
+            added += 1
+        else:
+            skipped += 1
+    if added:
+        conn.execute("UPDATE capsules SET updated_at=? WHERE id=?", (ts, capsule_id))
+        insert_changelog(
+            conn,
+            db,
+            capsule_id,
+            "learning_generated",
+            summary=f"Added {added} learning item{'' if added == 1 else 's'}",
+            payload={"learning_item_ids": learning_item_ids, "skipped_duplicates": skipped},
+        )
+        db.event(conn, "capsule.learning_generated", "capsule", capsule_id, {"learning_item_ids": learning_item_ids, "added": added}, "user")
+    return {"added": added, "skipped_duplicates": skipped, "learning_item_ids": learning_item_ids}
+
+
 def create_capsule_import_review_items(db: VaultDatabase, import_id: str) -> dict[str, Any]:
     ts = now_iso()
     with db.connect() as conn:
@@ -1592,6 +1658,56 @@ def capsule_approved_claim_ids_for_overview(conn: sqlite3.Connection, workspace_
         (workspace_id, capsule_id, *APPROVED_CLAIM_STATUSES),
     ).fetchall()
     return [row["id"] for row in rows]
+
+
+def capsule_claim_rows_for_learning(conn: sqlite3.Connection, workspace_id: str, capsule_id: str, source_policy: str, limit: int) -> list[sqlite3.Row]:
+    if source_policy in {"approved_claims_only", "reviewed_claims_only"}:
+        statuses = sorted(APPROVED_CLAIM_STATUSES)
+    elif source_policy == "include_unreviewed_with_warnings":
+        statuses = sorted(APPROVED_CLAIM_STATUSES | UNREVIEWED_CLAIM_STATUSES)
+    elif source_policy == "exploratory_mode":
+        statuses = sorted(APPROVED_CLAIM_STATUSES | UNREVIEWED_CLAIM_STATUSES | {"contradicted", "deprecated", "rejected"})
+    else:
+        raise HTTPException(422, f"Unsupported capsule learning source policy: {source_policy}")
+    rows = conn.execute(
+        f"""
+        SELECT claims.id, claims.normalized_text, claims.status, claims.evidence_strength, claims.confidence
+        FROM capsule_items
+        JOIN claims ON claims.id=capsule_items.target_id
+        WHERE capsule_items.workspace_id=? AND capsule_items.capsule_id=?
+          AND capsule_items.target_type='claim' AND capsule_items.status='active'
+          AND claims.status IN ({','.join('?' for _ in statuses)})
+        ORDER BY claims.evidence_strength DESC, claims.updated_at DESC
+        LIMIT ?
+        """,
+        (workspace_id, capsule_id, *statuses, limit),
+    ).fetchall()
+    return list(rows)
+
+
+def capsule_learning_cards(capsule_name: str, claims: list[sqlite3.Row], payload: dict[str, Any]) -> list[dict[str, Any]]:
+    difficulty = str(payload.get("difficulty") or "beginner")
+    duration = str(payload.get("duration") or "7_days")
+    source_policy = str(payload.get("source_policy") or "reviewed_claims_only")
+    cards = []
+    for index, row in enumerate(claims, start=1):
+        text = str(row["normalized_text"])
+        cards.append(
+            {
+                "front": f"{capsule_name}: what should you remember about point {index}?",
+                "back": text,
+                "source_refs": [{"claim_id": row["id"], "status": row["status"]}],
+                "schedule": {"again": "tomorrow", "good": "3 days", "easy": "7 days"},
+                "capsule_learning": {
+                    "difficulty": difficulty,
+                    "duration": duration,
+                    "source_policy": source_policy,
+                    "evidence_strength": row["evidence_strength"],
+                    "confidence": row["confidence"],
+                },
+            }
+        )
+    return cards
 
 
 def capsule_edge_rows(conn: sqlite3.Connection, workspace_id: str, explicit_edge_ids: set[str], node_ids: set[str]) -> list[dict[str, Any]]:
