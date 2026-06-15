@@ -1696,6 +1696,7 @@ def register_routes(app: FastAPI) -> None:
             item_id = new_id("rev")
             payload = {
                 "topic": deck["topic"],
+                "items": deck["items"],
                 "cards": deck["cards"],
                 "capsule_id": capsule_id,
                 "source_policy": deck["source_policy"],
@@ -1703,7 +1704,7 @@ def register_routes(app: FastAPI) -> None:
                 "duration": deck["duration"],
                 "mode": deck["mode"],
                 "warnings": deck["warnings"],
-                "actions": ["Approve to add these cards to Practice."],
+                "actions": ["Approve to add these learning items to Practice."],
                 "tags": ["capsule", "learning"],
             }
             conn.execute(
@@ -1716,16 +1717,24 @@ def register_routes(app: FastAPI) -> None:
                     item_id,
                     db.workspace_id,
                     f"Capsule learning: {deck['topic']}",
-                    f"{len(deck['cards'])} cards prepared from capsule claims.",
+                    f"{len(deck['items'])} learning items prepared from capsule claims.",
                     dumps(payload),
                     ts,
                     ts,
                 ),
             )
-            db.event(conn, "capsule.learning_review_created", "capsule", capsule_id, {"review_item_id": item_id, "cards": len(deck["cards"])}, "core")
+            db.event(
+                conn,
+                "capsule.learning_review_created",
+                "capsule",
+                capsule_id,
+                {"review_item_id": item_id, "items": len(deck["items"]), "cards": len(deck["cards"])},
+                "core",
+            )
         return {
             "capsule_id": capsule_id,
             "review_item_id": item_id,
+            "items": deck["items"],
             "cards": deck["cards"],
             "status": "pending_review",
             "source_policy": deck["source_policy"],
@@ -2213,20 +2222,30 @@ def register_routes(app: FastAPI) -> None:
                 created = {"node_id": node_id}
             elif item["item_type"] == "learning_deck":
                 learning_item_ids: list[str] = []
-                for card in payload.get("cards", []):
+                learning_items = payload.get("items") or [
+                    {"type": "flashcard", "title": card["front"], "body": card, "source_refs": card.get("source_refs", [])}
+                    for card in payload.get("cards", [])
+                ]
+                for learning_item in learning_items:
                     item_id_new = new_id("learn")
+                    body = learning_item.get("body") if isinstance(learning_item, dict) else {}
+                    body = body if isinstance(body, dict) else {}
+                    source_refs = learning_item.get("source_refs") if isinstance(learning_item, dict) else []
+                    item_type = str(learning_item.get("type") or "flashcard") if isinstance(learning_item, dict) else "flashcard"
+                    title = str(learning_item.get("title") or body.get("front") or body.get("prompt") or "Learning item") if isinstance(learning_item, dict) else "Learning item"
                     conn.execute(
                         """
                         INSERT INTO learning_items
                           (id, workspace_id, type, title, body_json, source_refs_json, status, created_at, updated_at)
-                        VALUES (?, ?, 'flashcard', ?, ?, ?, 'active', ?, ?)
+                        VALUES (?, ?, ?, ?, ?, ?, 'active', ?, ?)
                         """,
                         (
                             item_id_new,
                             db.workspace_id,
-                            card["front"],
-                            dumps(card),
-                            dumps(card.get("source_refs", [])),
+                            item_type,
+                            title,
+                            dumps(body),
+                            dumps(source_refs if isinstance(source_refs, list) else []),
                             ts,
                             ts,
                         ),

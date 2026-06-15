@@ -740,14 +740,17 @@ def test_capsules_reference_global_objects_and_snapshot_health(client):
     assert learning["status"] == "pending_review"
     assert learning["capsule_id"] == capsule["id"]
     assert learning["source_policy"] == "reviewed_claims_only"
+    assert {item["type"] for item in learning["items"]} >= {"course_outline", "course_lesson", "quiz", "explain_back", "flashcard"}
+    assert learning["items"][0]["source_refs"][0]["claim_id"] == claim_id
     assert learning["cards"][0]["source_refs"][0]["claim_id"] == claim_id
     approved_learning = client.post(
         f"/review/items/{learning['review_item_id']}/approve",
-        json={"decision_note": "Capsule learning cards checked."},
+        json={"decision_note": "Capsule learning items checked."},
     ).json()
-    assert approved_learning["created"]["learning_items"] == len(learning["cards"])
-    assert approved_learning["created"]["capsule_attachment"]["added"] == len(learning["cards"])
+    assert approved_learning["created"]["learning_items"] == len(learning["items"])
+    assert approved_learning["created"]["capsule_attachment"]["added"] == len(learning["items"])
     learning_items = client.get("/learning/items").json()
+    assert {item["type"] for item in learning_items} >= {"course_outline", "course_lesson", "quiz", "explain_back", "flashcard"}
     assert any(item["source_refs"][0]["claim_id"] == claim_id for item in learning_items)
     capsule_after_learning = client.get(f"/capsules/{capsule['id']}").json()
     assert any(item["target_type"] == "learning_item" and item["role"] == "learning" for item in capsule_after_learning["items"])

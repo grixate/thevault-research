@@ -298,6 +298,7 @@ export type CapsuleOverviewNoteResult = {
 export type CapsuleLearningGenerateResult = {
   capsule_id: string;
   review_item_id: string;
+  items: Record<string, any>[];
   cards: Record<string, any>[];
   status: "pending_review" | string;
   source_policy: string;

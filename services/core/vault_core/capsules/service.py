@@ -660,13 +660,15 @@ def capsule_learning_deck_payload(db: VaultDatabase, capsule_id: str, payload: d
         claims = capsule_claim_rows_for_learning(conn, db.workspace_id, capsule_id, source_policy, deck_size)
         if not claims:
             raise HTTPException(422, "Add reviewed capsule claims before generating learning items")
-        cards = capsule_learning_cards(capsule["name"], claims, payload)
+        items = capsule_learning_items(capsule["name"], claims, payload)
+        cards = [item["body"] for item in items if item["type"] == "flashcard"]
         warnings: list[str] = []
         if source_policy in {"include_unreviewed_with_warnings", "exploratory_mode"}:
-            warnings.append("Some learning cards may come from unreviewed capsule claims.")
+            warnings.append("Some learning items may come from unreviewed capsule claims.")
         return {
             "capsule": capsule,
             "topic": capsule["name"],
+            "items": items,
             "cards": cards,
             "claims": [dict(row) for row in claims],
             "source_policy": source_policy,
@@ -1685,10 +1687,87 @@ def capsule_claim_rows_for_learning(conn: sqlite3.Connection, workspace_id: str,
     return list(rows)
 
 
-def capsule_learning_cards(capsule_name: str, claims: list[sqlite3.Row], payload: dict[str, Any]) -> list[dict[str, Any]]:
+def capsule_learning_items(capsule_name: str, claims: list[sqlite3.Row], payload: dict[str, Any]) -> list[dict[str, Any]]:
     difficulty = str(payload.get("difficulty") or "beginner")
     duration = str(payload.get("duration") or "7_days")
     source_policy = str(payload.get("source_policy") or "reviewed_claims_only")
+    include_flashcards = bool(payload.get("include_flashcards", True))
+    include_quiz = bool(payload.get("include_quiz", True))
+    source_refs = [{"claim_id": row["id"], "status": row["status"]} for row in claims]
+    claim_texts = [str(row["normalized_text"]) for row in claims]
+    items: list[dict[str, Any]] = [
+        {
+            "type": "course_outline",
+            "title": f"{capsule_name}: {duration.replace('_', ' ')} path",
+            "body": {
+                "prompt": f"Follow this {duration.replace('_', ' ')} path through {capsule_name}.",
+                "answer": "Start with the core claims, then explain them from memory and check the evidence.",
+                "sections": [
+                    {
+                        "title": f"Step {index}",
+                        "claim_id": row["id"],
+                        "summary": str(row["normalized_text"]),
+                    }
+                    for index, row in enumerate(claims, start=1)
+                ],
+                "difficulty": difficulty,
+                "duration": duration,
+                "source_policy": source_policy,
+            },
+            "source_refs": source_refs,
+        },
+        {
+            "type": "course_lesson",
+            "title": f"{capsule_name}: first lesson",
+            "body": {
+                "prompt": f"Read the first lesson for {capsule_name}.",
+                "answer": "\n".join(f"{index}. {text}" for index, text in enumerate(claim_texts[:4], start=1)),
+                "key_points": claim_texts[:4],
+                "difficulty": difficulty,
+                "duration": duration,
+                "source_policy": source_policy,
+            },
+            "source_refs": source_refs[:4],
+        },
+        {
+            "type": "explain_back",
+            "title": f"{capsule_name}: explain back",
+            "body": {
+                "prompt": f"Explain {capsule_name} back in your own words, using the claims below.",
+                "answer": "A strong answer should cover: " + "; ".join(claim_texts[:5]),
+                "checklist": claim_texts[:5],
+                "difficulty": difficulty,
+                "duration": duration,
+                "source_policy": source_policy,
+            },
+            "source_refs": source_refs[:5],
+        },
+    ]
+    if include_quiz:
+        items.append(
+            {
+                "type": "quiz",
+                "title": f"{capsule_name}: checkpoint quiz",
+                "body": {
+                    "prompt": f"Answer this short quiz on {capsule_name}.",
+                    "answer": "Check your answers against the cited capsule claims.",
+                    "questions": [
+                        {
+                            "question": f"What is the key idea in point {index}?",
+                            "answer": text,
+                            "claim_id": row["id"],
+                        }
+                        for index, (row, text) in enumerate(zip(claims[:5], claim_texts[:5], strict=False), start=1)
+                    ],
+                    "difficulty": difficulty,
+                    "duration": duration,
+                    "source_policy": source_policy,
+                },
+                "source_refs": source_refs[:5],
+            }
+        )
+    if not include_flashcards:
+        return items
     cards = []
     for index, row in enumerate(claims, start=1):
         text = str(row["normalized_text"])
@@ -1707,7 +1786,11 @@ def capsule_learning_cards(capsule_name: str, claims: list[sqlite3.Row], payload
                 },
             }
         )
-    return cards
+    return items + [{"type": "flashcard", "title": card["front"], "body": card, "source_refs": card.get("source_refs", [])} for card in cards]
+
+
+def capsule_learning_cards(capsule_name: str, claims: list[sqlite3.Row], payload: dict[str, Any]) -> list[dict[str, Any]]:
+    return [item["body"] for item in capsule_learning_items(capsule_name, claims, payload) if item["type"] == "flashcard"]
 
 
 def capsule_edge_rows(conn: sqlite3.Connection, workspace_id: str, explicit_edge_ids: set[str], node_ids: set[str]) -> list[dict[str, Any]]:

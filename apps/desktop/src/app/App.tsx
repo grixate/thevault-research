@@ -5800,6 +5800,7 @@ function ReviewPayloadSummary({ item }: { item: ReviewItem }) {
   const tags = stringList(payload.tags);
   const actions = stringList(payload.actions);
   const cards = Array.isArray(payload.cards) ? payload.cards : [];
+  const learningItems = Array.isArray(payload.items) ? payload.items : [];
   return (
     <div className="review-proposal">
       <div className="review-proposal-header">
@@ -5864,10 +5865,10 @@ function ReviewPayloadSummary({ item }: { item: ReviewItem }) {
           {String(payload.source_quote)}
         </blockquote>
       )}
-      {cards.length > 0 && (
+      {(learningItems.length > 0 || cards.length > 0) && (
         <section>
-          <span>Learning cards</span>
-          <p>{cards.length} card{cards.length === 1 ? "" : "s"} proposed.</p>
+          <span>Learning items</span>
+          <p>{learningItems.length || cards.length} item{(learningItems.length || cards.length) === 1 ? "" : "s"} proposed.</p>
         </section>
       )}
       {actions.length > 0 && (
@@ -8038,12 +8039,12 @@ function LearningView() {
           <Input value={topic} onChange={(event) => setTopic(event.target.value)} />
         </label>
         <div className="entity-list learning-card-list">
-          {items.isLoading && <div className="entity-list-empty">Loading learning cards...</div>}
+          {items.isLoading && <div className="entity-list-empty">Loading practice...</div>}
           {!items.isLoading && (items.data ?? []).length === 0 && (
             <div className="entity-list-empty">
               <Brain size={18} />
-              <strong>No practice cards</strong>
-              <span>Create a deck from approved knowledge. New cards wait in Review before practice.</span>
+              <strong>No practice items</strong>
+              <span>Create a deck from approved knowledge. New items wait in Review before practice.</span>
             </div>
           )}
           {learningItems.map((item) => {
@@ -8137,11 +8138,11 @@ function LearningView() {
 }
 
 function learningItemPrompt(item: LearningItem): string {
-  return String(item.body?.front ?? item.body?.prompt ?? item.title ?? "").trim();
+  return String(item.body?.front ?? item.body?.prompt ?? item.body?.sections?.[0]?.summary ?? item.body?.questions?.[0]?.question ?? item.title ?? "").trim();
 }
 
 function learningItemAnswer(item: LearningItem): string {
-  return String(item.body?.back ?? item.body?.answer ?? "").trim();
+  return String(item.body?.back ?? item.body?.answer ?? item.body?.questions?.[0]?.answer ?? "").trim();
 }
 
 function learningItemSpeechText(item: LearningItem): string {
