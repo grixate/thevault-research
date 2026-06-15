@@ -129,6 +129,7 @@ function mapRoute(route: string, payload?: any): { method: string; path: string;
     "capsules.addItems": { method: "POST", path: `/capsules/${payload?.capsuleId}/items`, body: { items: payload?.items ?? [] } },
     "capsules.removeItem": { method: "DELETE", path: `/capsules/${payload?.capsuleId}/items/${payload?.itemId}` },
     "capsules.health.run": { method: "POST", path: `/capsules/${payload?.capsuleId}/health/run` },
+    "capsules.overviewNote": { method: "POST", path: `/capsules/${payload?.capsuleId}/overview-note`, body: {} },
     "capsules.snapshot": { method: "POST", path: `/capsules/${payload?.capsuleId}/versions`, body: payload?.data ?? {} },
     "capsules.versions": { method: "GET", path: `/capsules/${payload?.capsuleId}/versions` },
     "capsules.exportPreview": { method: "POST", path: `/capsules/${payload?.capsuleId}/export/preview`, body: payload?.data ?? {} },

@@ -606,6 +606,49 @@ def list_capsule_imports(db: VaultDatabase, limit: int = 50, offset: int = 0) ->
         return {"items": items, "total": total}
 
 
+def capsule_overview_note_input(db: VaultDatabase, capsule_id: str) -> dict[str, Any]:
+    with db.connect() as conn:
+        row = conn.execute("SELECT * FROM capsules WHERE id=? AND workspace_id=?", (capsule_id, db.workspace_id)).fetchone()
+        if not row:
+            raise HTTPException(404, "Capsule not found")
+        capsule = inflate_capsule(row)
+        source_ids = capsule_source_ids_for_overview(conn, db.workspace_id, capsule_id)
+        claim_ids = capsule_approved_claim_ids_for_overview(conn, db.workspace_id, capsule_id)
+        if not source_ids and not claim_ids:
+            raise HTTPException(422, "Add capsule sources or approved claims before generating an overview note")
+        purpose = capsule.get("purpose") or capsule.get("description") or "Summarize the reviewed capsule knowledge."
+        prompt = (
+            f"Create a capsule overview for {capsule['name']}.\n"
+            f"Purpose: {purpose}\n"
+            "Use only the supplied capsule evidence. Summarize what is known, key claims, evidence, uncertainties, and useful next questions."
+        )
+        return {
+            "capsule": capsule,
+            "title": f"{capsule['name']} overview",
+            "prompt": prompt,
+            "source_ids": source_ids,
+            "claim_ids": claim_ids,
+        }
+
+
+def record_capsule_generated_note(db: VaultDatabase, capsule_id: str, note_id: str, payload: dict[str, Any]) -> None:
+    ts = now_iso()
+    with db.connect() as conn:
+        ensure_capsule(conn, db.workspace_id, capsule_id)
+        conn.execute("UPDATE capsules SET updated_at=? WHERE id=?", (ts, capsule_id))
+        insert_changelog(
+            conn,
+            db,
+            capsule_id,
+            "note_generated",
+            target_type="note",
+            target_id=note_id,
+            summary="Generated capsule overview note",
+            payload=payload,
+        )
+        db.event(conn, "capsule.note_generated", "capsule", capsule_id, {"note_id": note_id, **payload}, "user")
+
+
 def create_capsule_import_review_items(db: VaultDatabase, import_id: str) -> dict[str, Any]:
     ts = now_iso()
     with db.connect() as conn:
@@ -1504,6 +1547,51 @@ def source_blocks_by_ids(conn: sqlite3.Connection, ids: set[str], workspace_id: 
             (*ids, workspace_id),
         ).fetchall()
     )
+
+
+def capsule_source_ids_for_overview(conn: sqlite3.Connection, workspace_id: str, capsule_id: str) -> list[str]:
+    rows = conn.execute(
+        """
+        SELECT DISTINCT sources.id
+        FROM capsule_items
+        JOIN sources ON sources.id=capsule_items.target_id
+        WHERE capsule_items.workspace_id=? AND capsule_items.capsule_id=?
+          AND capsule_items.target_type='source' AND capsule_items.status='active'
+        UNION
+        SELECT DISTINCT source_blocks.source_id
+        FROM capsule_items
+        JOIN source_blocks ON source_blocks.id=capsule_items.target_id
+        JOIN sources ON sources.id=source_blocks.source_id
+        WHERE capsule_items.workspace_id=? AND capsule_items.capsule_id=?
+          AND capsule_items.target_type='source_block' AND capsule_items.status='active'
+        UNION
+        SELECT DISTINCT notes.source_id
+        FROM capsule_items
+        JOIN notes ON notes.id=capsule_items.target_id
+        WHERE capsule_items.workspace_id=? AND capsule_items.capsule_id=?
+          AND capsule_items.target_type='note' AND capsule_items.status='active'
+          AND notes.source_id IS NOT NULL
+        ORDER BY 1
+        """,
+        (workspace_id, capsule_id, workspace_id, capsule_id, workspace_id, capsule_id),
+    ).fetchall()
+    return [row["id"] for row in rows]
+
+
+def capsule_approved_claim_ids_for_overview(conn: sqlite3.Connection, workspace_id: str, capsule_id: str) -> list[str]:
+    rows = conn.execute(
+        f"""
+        SELECT DISTINCT claims.id
+        FROM capsule_items
+        JOIN claims ON claims.id=capsule_items.target_id
+        WHERE capsule_items.workspace_id=? AND capsule_items.capsule_id=?
+          AND capsule_items.target_type='claim' AND capsule_items.status='active'
+          AND claims.status IN ({sql_placeholders(APPROVED_CLAIM_STATUSES)})
+        ORDER BY claims.evidence_strength DESC, claims.updated_at DESC
+        """,
+        (workspace_id, capsule_id, *APPROVED_CLAIM_STATUSES),
+    ).fetchall()
+    return [row["id"] for row in rows]
 
 
 def capsule_edge_rows(conn: sqlite3.Connection, workspace_id: str, explicit_edge_ids: set[str], node_ids: set[str]) -> list[dict[str, Any]]:

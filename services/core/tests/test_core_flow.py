@@ -683,6 +683,18 @@ def test_capsules_reference_global_objects_and_snapshot_health(client):
     assert health["counts"]["unsupported_claims"] == 0
     assert health["status"] == "healthy"
 
+    overview = client.post(f"/capsules/{capsule['id']}/overview-note").json()
+    assert overview["status"] == "generated_pending_review"
+    assert overview["capsule_id"] == capsule["id"]
+    overview_note = client.get(f"/notes/{overview['note_id']}").json()
+    assert overview_note["status"] == "generated_pending_review"
+    assert overview_note["origin"] == "ai_generated"
+    assert overview_note["content"]["capsule_id"] == capsule["id"]
+    assert overview_note["content"]["capsule_role"] == "overview"
+    assert overview_note["content"]["capsule_claim_ids"] == [claim_id]
+    capsule_after_overview = client.get(f"/capsules/{capsule['id']}").json()
+    assert any(item["target_type"] == "note" and item["target_id"] == overview["note_id"] and item["role"] == "overview" for item in capsule_after_overview["items"])
+
     snapshot = client.post(
         f"/capsules/{capsule['id']}/versions",
         json={"version": "0.2.0", "title": "First acoustics capsule"},
@@ -763,21 +775,23 @@ def test_capsules_reference_global_objects_and_snapshot_health(client):
         "sources": len(client.get("/sources").json()),
         "claims": len(client.get("/claims").json()),
     }
-    imported_by_type = {item["item_type"]: item for item in imported_reviews}
+    imported_note_review = next(item for item in imported_reviews if item["item_type"] == "capsule_import_note" and item["payload"]["import_target_id"] == note["id"])
+    imported_source_review = next(item for item in imported_reviews if item["item_type"] == "capsule_import_source" and item["payload"]["import_target_id"] == imported["source"]["id"])
+    imported_claim_review = next(item for item in imported_reviews if item["item_type"] == "capsule_import_claim" and item["payload"]["import_target_id"] == claim_id)
     approved_import_note = client.post(
-        f"/review/items/{imported_by_type['capsule_import_note']['id']}/approve",
+        f"/review/items/{imported_note_review['id']}/approve",
         json={"decision_note": "Keep this imported note linked to the existing note."},
     ).json()
     assert approved_import_note["created"]["merge_action"] == "linked_existing"
     assert approved_import_note["created"]["note_id"] == note["id"]
     approved_import_source = client.post(
-        f"/review/items/{imported_by_type['capsule_import_source']['id']}/approve",
+        f"/review/items/{imported_source_review['id']}/approve",
         json={"decision_note": "Keep this imported source linked to the existing source."},
     ).json()
     assert approved_import_source["created"]["merge_action"] == "linked_existing"
     assert approved_import_source["created"]["source_id"] == imported["source"]["id"]
     approved_import_claim = client.post(
-        f"/review/items/{imported_by_type['capsule_import_claim']['id']}/approve",
+        f"/review/items/{imported_claim_review['id']}/approve",
         json={"decision_note": "Keep this imported claim linked to the existing claim."},
     ).json()
     assert approved_import_claim["created"]["merge_action"] == "linked_existing"

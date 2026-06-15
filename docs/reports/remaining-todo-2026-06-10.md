@@ -2557,6 +2557,8 @@ Current good state:
 - Review approval can now selectively merge individual imported notes, sources, claims, concepts, and tools.
 - Imported objects link to an existing local object when the original ID already exists, instead of duplicating canonical graph objects.
 - Imported claims are merged as `weakly_supported` unless they already exist locally; imported tools are created disabled.
+- Capsules can generate an overview note from capsule-scoped sources and approved claims only.
+- Generated capsule overview notes enter Notes as `generated_pending_review`, keep normal generated-note metadata, and attach back to the capsule with role `overview`.
 - Compact capsule attach entry points exist in the real workflows:
   - current Note,
   - selected Storage source,
@@ -2577,7 +2579,6 @@ Remaining tasks:
   - kg node/concept selection,
   - learning items,
   - attached tools.
-- Add capsule overview generation as a generated pending-review note using reviewed claims/sources only.
 - Add capsule learning generation with default `reviewed_claims_only`.
 - Harden/export follow-ups:
   - add richer copyrighted-file and secret scanning,
@@ -2604,7 +2605,7 @@ Acceptance evidence:
 - Export cannot proceed through unsafe modes when privacy blockers are unresolved.
 - Generated capsule notes and learning items stay reviewable and evidence-linked.
 - Browser screenshots show Capsules as a calm knowledge curation surface, not an overloaded management console.
-- Backend tests cover item references, evidence auto-inclusion, health, snapshots, export preview, export manifest/checksum files, export privacy blocking, import quarantine, import review-item creation, and selective merge approval for existing local objects.
+- Backend tests cover item references, evidence auto-inclusion, health, generated overview notes, snapshots, export preview, export manifest/checksum files, export privacy blocking, import quarantine, import review-item creation, and selective merge approval for existing local objects.
 - Desktop tests cover create, attach note/source/claim, snapshot, health, export preview/package creation, export blocking, import quarantine inspection, and the Review handoff.
 
 ## Recommended Next Session Steps

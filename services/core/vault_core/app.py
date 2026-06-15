@@ -158,6 +158,7 @@ from vault_core.capsules.service import (
     approve_capsule_import_review_item,
     add_capsule_items,
     archive_capsule,
+    capsule_overview_note_input,
     create_capsule,
     create_capsule_snapshot,
     export_capsule_package,
@@ -170,6 +171,7 @@ from vault_core.capsules.service import (
     list_capsule_versions,
     list_capsules,
     preview_capsule_export,
+    record_capsule_generated_note,
     remove_capsule_item,
     run_capsule_health,
     update_capsule,
@@ -1569,7 +1571,7 @@ def register_routes(app: FastAPI) -> None:
 
     @app.post("/notes/generate", dependencies=[auth])
     def generate_note(req: GeneratedNoteRequest, request: Request, db: VaultDatabase = Depends(get_db)) -> dict[str, Any]:
-        sources = collect_quote_pack(db, req.source_ids, req.claim_ids, limit=8)
+        sources = collect_quote_pack(db, req.source_ids, req.claim_ids, limit=8, allow_global_fallback=not req.strict_source_scope)
         warnings: list[str] = []
         if not sources:
             warnings.append("No approved evidence found; generated draft is marked speculative.")
@@ -1638,6 +1640,50 @@ def register_routes(app: FastAPI) -> None:
             "model_id": generated.model_id,
             "sent_off_device": generated.sent_off_device,
         }
+
+    @app.post("/capsules/{capsule_id}/overview-note", dependencies=[auth])
+    def capsule_overview_note(capsule_id: str, request: Request, db: VaultDatabase = Depends(get_db)) -> dict[str, Any]:
+        overview = capsule_overview_note_input(db, capsule_id)
+        generated = generate_note(
+            GeneratedNoteRequest(
+                mode="capsule_overview",
+                title=overview["title"],
+                prompt=overview["prompt"],
+                source_ids=overview["source_ids"],
+                claim_ids=overview["claim_ids"],
+                citation_policy="capsule_evidence_only",
+                local_only=True,
+                max_tokens=1200,
+                strict_source_scope=True,
+            ),
+            request,
+            db,
+        )
+        with db.connect() as conn:
+            row = conn.execute("SELECT * FROM notes WHERE id=?", (generated["note_id"],)).fetchone()
+            note = inflate_json(row_to_note(row), "content_json")
+        content = dict(note.get("content") or {})
+        content.update(
+            {
+                "capsule_id": capsule_id,
+                "capsule_role": "overview",
+                "capsule_source_ids": overview["source_ids"],
+                "capsule_claim_ids": overview["claim_ids"],
+            }
+        )
+        update_note_metadata(db, generated["note_id"], content, None, "capsule.overview_note_metadata")
+        attached = add_capsule_items(
+            db,
+            capsule_id,
+            [{"target_type": "note", "target_id": generated["note_id"], "role": "overview", "include_mode": "reference"}],
+        )
+        record_capsule_generated_note(
+            db,
+            capsule_id,
+            generated["note_id"],
+            {"source_count": len(overview["source_ids"]), "claim_count": len(overview["claim_ids"]), "ai_run_id": generated["ai_run_id"]},
+        )
+        return {"capsule_id": capsule_id, **generated, "attached": attached}
 
     @app.post("/notes/{note_id}/promote-generated", dependencies=[auth])
     def promote_generated(note_id: str, db: VaultDatabase = Depends(get_db)) -> dict[str, Any]:
@@ -4514,6 +4560,7 @@ def collect_quote_pack(
     query: str | None = None,
     claim_statuses: list[str] | None = None,
     limit: int = 8,
+    allow_global_fallback: bool = True,
 ) -> list[dict[str, Any]]:
     results: list[dict[str, Any]] = []
     with db.connect() as conn:
@@ -4566,7 +4613,7 @@ def collect_quote_pack(
                         "locator": row["locator"],
                     }
                 )
-        if len(results) < limit:
+        if allow_global_fallback and len(results) < limit:
             status_values = claim_statuses or ["supported", "user_confirmed", "verified"]
             placeholders = ",".join("?" for _ in status_values)
             rows = conn.execute(

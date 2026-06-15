@@ -266,6 +266,24 @@ export type CapsuleImportReviewItemsResult = {
   merge_plan: Record<string, any>;
 };
 
+export type CapsuleOverviewNoteResult = {
+  capsule_id: string;
+  note_id: string;
+  status: "generated_pending_review" | string;
+  warnings: string[];
+  citations: Record<string, any>[];
+  ai_run_id: string;
+  output_hash: string;
+  provider: string;
+  model_id: string;
+  sent_off_device: boolean;
+  attached: {
+    added: number;
+    skipped_duplicates: number;
+    auto_included: Record<string, string>[];
+  };
+};
+
 export type AIProviderInfo = {
   id: string;
   display_name: string;

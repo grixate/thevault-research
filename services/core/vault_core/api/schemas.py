@@ -35,6 +35,7 @@ class GeneratedNoteRequest(BaseModel):
     citation_policy: str = "require_evidence_for_factual_claims"
     local_only: bool = True
     max_tokens: int = 1200
+    strict_source_scope: bool = False
 
 
 class GeneratedNoteReviewPrepareRequest(BaseModel):

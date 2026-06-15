@@ -110,6 +110,7 @@ import type {
   CapsuleImportReviewItemsResult,
   CapsuleImportResult,
   CapsuleListResponse,
+  CapsuleOverviewNoteResult,
   CapsuleItem,
   Claim,
   HardwareProfile,
@@ -6733,6 +6734,8 @@ function CapsuleImportDetail({ result, onClose }: { result: CapsuleImportResult;
 
 function CapsuleDetail({ capsule, onOpenTarget }: { capsule: Capsule; onOpenTarget: (item: CapsuleItem) => void }) {
   const queryClient = useQueryClient();
+  const setSurface = useUIStore((state) => state.setSurface);
+  const setSelectedNoteId = useUIStore((state) => state.setSelectedNoteId);
   const notes = useQuery({ queryKey: ["notes"], queryFn: () => vaultRequest<Note[]>("notes.list") });
   const sources = useQuery({ queryKey: ["sources"], queryFn: () => vaultRequest<Source[]>("sources.list") });
   const claims = useQuery({ queryKey: ["claims"], queryFn: () => vaultRequest<Claim[]>("claims.list") });
@@ -6776,6 +6779,18 @@ function CapsuleDetail({ capsule, onOpenTarget }: { capsule: Capsule; onOpenTarg
       queryClient.invalidateQueries({ queryKey: ["capsule", capsule.id] });
     }
   });
+  const generateOverview = useMutation({
+    mutationFn: () => vaultRequest<CapsuleOverviewNoteResult>("capsules.overviewNote", { capsuleId: capsule.id }),
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ["capsules"] });
+      queryClient.invalidateQueries({ queryKey: ["capsule", capsule.id] });
+      queryClient.invalidateQueries({ queryKey: ["notes"] });
+      queryClient.invalidateQueries({ queryKey: ["stats"] });
+      queryClient.invalidateQueries({ queryKey: ["events"] });
+      setSelectedNoteId(result.note_id);
+      setSurface("notes");
+    }
+  });
   const snapshot = useMutation({
     mutationFn: () =>
       vaultRequest("capsules.snapshot", {
@@ -6795,6 +6810,9 @@ function CapsuleDetail({ capsule, onOpenTarget }: { capsule: Capsule; onOpenTarg
           <>
             <Button icon={<RefreshCw size={15} />} variant="quiet" disabled={runHealth.isPending} onClick={() => runHealth.mutate()}>
               Health
+            </Button>
+            <Button icon={<Sparkles size={15} />} variant="quiet" disabled={generateOverview.isPending} onClick={() => generateOverview.mutate()}>
+              Overview
             </Button>
             <Button icon={<Save size={15} />} variant="secondary" disabled={!snapshotVersion.trim() || snapshot.isPending} onClick={() => snapshot.mutate()}>
               Snapshot
@@ -6874,8 +6892,8 @@ function CapsuleDetail({ capsule, onOpenTarget }: { capsule: Capsule; onOpenTarg
           <Input aria-label="Snapshot version" value={snapshotVersion} onChange={(event) => setSnapshotVersion(event.target.value)} />
         </section>
       </div>
-      {(addItem.error || runHealth.error || snapshot.error) && (
-        <small className="model-test-error">{addItem.error?.message || runHealth.error?.message || snapshot.error?.message}</small>
+      {(addItem.error || runHealth.error || generateOverview.error || snapshot.error) && (
+        <small className="model-test-error">{addItem.error?.message || runHealth.error?.message || generateOverview.error?.message || snapshot.error?.message}</small>
       )}
       <div className="capsule-health-row">
         {visibleCapsuleWarnings(capsule).slice(0, 3).map((warning) => (
