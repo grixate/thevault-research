@@ -716,6 +716,7 @@ describe("App", () => {
       ]
     };
     let capsuleRows: any[] = [];
+    let reviewRows: any[] = [];
     const selectFiles = vi.fn(async () => ["/tmp/acoustic-science-foundations.vaultcapsule"]);
     window.vault = {
       request: vi.fn(async (route: string, payload?: any) => {
@@ -810,6 +811,37 @@ describe("App", () => {
           };
         }
         if (route === "capsules.import.reviewItems") {
+          reviewRows = [
+            {
+              id: "rev_import_claim",
+              workspace_id: "wrk_default",
+              item_type: "capsule_import_claim",
+              title: "Imported claim: Resonance depends on boundary conditions",
+              summary: "Acoustic Science Foundations: claim requires review before merge.",
+              payload: {
+                type: "capsule_import",
+                capsule_import_id: "capimp_test",
+                import_target_type: "claim",
+                import_target_id: "clm_remote_resonance",
+                body: "Resonance depends on boundary conditions.",
+                canonical_mutation: "none",
+                merge_action_preview: "created",
+                merge_summary: "Approval creates a weakly supported local claim that still needs evidence review.",
+                merge_preview: {
+                  import_target_type: "claim",
+                  import_target_id: "clm_remote_resonance",
+                  canonical_target_type: "claim",
+                  canonical_target_id: null,
+                  action: "created",
+                  summary: "Approval creates a weakly supported local claim that still needs evidence review.",
+                  requires_review: true
+                }
+              },
+              status: "pending",
+              created_at: "2026-06-14T12:20:00Z",
+              updated_at: "2026-06-14T12:20:00Z"
+            }
+          ];
           return {
             import_id: "capimp_test",
             status: "review_ready",
@@ -828,7 +860,7 @@ describe("App", () => {
         if (route === "graph.nodes") return [{ id: "node_natural_frequency", node_type: "concept", title: "Natural frequency", canonical_text: "Natural frequency", status: "active", updated_at: "2026-06-14T12:00:00Z" }];
         if (route === "learning.items") return [{ id: "learn_natural_frequency", type: "flashcard", title: "Natural frequency recall", status: "active" }];
         if (route === "tools.list") return [{ id: "tool_claim_citation_checker", name: "Claim citation checker", slug: "claim-citation-checker", version: "0.1.0", status: "installed" }];
-        if (route === "review.list") return [];
+        if (route === "review.list") return reviewRows;
         return [];
       }),
       selectFiles
@@ -870,6 +902,9 @@ describe("App", () => {
     expect(await screen.findByText("2 created")).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: /open review/i }));
     await waitFor(() => expect(useUIStore.getState().surface).toBe("review"));
+    expect(await screen.findByLabelText("Capsule import merge preview")).toBeTruthy();
+    expect(await screen.findByText("Create new")).toBeTruthy();
+    expect(await screen.findByText("Approval creates a weakly supported local claim that still needs evidence review.")).toBeTruthy();
   });
 
   it("adds the current note to a capsule from the note editor", async () => {

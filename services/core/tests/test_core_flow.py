@@ -917,6 +917,11 @@ def test_capsules_reference_global_objects_and_snapshot_health(client):
     imported_note_review = next(item for item in imported_reviews if item["item_type"] == "capsule_import_note" and item["payload"]["import_target_id"] == note["id"])
     imported_source_review = next(item for item in imported_reviews if item["item_type"] == "capsule_import_source" and item["payload"]["import_target_id"] == imported["source"]["id"])
     imported_claim_review = next(item for item in imported_reviews if item["item_type"] == "capsule_import_claim" and item["payload"]["import_target_id"] == claim_id)
+    assert imported_note_review["payload"]["merge_preview"]["action"] == "linked_existing"
+    assert imported_note_review["payload"]["merge_preview"]["canonical_target_id"] == note["id"]
+    assert "no duplicate" in imported_note_review["payload"]["merge_preview"]["summary"]
+    assert imported_source_review["payload"]["merge_preview"]["action"] == "linked_existing"
+    assert imported_claim_review["payload"]["merge_preview"]["action"] == "linked_existing"
     approved_import_note = client.post(
         f"/review/items/{imported_note_review['id']}/approve",
         json={"decision_note": "Keep this imported note linked to the existing note."},

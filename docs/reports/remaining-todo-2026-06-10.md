@@ -270,6 +270,15 @@ Latest capsule workspace-backup verification on 2026-06-15:
 - Focused desktop workspace backup test: passed.
 - Python lint: passed.
 
+Latest capsule import-merge preview verification on 2026-06-15:
+
+- Capsule import review items now include backend merge preview metadata before any approval:
+  link existing local object, create new object, create weakly supported claim, or create disabled tool.
+- Review shows a compact `Merge preview` block for imported capsule items, including the approval consequence, imported ID, and existing local ID when available.
+- The preview keeps quarantine-first behavior intact: imported objects still merge only through Review approval.
+- Focused backend capsule import/merge test: passed.
+- Focused desktop capsule import Review handoff test: passed.
+
 Latest focused verification on 2026-06-11 before the current claim-grammar slice:
 
 - Python core tests: 125 passed.
@@ -2592,6 +2601,7 @@ Current good state:
 - Review approval can now selectively merge individual imported notes, sources, claims, concepts, and tools.
 - Imported objects link to an existing local object when the original ID already exists, instead of duplicating canonical graph objects.
 - Imported claims are merged as `weakly_supported` unless they already exist locally; imported tools are created disabled.
+- Capsule import Review items now show a merge preview before approval, including whether approval links an existing object, creates a new object, creates a weak claim, or creates a disabled tool.
 - Capsules can generate an overview note from capsule-scoped sources and approved claims only.
 - Generated capsule overview notes enter Notes as `generated_pending_review`, keep normal generated-note metadata, and attach back to the capsule with role `overview`.
 - Capsules can generate reviewed-claims-only learning items into Review: course outline, first lesson, quiz, explain-back prompt, and flashcards. Approved items attach back to the capsule as `learning_item` references.
@@ -2627,7 +2637,7 @@ Remaining tasks:
   - add version-specific export,
   - add package format contract docs once import stabilizes.
 - Complete import merge workflow:
-  - add conflict-aware selective merge UI for imported objects that do not already exist locally,
+  - expand conflict-aware selective merge beyond the current Review-item preview into explicit side-by-side conflict comparison where imported and local content differ,
   - add richer merge decisions for evidence links, source blocks, graph edges, and capsule membership,
   - add an explicit enable step for reviewed imported tools,
   - expose import history/details beyond the latest import result,

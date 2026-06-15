@@ -3463,6 +3463,21 @@ textarea {
   background: hsl(42 78% 94%) !important;
 }
 
+.review-import-merge {
+  background: var(--card) !important;
+}
+
+.review-import-merge-line {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  min-width: 0;
+}
+
+.review-import-merge-line p {
+  min-width: 0;
+}
+
 .review-meta-row small {
   max-width: 100%;
   color: var(--muted);

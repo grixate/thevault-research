@@ -988,6 +988,7 @@ def create_capsule_import_review_items(db: VaultDatabase, import_id: str) -> dic
         created_ids: list[str] = []
         skipped = 0
         for proposal in capsule_import_review_proposals(import_id, manifest, records):
+            proposal = add_capsule_import_merge_preview(conn, db.workspace_id, proposal)
             key = (proposal["item_type"], proposal["payload"]["import_target_type"], proposal["payload"]["import_target_id"])
             if key in existing:
                 skipped += 1
@@ -1607,6 +1608,64 @@ def import_review_proposal(
             "canonical_mutation": "none",
         },
     }
+
+
+def add_capsule_import_merge_preview(conn: sqlite3.Connection, workspace_id: str, proposal: dict[str, Any]) -> dict[str, Any]:
+    payload = proposal.get("payload") if isinstance(proposal.get("payload"), dict) else {}
+    target_type = str(payload.get("import_target_type") or "")
+    original_id = str(payload.get("import_target_id") or "")
+    target_table = capsule_import_target_table(target_type)
+    existing = local_row_by_original_id(conn, target_table, workspace_id, original_id) if target_table else None
+    action = "linked_existing" if existing else capsule_import_create_action(target_type)
+    summary = capsule_import_merge_preview_summary(target_type, action)
+    enriched_payload = {
+        **payload,
+        "merge_preview": {
+            "import_target_type": target_type,
+            "import_target_id": original_id,
+            "canonical_target_type": target_type,
+            "canonical_target_id": existing["id"] if existing else None,
+            "action": action,
+            "summary": summary,
+            "requires_review": True,
+        },
+        "merge_action_preview": action,
+        "merge_summary": summary,
+        "existing_target_id": existing["id"] if existing else None,
+    }
+    if target_type == "claim" and not existing:
+        enriched_payload["suggested_status"] = "weakly_supported"
+    if target_type == "tool" and not existing:
+        enriched_payload["tool_import_status"] = "disabled_until_reviewed"
+    return {**proposal, "payload": enriched_payload}
+
+
+def capsule_import_target_table(target_type: str) -> str | None:
+    tables = {
+        "source": "sources",
+        "note": "notes",
+        "claim": "claims",
+        "kg_node": "kg_nodes",
+        "tool": "tool_registry",
+    }
+    return tables.get(target_type)
+
+
+def capsule_import_create_action(target_type: str) -> str:
+    if target_type == "tool":
+        return "created_disabled"
+    return "created"
+
+
+def capsule_import_merge_preview_summary(target_type: str, action: str) -> str:
+    label = target_type.replace("_", " ") or "item"
+    if action == "linked_existing":
+        return f"Approval links this import to the existing local {label}; no duplicate object is created."
+    if action == "created_disabled":
+        return "Approval creates a disabled local tool. It cannot run until explicitly enabled after review."
+    if target_type == "claim":
+        return "Approval creates a weakly supported local claim that still needs evidence review."
+    return f"Approval creates a new local {label} from this quarantined import."
 
 
 def normalize_export_mode(value: Any) -> str:

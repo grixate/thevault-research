@@ -5749,6 +5749,8 @@ function reviewItemSearchText(item: ReviewItem): string {
     payload.ai_run_id,
     payload.model_id,
     payload.provider_id,
+    payload.merge_action_preview,
+    payload.merge_summary,
     ...stringList(payload.source_ids),
     ...stringList(payload.source_refs),
     ...stringList(payload.tags),
@@ -5777,6 +5779,29 @@ function reviewPayloadModelLabel(payload: Record<string, unknown>): string {
 
 function reviewPayloadBlockLabel(payload: Record<string, unknown>): string {
   return payload.source_block_id ? "Source block" : "";
+}
+
+function capsuleImportMergePreview(payload: Record<string, unknown>): Record<string, unknown> | null {
+  if (payload.type !== "capsule_import") return null;
+  return payload.merge_preview && typeof payload.merge_preview === "object"
+    ? (payload.merge_preview as Record<string, unknown>)
+    : null;
+}
+
+function capsuleImportMergeActionLabel(action: unknown): string {
+  const value = String(action || "");
+  if (value === "linked_existing") return "Link existing";
+  if (value === "created_disabled") return "Create disabled tool";
+  if (value === "created") return "Create new";
+  return value ? capsuleOptionLabel(value) : "Review first";
+}
+
+function capsuleImportMergeTone(action: unknown): "good" | "warn" | "bad" | "info" | "neutral" {
+  const value = String(action || "");
+  if (value === "linked_existing") return "good";
+  if (value === "created_disabled") return "warn";
+  if (value === "created") return "info";
+  return "neutral";
 }
 
 function shortIdentifier(value: string): string {
@@ -5809,6 +5834,7 @@ function ReviewPayloadSummary({ item }: { item: ReviewItem }) {
   const actions = stringList(payload.actions);
   const cards = Array.isArray(payload.cards) ? payload.cards : [];
   const learningItems = Array.isArray(payload.items) ? payload.items : [];
+  const importMergePreview = capsuleImportMergePreview(payload);
   return (
     <div className="review-proposal">
       <div className="review-proposal-header">
@@ -5817,6 +5843,20 @@ function ReviewPayloadSummary({ item }: { item: ReviewItem }) {
         {payload.language && <Badge>{String(payload.language)}</Badge>}
         {confidence != null && Number.isFinite(confidence) && <Badge tone={confidence >= 0.75 ? "good" : confidence >= 0.45 ? "warn" : "bad"}>{Math.round(confidence * 100)}%</Badge>}
       </div>
+      {importMergePreview && (
+        <section className="review-import-merge" aria-label="Capsule import merge preview">
+          <span>Merge preview</span>
+          <div className="review-import-merge-line">
+            <Badge tone={capsuleImportMergeTone(importMergePreview.action)}>{capsuleImportMergeActionLabel(importMergePreview.action)}</Badge>
+            <p>{String(importMergePreview.summary || payload.merge_summary || "Review before merging this imported item.")}</p>
+          </div>
+          <div className="review-meta-row">
+            {payload.import_target_type && <small>{capsuleOptionLabel(String(payload.import_target_type))}</small>}
+            {payload.import_target_id && <small title={String(payload.import_target_id)}>import {shortIdentifier(String(payload.import_target_id))}</small>}
+            {importMergePreview.canonical_target_id && <small title={String(importMergePreview.canonical_target_id)}>local {shortIdentifier(String(importMergePreview.canonical_target_id))}</small>}
+          </div>
+        </section>
+      )}
       {payload.body && (
         <section>
           <span>Proposal</span>
