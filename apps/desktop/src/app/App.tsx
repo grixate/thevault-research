@@ -11029,7 +11029,7 @@ function SettingsView() {
                 <h3>Workspace backup</h3>
                 <p>
                   Save a zip in the Vault backups folder with notes, sources, claims, review history,
-                  files, and a safe database copy.
+                  capsules, files, and a safe database copy.
                 </p>
               </div>
               <Button icon={<Download size={15} />} variant="primary" disabled={createWorkspaceExport.isPending} onClick={() => createWorkspaceExport.mutate()}>
@@ -11041,6 +11041,7 @@ function SettingsView() {
                 ["Notes", "One Markdown file per note, with note metadata."],
                 ["Sources", "Source records and source blocks for evidence traceability."],
                 ["Claims", "Claims, evidence links, and graph edges."],
+                ["Capsules", "Capsule membership, versions, exports, imports, and dependencies."],
                 ["Review history", "Review decisions and pending proposals."],
                 ["Files and database", "Vault files plus a safe SQLite backup."]
               ].map(([title, body]) => (

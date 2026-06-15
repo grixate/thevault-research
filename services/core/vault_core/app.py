@@ -3187,6 +3187,14 @@ def create_workspace_export(settings: Settings, db: VaultDatabase) -> dict[str, 
                 "claims": "JSONL",
                 "graph_edges": "JSONL",
                 "review_history": "JSONL",
+                "capsules": "JSONL",
+                "capsule_items": "JSONL",
+                "capsule_versions": "JSONL",
+                "capsule_dependencies": "JSONL",
+                "capsule_health_snapshots": "JSONL",
+                "capsule_exports": "JSONL",
+                "capsule_imports": "JSONL",
+                "capsule_changelog": "JSONL",
                 "database_backup": "SQLite",
             },
             "counts": {key: len(value) for key, value in data["records"].items()},
@@ -3205,6 +3213,14 @@ def create_workspace_export(settings: Settings, db: VaultDatabase) -> dict[str, 
             write_zip_jsonl(archive, "data/graph_edges.jsonl", data["records"]["graph_edges"])
             write_zip_jsonl(archive, "data/review_history.jsonl", data["records"]["review_history"])
             write_zip_jsonl(archive, "data/learning_items.jsonl", data["records"]["learning_items"])
+            write_zip_jsonl(archive, "data/capsules.jsonl", data["records"]["capsules"])
+            write_zip_jsonl(archive, "data/capsule_items.jsonl", data["records"]["capsule_items"])
+            write_zip_jsonl(archive, "data/capsule_versions.jsonl", data["records"]["capsule_versions"])
+            write_zip_jsonl(archive, "data/capsule_dependencies.jsonl", data["records"]["capsule_dependencies"])
+            write_zip_jsonl(archive, "data/capsule_health_snapshots.jsonl", data["records"]["capsule_health_snapshots"])
+            write_zip_jsonl(archive, "data/capsule_exports.jsonl", data["records"]["capsule_exports"])
+            write_zip_jsonl(archive, "data/capsule_imports.jsonl", data["records"]["capsule_imports"])
+            write_zip_jsonl(archive, "data/capsule_changelog.jsonl", data["records"]["capsule_changelog"])
             archive.write(backup_db_path, "backup/vault.db")
             blob_entries = add_blobs_to_export(archive, settings.blob_dir)
             manifest["blobs"] = blob_entries
@@ -3290,6 +3306,48 @@ def collect_workspace_export_data(settings: Settings, db: VaultDatabase) -> dict
             "learning_items": export_rows(
                 conn.execute("SELECT * FROM learning_items WHERE workspace_id=? ORDER BY created_at, id", (db.workspace_id,)).fetchall(),
                 json_fields={"body_json": "body", "source_refs_json": "source_refs"},
+            ),
+            "capsules": export_rows(
+                conn.execute("SELECT * FROM capsules WHERE workspace_id=? ORDER BY updated_at DESC, id", (db.workspace_id,)).fetchall(),
+                json_fields={"domains_json": "domains", "tags_json": "tags", "metadata_json": "metadata"},
+            ),
+            "capsule_items": export_rows(
+                conn.execute("SELECT * FROM capsule_items WHERE workspace_id=? ORDER BY capsule_id, sort_order, created_at, id", (db.workspace_id,)).fetchall(),
+                json_fields={"metadata_json": "metadata"},
+            ),
+            "capsule_versions": export_rows(
+                conn.execute("SELECT * FROM capsule_versions WHERE workspace_id=? ORDER BY capsule_id, created_at, id", (db.workspace_id,)).fetchall(),
+                json_fields={"manifest_json": "manifest", "item_snapshot_json": "item_snapshot", "health_snapshot_json": "health_snapshot"},
+            ),
+            "capsule_dependencies": export_rows(
+                conn.execute("SELECT * FROM capsule_dependencies WHERE workspace_id=? ORDER BY capsule_id, created_at, id", (db.workspace_id,)).fetchall(),
+                json_fields={"metadata_json": "metadata"},
+            ),
+            "capsule_health_snapshots": export_rows(
+                conn.execute("SELECT * FROM capsule_health_snapshots WHERE workspace_id=? ORDER BY capsule_id, created_at, id", (db.workspace_id,)).fetchall(),
+                json_fields={"warning_json": "warnings"},
+            ),
+            "capsule_exports": export_rows(
+                conn.execute("SELECT * FROM capsule_exports WHERE workspace_id=? ORDER BY created_at, id", (db.workspace_id,)).fetchall(),
+                json_fields={
+                    "manifest_json": "manifest",
+                    "privacy_report_json": "privacy_report",
+                    "validation_report_json": "validation_report",
+                    "warnings_json": "warnings",
+                },
+            ),
+            "capsule_imports": export_rows(
+                conn.execute("SELECT * FROM capsule_imports WHERE workspace_id=? ORDER BY created_at, id", (db.workspace_id,)).fetchall(),
+                json_fields={
+                    "manifest_json": "manifest",
+                    "validation_report_json": "validation_report",
+                    "merge_plan_json": "merge_plan",
+                    "warnings_json": "warnings",
+                },
+            ),
+            "capsule_changelog": export_rows(
+                conn.execute("SELECT * FROM capsule_changelog WHERE workspace_id=? ORDER BY capsule_id, created_at, id", (db.workspace_id,)).fetchall(),
+                json_fields={"payload_json": "payload"},
             ),
         }
     return {"database_schema_version": schema_version, "records": records}

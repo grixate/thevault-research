@@ -4715,8 +4715,8 @@ describe("App", () => {
           size_bytes: 2048,
           created_at: "2026-06-05T00:00:00Z",
           manifest: {
-            counts: { notes: 2, sources: 1, claims: 1, graph_edges: 0, review_history: 1 },
-            formats: { notes: "Markdown + JSONL metadata" },
+            counts: { notes: 2, sources: 1, claims: 1, graph_edges: 0, review_history: 1, capsules: 1, capsule_items: 3, capsule_versions: 1 },
+            formats: { notes: "Markdown + JSONL metadata", capsules: "JSONL" },
             database: { schema_version: 0 },
             blobs: []
           }
@@ -4731,7 +4731,9 @@ describe("App", () => {
 
     fireEvent.click(await screen.findByRole("tab", { name: /^export$/i }));
     expect(await screen.findByText("Workspace backup")).toBeTruthy();
-    expect(await screen.findByLabelText("Workspace backup contents")).toBeTruthy();
+    const backupContents = await screen.findByLabelText("Workspace backup contents");
+    expect(backupContents).toBeTruthy();
+    expect(within(backupContents).getByText("Capsules")).toBeTruthy();
     fireEvent.click(await screen.findByRole("button", { name: /create backup/i }));
 
     await waitFor(() => expect(request).toHaveBeenCalledWith("export.workspace", {}));
@@ -4739,6 +4741,8 @@ describe("App", () => {
     expect(await screen.findByText(/notes: 2/i)).toBeTruthy();
     expect(await screen.findByText(/sources: 1/i)).toBeTruthy();
     expect(await screen.findByText(/claims: 1/i)).toBeTruthy();
+    expect(await screen.findByText(/capsules: 1/i)).toBeTruthy();
+    expect(await screen.findByText(/capsule items: 3/i)).toBeTruthy();
     expect(await screen.findByText(/Created vault-workspace-export-test.zip/)).toBeTruthy();
   });
 

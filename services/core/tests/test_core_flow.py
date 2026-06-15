@@ -591,6 +591,27 @@ def test_workspace_export_contains_notes_sources_graph_review_and_backup(client)
     client.post("/extraction/run", json={"target_type": "source", "target_id": imported["source"]["id"], "extract": ["claims"]})
     review_item = client.get("/review/items").json()[0]
     claim_id = client.post(f"/review/items/{review_item['id']}/approve", json={"decision_note": "Ready for export."}).json()["created"]["claim_id"]
+    capsule = client.post(
+        "/capsules",
+        json={"name": "Workspace Export Capsule", "capsule_type": "project", "purpose": "Verify workspace backups include capsules."},
+    ).json()
+    client.post(
+        f"/capsules/{capsule['id']}/items",
+        json={
+            "items": [
+                {"target_type": "note", "target_id": note["id"], "role": "overview"},
+                {"target_type": "source", "target_id": imported["source"]["id"], "role": "source"},
+                {"target_type": "claim", "target_id": claim_id, "role": "key_claim"},
+            ]
+        },
+    ).json()
+    client.post(f"/capsules/{capsule['id']}/health/run").json()
+    client.post(
+        f"/capsules/{capsule['id']}/versions",
+        json={"version": "0.1.1", "title": "Workspace export checkpoint", "changelog": "Backup should include capsule state."},
+    ).json()
+    forked = client.post(f"/capsules/{capsule['id']}/fork", json={"name": "Workspace Export Capsule Fork"}).json()
+    capsule_export = client.post(f"/capsules/{capsule['id']}/export", json={"export_mode": "reference_only"}).json()
 
     exported = client.post("/export/workspace").json()
 
@@ -600,7 +621,14 @@ def test_workspace_export_contains_notes_sources_graph_review_and_backup(client)
     assert exported["manifest"]["counts"]["notes"] >= 1
     assert exported["manifest"]["counts"]["sources"] >= 1
     assert exported["manifest"]["counts"]["claims"] >= 1
+    assert exported["manifest"]["counts"]["capsules"] >= 2
+    assert exported["manifest"]["counts"]["capsule_items"] >= 3
+    assert exported["manifest"]["counts"]["capsule_versions"] >= 1
+    assert exported["manifest"]["counts"]["capsule_dependencies"] >= 1
+    assert exported["manifest"]["counts"]["capsule_health_snapshots"] >= 1
+    assert exported["manifest"]["counts"]["capsule_exports"] >= 1
     assert exported["manifest"]["formats"]["notes"] == "Markdown + JSONL metadata"
+    assert exported["manifest"]["formats"]["capsules"] == "JSONL"
     with zipfile.ZipFile(export_path) as archive:
         names = set(archive.namelist())
         assert "manifest.json" in names
@@ -608,6 +636,14 @@ def test_workspace_export_contains_notes_sources_graph_review_and_backup(client)
         assert "data/claims.jsonl" in names
         assert "data/graph_edges.jsonl" in names
         assert "data/review_history.jsonl" in names
+        assert "data/capsules.jsonl" in names
+        assert "data/capsule_items.jsonl" in names
+        assert "data/capsule_versions.jsonl" in names
+        assert "data/capsule_dependencies.jsonl" in names
+        assert "data/capsule_health_snapshots.jsonl" in names
+        assert "data/capsule_exports.jsonl" in names
+        assert "data/capsule_imports.jsonl" in names
+        assert "data/capsule_changelog.jsonl" in names
         assert "backup/vault.db" in names
         note_files = [name for name in names if name.startswith("notes/") and name.endswith(f"{note['id']}.md")]
         assert note_files
@@ -616,6 +652,19 @@ def test_workspace_export_contains_notes_sources_graph_review_and_backup(client)
         assert any(claim["id"] == claim_id for claim in claims)
         review_items = [json.loads(line) for line in archive.read("data/review_history.jsonl").decode("utf-8").splitlines()]
         assert any(item["decision_note"] == "Ready for export." for item in review_items)
+        capsules = [json.loads(line) for line in archive.read("data/capsules.jsonl").decode("utf-8").splitlines()]
+        assert any(item["id"] == capsule["id"] and item["domains"] == [] and item["metadata"] == {} for item in capsules)
+        assert any(item["id"] == forked["id"] for item in capsules)
+        capsule_items = [json.loads(line) for line in archive.read("data/capsule_items.jsonl").decode("utf-8").splitlines()]
+        assert {item["target_id"] for item in capsule_items if item["capsule_id"] == capsule["id"]} >= {note["id"], imported["source"]["id"], claim_id}
+        capsule_versions = [json.loads(line) for line in archive.read("data/capsule_versions.jsonl").decode("utf-8").splitlines()]
+        assert any(item["version"] == "0.1.1" and item["manifest"]["capsule"]["id"] == capsule["id"] for item in capsule_versions)
+        capsule_dependencies = [json.loads(line) for line in archive.read("data/capsule_dependencies.jsonl").decode("utf-8").splitlines()]
+        assert any(item["capsule_id"] == forked["id"] and item["target_capsule_id"] == capsule["id"] for item in capsule_dependencies)
+        capsule_health = [json.loads(line) for line in archive.read("data/capsule_health_snapshots.jsonl").decode("utf-8").splitlines()]
+        assert any(item["capsule_id"] == capsule["id"] and isinstance(item["warnings"], list) for item in capsule_health)
+        capsule_exports = [json.loads(line) for line in archive.read("data/capsule_exports.jsonl").decode("utf-8").splitlines()]
+        assert any(item["id"] == capsule_export["export_id"] and item["privacy_report"]["status"] == "ready" for item in capsule_exports)
 
 
 def test_capsules_reference_global_objects_and_snapshot_health(client):
