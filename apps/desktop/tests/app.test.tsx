@@ -843,9 +843,22 @@ describe("App", () => {
       epistemic_strictness: "balanced",
       default_source_policy: "reference_only",
       updated_at: "2026-06-14T12:00:00Z",
-      counts: { sources: 0, notes: 0, claims: 0, concepts: 0, tools: 0 },
+      counts: { sources: 0, notes: 1, claims: 0, concepts: 0, tools: 0 },
       health: { score: 0, status: "needs_review", warnings: ["No capsule items yet."] },
-      items: [],
+      items: [
+        {
+          id: "capitem_note",
+          capsule_id: "cap_acoustics",
+          target_type: "note",
+          target_id: "note_capsule_intro",
+          role: "core",
+          include_mode: "reference",
+          status: "active",
+          private_flag: false,
+          created_at: "2026-06-14T12:05:00Z",
+          target: { type: "note", id: "note_capsule_intro", title: "Acoustics intro note" }
+        }
+      ],
       versions: [
         { id: "capver_02", version: "0.2.0", title: "Current", changelog: null, created_at: "2026-06-14T12:10:00Z" },
         { id: "capver_01", version: "0.1.0", title: "Baseline", changelog: null, created_at: "2026-06-14T12:00:00Z" }
@@ -889,6 +902,11 @@ describe("App", () => {
         if (route === "capsules.create") {
           capsuleRows = [capsule];
           return capsule;
+        }
+        if (route === "capsules.removeItem") {
+          capsule.items = capsule.items.filter((item) => item.id !== payload?.itemId);
+          capsule.counts = { ...capsule.counts, notes: 0 };
+          return { removed: true, item_id: payload?.itemId };
         }
         if (route === "capsules.fork") {
           capsuleRows = [forkedCapsule, capsule];
@@ -1057,6 +1075,10 @@ describe("App", () => {
     expect(await screen.findByLabelText("Capsule target type")).toBeTruthy();
     expect(await screen.findByRole("button", { name: "Add note" })).toBeTruthy();
     expect(await screen.findByText("No notes")).toBeTruthy();
+    expect(await screen.findByText("Acoustics intro note")).toBeTruthy();
+    fireEvent.click(await screen.findByRole("button", { name: "Remove Acoustics intro note" }));
+    await waitFor(() => expect(window.vault.request).toHaveBeenCalledWith("capsules.removeItem", { capsuleId: "cap_acoustics", itemId: "capitem_note" }));
+    await waitFor(() => expect(screen.queryByText("Acoustics intro note")).toBeNull());
     await waitFor(() => expect(window.vault.request).toHaveBeenCalledWith("graph.nodes", { limit: 100 }));
     expect(window.vault.request).toHaveBeenCalledWith("learning.items", undefined);
     expect(window.vault.request).toHaveBeenCalledWith("tools.list", undefined);

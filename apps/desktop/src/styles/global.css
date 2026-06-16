@@ -1082,6 +1082,10 @@ textarea:not(.ui-textarea) {
 }
 
 .capsule-items article {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
   min-width: 0;
   border-bottom: 1px solid var(--line);
 }
@@ -1090,7 +1094,7 @@ textarea:not(.ui-textarea) {
   border-bottom: 0;
 }
 
-.capsule-items button {
+.capsule-items article > button:first-child {
   width: 100%;
   min-width: 0;
   display: grid;
@@ -1104,6 +1108,30 @@ textarea:not(.ui-textarea) {
   background: transparent;
   border: 0;
   cursor: pointer;
+}
+
+.capsule-item-remove {
+  width: 30px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.capsule-item-remove:hover:not(:disabled) {
+  color: var(--foreground);
+  background: var(--muted-surface);
+  border-color: var(--line);
+}
+
+.capsule-item-remove:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 .capsule-items strong,

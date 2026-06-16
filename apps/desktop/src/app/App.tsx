@@ -7483,6 +7483,14 @@ function CapsuleDetail({ capsule, onOpenTarget }: { capsule: Capsule; onOpenTarg
       queryClient.invalidateQueries({ queryKey: ["capsule", capsule.id] });
     }
   });
+  const removeItem = useMutation({
+    mutationFn: (itemId: string) => vaultRequest("capsules.removeItem", { capsuleId: capsule.id, itemId }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["capsules"] });
+      queryClient.invalidateQueries({ queryKey: ["capsule", capsule.id] });
+      queryClient.invalidateQueries({ queryKey: ["stats"] });
+    }
+  });
   const runHealth = useMutation({
     mutationFn: () => vaultRequest("capsules.health.run", { capsuleId: capsule.id }),
     onSuccess: () => {
@@ -7663,9 +7671,10 @@ function CapsuleDetail({ capsule, onOpenTarget }: { capsule: Capsule; onOpenTarg
           </Button>
         </section>
       </div>
-      {(addItem.error || runHealth.error || forkCapsule.error || generateOverview.error || generateLearning.error || snapshot.error || versionDiff.error) && (
+      {(addItem.error || removeItem.error || runHealth.error || forkCapsule.error || generateOverview.error || generateLearning.error || snapshot.error || versionDiff.error) && (
         <small className="model-test-error">
           {addItem.error?.message ||
+            removeItem.error?.message ||
             runHealth.error?.message ||
             forkCapsule.error?.message ||
             generateOverview.error?.message ||
@@ -7689,6 +7698,16 @@ function CapsuleDetail({ capsule, onOpenTarget }: { capsule: Capsule; onOpenTarg
             <button type="button" onClick={() => onOpenTarget(item)}>
               <strong>{item.target?.title ?? item.target_id}</strong>
               <span>{capsuleOptionLabel(item.target_type)} · {capsuleOptionLabel(item.role)}</span>
+            </button>
+            <button
+              type="button"
+              className="capsule-item-remove"
+              aria-label={`Remove ${item.target?.title ?? item.target_id}`}
+              title="Remove from capsule"
+              disabled={removeItem.isPending}
+              onClick={() => removeItem.mutate(item.id)}
+            >
+              <X size={14} />
             </button>
           </article>
         ))}
