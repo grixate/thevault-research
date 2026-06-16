@@ -1067,6 +1067,9 @@ describe("App", () => {
     expect(await screen.findByText("No capsules")).toBeTruthy();
     fireEvent.click(screen.getAllByRole("button", { name: "New" })[0]);
     fireEvent.change(await screen.findByLabelText("Capsule name"), { target: { value: "Acoustic Science Foundations" } });
+    const detailsSummary = screen.getByText("Details");
+    expect((detailsSummary.closest("details") as HTMLDetailsElement).open).toBe(false);
+    fireEvent.click(detailsSummary);
     fireEvent.change(screen.getByLabelText("Capsule purpose"), { target: { value: "Reusable acoustics research module." } });
     fireEvent.click(screen.getByRole("button", { name: "Create" }));
 

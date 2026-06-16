@@ -7188,20 +7188,8 @@ function CapsulesView() {
                 createCapsule.mutate();
               }}
             >
-              <Input aria-label="Capsule name" value={draft.name} placeholder="Name" onChange={(event) => setDraft((current) => ({ ...current, name: event.target.value }))} />
-              <Textarea
-                aria-label="Capsule purpose"
-                value={draft.purpose}
-                placeholder="Purpose"
-                onChange={(event) => setDraft((current) => ({ ...current, purpose: event.target.value }))}
-              />
-              <Input
-                aria-label="Capsule description"
-                value={draft.description}
-                placeholder="Description"
-                onChange={(event) => setDraft((current) => ({ ...current, description: event.target.value }))}
-              />
-              <div className="capsule-create-grid">
+              <div className="capsule-create-primary">
+                <Input aria-label="Capsule name" value={draft.name} placeholder="Name" onChange={(event) => setDraft((current) => ({ ...current, name: event.target.value }))} />
                 <label className="field">
                   <span>Type</span>
                   <SelectRoot value={draft.capsule_type} onValueChange={(value) => setDraft((current) => ({ ...current, capsule_type: value }))}>
@@ -7217,41 +7205,58 @@ function CapsulesView() {
                     </SelectContent>
                   </SelectRoot>
                 </label>
-                <label className="field">
-                  <span>Strictness</span>
-                  <SelectRoot value={draft.epistemic_strictness} onValueChange={(value) => setDraft((current) => ({ ...current, epistemic_strictness: value }))}>
-                    <SelectTrigger aria-label="Capsule epistemic strictness">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {["strict_evidence", "balanced", "exploratory", "creative_speculative"].map((strictness) => (
-                        <SelectItem key={strictness} value={strictness}>
-                          {capsuleOptionLabel(strictness)}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </SelectRoot>
-                </label>
-                <label className="field">
-                  <span>Source policy</span>
-                  <SelectRoot value={draft.default_source_policy} onValueChange={(value) => setDraft((current) => ({ ...current, default_source_policy: value }))}>
-                    <SelectTrigger aria-label="Capsule default source export policy">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {["reference_only", "metadata_and_quotes", "extracted_text_only", "full_sources_private"].map((policy) => (
-                        <SelectItem key={policy} value={policy}>
-                          {capsuleOptionLabel(policy)}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </SelectRoot>
-                </label>
               </div>
-              <div className="capsule-create-grid two">
-                <Input aria-label="Capsule domains" value={draft.domains} placeholder="Domains" onChange={(event) => setDraft((current) => ({ ...current, domains: event.target.value }))} />
-                <Input aria-label="Capsule tags" value={draft.tags} placeholder="Tags" onChange={(event) => setDraft((current) => ({ ...current, tags: event.target.value }))} />
-              </div>
+              <details className="capsule-create-more">
+                <summary>Details</summary>
+                <Textarea
+                  aria-label="Capsule purpose"
+                  value={draft.purpose}
+                  placeholder="Purpose"
+                  onChange={(event) => setDraft((current) => ({ ...current, purpose: event.target.value }))}
+                />
+                <Input
+                  aria-label="Capsule description"
+                  value={draft.description}
+                  placeholder="Description"
+                  onChange={(event) => setDraft((current) => ({ ...current, description: event.target.value }))}
+                />
+                <div className="capsule-create-grid">
+                  <label className="field">
+                    <span>Strictness</span>
+                    <SelectRoot value={draft.epistemic_strictness} onValueChange={(value) => setDraft((current) => ({ ...current, epistemic_strictness: value }))}>
+                      <SelectTrigger aria-label="Capsule epistemic strictness">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {["strict_evidence", "balanced", "exploratory", "creative_speculative"].map((strictness) => (
+                          <SelectItem key={strictness} value={strictness}>
+                            {capsuleOptionLabel(strictness)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </SelectRoot>
+                  </label>
+                  <label className="field">
+                    <span>Source policy</span>
+                    <SelectRoot value={draft.default_source_policy} onValueChange={(value) => setDraft((current) => ({ ...current, default_source_policy: value }))}>
+                      <SelectTrigger aria-label="Capsule default source export policy">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {["reference_only", "metadata_and_quotes", "extracted_text_only", "full_sources_private"].map((policy) => (
+                          <SelectItem key={policy} value={policy}>
+                            {capsuleOptionLabel(policy)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </SelectRoot>
+                  </label>
+                </div>
+                <div className="capsule-create-grid two">
+                  <Input aria-label="Capsule domains" value={draft.domains} placeholder="Domains" onChange={(event) => setDraft((current) => ({ ...current, domains: event.target.value }))} />
+                  <Input aria-label="Capsule tags" value={draft.tags} placeholder="Tags" onChange={(event) => setDraft((current) => ({ ...current, tags: event.target.value }))} />
+                </div>
+              </details>
               {createCapsule.error && <small className="model-test-error">{createCapsule.error.message}</small>}
               <div className="source-dialog-actions">
                 <small>{draft.name.trim() ? "Draft" : ""}</small>

@@ -309,6 +309,7 @@ Latest capsule UI polish verification on 2026-06-16:
 - Capsule curation copy is now target-aware without a redundant row label: the add action says `Add note/source/claim/concept/practice/tool`, empty selectors say `No notes/sources/...`, and the claim toggle says `Include evidence`.
 - Capsule item rows now include a compact remove action that calls the existing `capsules.removeItem` route, so mistaken note/source/claim/concept/practice/tool attachments can be undone from the detail surface.
 - Capsule import quarantine header no longer accumulates `Review items`, `Open Review`, and `Close` text buttons at once. It shows one primary handoff action that changes from `Review items` to `Open Review`, plus an icon-only close action.
+- New Capsule creation is now name/type-first. Optional purpose, description, strictness, source policy, domains, and tags live behind a quiet `Details` disclosure instead of filling the first view.
 - The curation workbench now separates target-aware add and `Snapshot` as compact rows instead of presenting them as dashboard cards or explanatory blocks.
 - Snapshot saving uses a compact Save action beside the version field; the rendered desktop smoke measured the Save action at 74px rather than stretching across the row.
 - Desktop browser smoke at 1440x950 with local core data rendered the Capsule detail header with 34px icon buttons, no visible action-caption text inside the header action cluster, and no horizontal overflow. Screenshot output at `/tmp/vault-capsules-icon-header-desktop.png`.

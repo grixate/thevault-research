@@ -1161,6 +1161,41 @@ textarea:not(.ui-textarea) {
   gap: 10px;
 }
 
+.capsule-create-primary {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 160px;
+  gap: 10px;
+  align-items: end;
+}
+
+.capsule-create-more {
+  display: grid;
+  gap: 10px;
+  padding-top: 2px;
+}
+
+.capsule-create-more > summary {
+  width: max-content;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 1.2;
+  list-style: none;
+  cursor: pointer;
+}
+
+.capsule-create-more > summary::-webkit-details-marker {
+  display: none;
+}
+
+.capsule-create-more > summary::after {
+  content: " +";
+}
+
+.capsule-create-more[open] > summary::after {
+  content: " -";
+}
+
 .capsule-create-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1169,6 +1204,14 @@ textarea:not(.ui-textarea) {
 
 .capsule-create-grid.two {
   grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+@media (max-width: 700px) {
+  .capsule-create-primary,
+  .capsule-create-grid,
+  .capsule-create-grid.two {
+    grid-template-columns: 1fr;
+  }
 }
 
 .capsule-attach-dialog {
