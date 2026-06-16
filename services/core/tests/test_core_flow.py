@@ -1762,6 +1762,43 @@ def test_tool_run_contract(client):
     assert run["output"]["findings"][0]["status"] == "quote_valid"
 
 
+def test_imported_tool_requires_explicit_enable_after_review(client):
+    ts = now_iso()
+    manifest = {
+        "name": "Imported Capsule Tool",
+        "version": "0.1.0",
+        "runtime": "python",
+        "imported_from_capsule": True,
+        "import_review_required": True,
+    }
+    with client.app.state.db.connect() as conn:
+        conn.execute(
+            """
+            INSERT INTO tool_registry
+              (id, workspace_id, name, slug, version, status, manifest_json, install_path, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, 'disabled', ?, NULL, ?, ?)
+            """,
+            (
+                "tool_imported_capsule",
+                client.app.state.db.workspace_id,
+                "Imported Capsule Tool",
+                "imported-capsule-tool",
+                "0.1.0",
+                dumps(manifest),
+                ts,
+                ts,
+            ),
+        )
+
+    enabled = client.post("/tools/tool_imported_capsule/enable").json()
+    assert enabled == {"tool_id": "tool_imported_capsule", "status": "installed"}
+    tool = next(item for item in client.get("/tools").json() if item["id"] == "tool_imported_capsule")
+    assert tool["status"] == "installed"
+    assert tool["manifest"]["imported_from_capsule"] is True
+    assert tool["manifest"]["import_review_required"] is False
+    assert tool["manifest"]["import_review_enabled_at"]
+
+
 def test_tool_bad_output_fails_without_review_items(client):
     tool_dir = client.app.state.settings.tool_dir / "installed" / "bad_contract_tool"
     tool_dir.mkdir(parents=True, exist_ok=True)

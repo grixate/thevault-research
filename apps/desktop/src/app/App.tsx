@@ -9088,7 +9088,16 @@ function ToolsView() {
       queryClient.invalidateQueries({ queryKey: ["events"] });
     }
   });
+  const enableTool = useMutation({
+    mutationFn: (tool: Tool) => vaultRequest("tools.enable", { toolId: tool.id }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["tools"] });
+      queryClient.invalidateQueries({ queryKey: ["stats"] });
+      queryClient.invalidateQueries({ queryKey: ["events"] });
+    }
+  });
   const manifest = selected?.manifest ?? {};
+  const importedToolNeedsEnable = selected?.status === "disabled" && manifest.imported_from_capsule === true && manifest.import_review_required === true;
   const permissions = Object.entries((manifest.permissions ?? {}) as Record<string, unknown>);
   const output = selectedRun?.output ?? {};
   function runSelectedTool() {
@@ -9129,10 +9138,15 @@ function ToolsView() {
           actions={
             selected && (
               <>
-                <Button icon={<Play size={16} />} disabled={run.isPending} onClick={runSelectedTool}>
+                {importedToolNeedsEnable && (
+                  <Button icon={<Check size={16} />} variant="secondary" disabled={enableTool.isPending} onClick={() => enableTool.mutate(selected)}>
+                    {enableTool.isPending ? "Enabling" : "Enable"}
+                  </Button>
+                )}
+                <Button icon={<Play size={16} />} disabled={run.isPending || selected.status !== "installed"} onClick={runSelectedTool}>
                   {run.isPending ? "Running" : "Run"}
                 </Button>
-                <Button icon={<Check size={16} />} variant="quiet" disabled={test.isPending} onClick={() => test.mutate(selected)}>
+                <Button icon={<Check size={16} />} variant="quiet" disabled={test.isPending || selected.status !== "installed"} onClick={() => test.mutate(selected)}>
                   {test.isPending ? "Testing" : "Test"}
                 </Button>
               </>
@@ -9145,6 +9159,7 @@ function ToolsView() {
               <div className="tool-contract-header">
                 <div>
                   <Badge tone={selected.status === "installed" ? "good" : "warn"}>{selected.status}</Badge>
+                  {manifest.imported_from_capsule === true && <Badge tone="warn">imported</Badge>}
                   <Badge tone="info">{String(manifest.runtime ?? "runtime")}</Badge>
                   <Badge>{Number(manifest.timeout_ms ?? 0) / 1000}s timeout</Badge>
                 </div>

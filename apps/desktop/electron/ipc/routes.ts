@@ -71,6 +71,7 @@ export type VaultRoute =
   | "tools.list"
   | "tools.propose"
   | "tools.runTests"
+  | "tools.enable"
   | "tools.run"
   | "tools.runs"
   | "learning.generateDeck"
@@ -231,6 +232,7 @@ export const allowedRoutes: Record<VaultRoute, RouteSpec> = {
   "tools.list": { method: "GET", path: () => "/tools" },
   "tools.propose": { method: "POST", path: () => "/tools/propose", body: (p) => p },
   "tools.runTests": { method: "POST", path: (p) => `/tools/${p.toolId}/run-tests` },
+  "tools.enable": { method: "POST", path: (p) => `/tools/${p.toolId}/enable` },
   "tools.run": { method: "POST", path: (p) => `/tools/${p.toolId}/run`, body: (p) => p.data ?? {} },
   "tools.runs": { method: "GET", path: (p) => `/tools/${p.toolId}/runs` },
   "learning.generateDeck": { method: "POST", path: () => "/learning/generate-deck", body: (p) => p },

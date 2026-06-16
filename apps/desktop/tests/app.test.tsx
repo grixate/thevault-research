@@ -1719,6 +1719,28 @@ describe("App", () => {
         output_schema: { type: "object" }
       }
     };
+    const importedTool = {
+      id: "tool_imported_capsule",
+      name: "Imported Capsule Tool",
+      slug: "imported-capsule-tool",
+      version: "0.1.0",
+      status: "disabled",
+      manifest: {
+        runtime: "python",
+        timeout_ms: 30000,
+        description: "Imported from a capsule and held for review.",
+        imported_from_capsule: true,
+        import_review_required: true,
+        permissions: {
+          read_sources: true,
+          write_canonical_graph: false,
+          network: false,
+          shell: false
+        },
+        input_schema: { type: "object" },
+        output_schema: { type: "object" }
+      }
+    };
     const reviewItem = {
       id: "rev_tool",
       item_type: "claim_status_change",
@@ -1752,8 +1774,14 @@ describe("App", () => {
         };
       }
       if (route === "events.list") return [];
-      if (route === "tools.list") return [tool];
+      if (route === "tools.list") return [tool, importedTool];
       if (route === "tools.runs") return lastRun ? [lastRun] : [];
+      if (route === "tools.enable") {
+        expect(payload).toEqual({ toolId: "tool_imported_capsule" });
+        importedTool.status = "installed";
+        importedTool.manifest.import_review_required = false;
+        return { tool_id: "tool_imported_capsule", status: "installed" };
+      }
       if (route === "tools.run") {
         expect(payload).toEqual({
           toolId: "tool_claim_citation_checker",
@@ -1787,6 +1815,12 @@ describe("App", () => {
     expect(await screen.findByRole("heading", { name: "Local tools", level: 2 })).toBeTruthy();
     expect(await screen.findByText("Sandboxed helpers")).toBeTruthy();
     expect(screen.queryByText(/Home Lab/i)).toBeNull();
+    fireEvent.click(await screen.findByRole("button", { name: /Imported Capsule Tool/i }));
+    expect(await screen.findByRole("button", { name: "Enable" })).toBeTruthy();
+    expect((screen.getByRole("button", { name: /^run$/i }) as HTMLButtonElement).disabled).toBe(true);
+    fireEvent.click(screen.getByRole("button", { name: "Enable" }));
+    await waitFor(() => expect(request).toHaveBeenCalledWith("tools.enable", { toolId: "tool_imported_capsule" }));
+    fireEvent.click(await screen.findByRole("button", { name: /Claim Citation Checker/i }));
     expect(await screen.findByText("write canonical graph")).toBeTruthy();
     expect(await screen.findByText("History")).toBeTruthy();
     fireEvent.change(await screen.findByLabelText("Input"), {

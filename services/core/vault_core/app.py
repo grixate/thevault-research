@@ -2855,6 +2855,27 @@ def register_routes(app: FastAPI) -> None:
             db.event(conn, "tool.installed", "tool", tool_id, {}, "user")
             return {"tool_id": tool_id, "status": "installed"}
 
+    @app.post("/tools/{tool_id}/enable", dependencies=[auth])
+    def enable_tool(tool_id: str, db: VaultDatabase = Depends(get_db)) -> dict[str, Any]:
+        ts = now_iso()
+        with db.connect() as conn:
+            tool = conn.execute("SELECT * FROM tool_registry WHERE id=? AND workspace_id=?", (tool_id, db.workspace_id)).fetchone()
+            if not tool:
+                raise HTTPException(404, "Tool not found")
+            manifest = loads(tool["manifest_json"], {})
+            if tool["status"] not in {"disabled", "disabled_imported"}:
+                raise HTTPException(409, "Only disabled tools can be enabled")
+            if not manifest.get("imported_from_capsule") or not manifest.get("import_review_required"):
+                raise HTTPException(409, "Only reviewed imported tools can be enabled here")
+            manifest["import_review_required"] = False
+            manifest["import_review_enabled_at"] = ts
+            conn.execute(
+                "UPDATE tool_registry SET status='installed', manifest_json=?, updated_at=? WHERE id=? AND workspace_id=?",
+                (dumps(manifest), ts, tool_id, db.workspace_id),
+            )
+            db.event(conn, "tool.enabled_after_import_review", "tool", tool_id, {"source": "capsule_import"}, "user")
+            return {"tool_id": tool_id, "status": "installed"}
+
     @app.post("/tools/{tool_id}/run", dependencies=[auth])
     def run_tool_endpoint(tool_id: str, req: ToolRunRequest, db: VaultDatabase = Depends(get_db)) -> dict[str, Any]:
         return run_tool(tool_id, req, db)

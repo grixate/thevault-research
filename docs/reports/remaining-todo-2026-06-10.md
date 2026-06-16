@@ -294,6 +294,7 @@ Latest capsule import-merge preview verification on 2026-06-15:
 - Review shows a compact `Merge preview` block for imported capsule items, including the approval consequence, imported ID, and existing local ID when available.
 - Merge preview now includes changed-field comparisons for imported notes, sources, claims, concepts, and tools when a matching local object exists.
 - Review shows the compact conflict comparison only when imported and local fields differ.
+- Imported tools stay disabled after merge until the user explicitly enables the reviewed tool from Local tools.
 - The preview keeps quarantine-first behavior intact: imported objects still merge only through Review approval.
 - Focused backend capsule import/merge test: passed.
 - Focused desktop capsule import Review handoff test: passed.
@@ -2659,6 +2660,7 @@ Current good state:
 - Review approval can now selectively merge individual imported notes, sources, claims, concepts, and tools.
 - Imported objects link to an existing local object when the original ID already exists, instead of duplicating canonical graph objects.
 - Imported claims are merged as `weakly_supported` unless they already exist locally; imported tools are created disabled.
+- Reviewed imported tools can be explicitly enabled from Local tools through the `tools.enable` route.
 - Capsule import Review items now show a merge preview before approval, including whether approval links an existing object, creates a new object, creates a weak claim, or creates a disabled tool.
 - Capsules can generate an overview note from capsule-scoped sources and approved claims only.
 - Generated capsule overview notes enter Notes as `generated_pending_review`, keep normal generated-note metadata, and attach back to the capsule with role `overview`.
@@ -2691,8 +2693,7 @@ Remaining tasks:
 - Harden/export follow-ups:
   - add richer copyrighted-file and secret scanning.
 - Complete import merge workflow:
-  - add richer merge decisions for evidence links, source blocks, graph edges, and capsule membership,
-  - add an explicit enable step for reviewed imported tools.
+  - add richer merge decisions for evidence links, source blocks, graph edges, and capsule membership.
 - Generate/update OpenAPI contract after routes settle.
 
 Acceptance evidence:

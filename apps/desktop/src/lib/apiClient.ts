@@ -185,6 +185,7 @@ function mapRoute(route: string, payload?: any): { method: string; path: string;
     "nightLab.latestBrief": { method: "GET", path: "/night-lab/latest-brief" },
     "tools.list": { method: "GET", path: "/tools" },
     "tools.runTests": { method: "POST", path: `/tools/${payload?.toolId}/run-tests` },
+    "tools.enable": { method: "POST", path: `/tools/${payload?.toolId}/enable` },
     "tools.run": { method: "POST", path: `/tools/${payload?.toolId}/run`, body: payload?.data ?? {} },
     "tools.runs": { method: "GET", path: `/tools/${payload?.toolId}/runs` },
     "learning.generateDeck": { method: "POST", path: "/learning/generate-deck", body: payload },
