@@ -6202,6 +6202,11 @@ function capsuleImportMergeTone(action: unknown): "good" | "warn" | "bad" | "inf
   return "neutral";
 }
 
+function capsuleImportChangedFields(preview: Record<string, unknown> | null): Array<Record<string, unknown>> {
+  const comparison = preview?.comparison;
+  return Array.isArray(comparison) ? comparison.filter((item) => item && typeof item === "object" && (item as Record<string, unknown>).changed === true) as Array<Record<string, unknown>> : [];
+}
+
 function shortIdentifier(value: string): string {
   return value.length > 18 ? `${value.slice(0, 18)}...` : value;
 }
@@ -6233,6 +6238,7 @@ function ReviewPayloadSummary({ item }: { item: ReviewItem }) {
   const cards = Array.isArray(payload.cards) ? payload.cards : [];
   const learningItems = Array.isArray(payload.items) ? payload.items : [];
   const importMergePreview = capsuleImportMergePreview(payload);
+  const changedImportFields = capsuleImportChangedFields(importMergePreview);
   return (
     <div className="review-proposal">
       <div className="review-proposal-header">
@@ -6253,6 +6259,17 @@ function ReviewPayloadSummary({ item }: { item: ReviewItem }) {
             {payload.import_target_id && <small title={String(payload.import_target_id)}>import {shortIdentifier(String(payload.import_target_id))}</small>}
             {importMergePreview.canonical_target_id && <small title={String(importMergePreview.canonical_target_id)}>local {shortIdentifier(String(importMergePreview.canonical_target_id))}</small>}
           </div>
+          {changedImportFields.length > 0 && (
+            <div className="review-import-diff" aria-label="Capsule import conflict comparison">
+              {changedImportFields.slice(0, 4).map((field) => (
+                <div key={String(field.field || field.label)}>
+                  <span>{String(field.label || field.field)}</span>
+                  <p title={String(field.imported || "")}>{String(field.imported || "Empty")}</p>
+                  <p title={String(field.local || "")}>{String(field.local || "Empty")}</p>
+                </div>
+              ))}
+            </div>
+          )}
         </section>
       )}
       {payload.body && (

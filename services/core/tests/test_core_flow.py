@@ -1019,6 +1019,10 @@ def test_capsules_reference_global_objects_and_snapshot_health(client):
     assert blocked_preview["status"] == "blocked"
     assert blocked_preview["privacy_report"]["blockers"][0]["code"] == "private_items"
 
+    client.put(
+        f"/notes/{note['id']}",
+        json={"content_markdown": "Local note changed after capsule export."},
+    ).json()
     imported_capsule = client.post("/capsules/imports", json={"file_path": str(export_path)}).json()
     assert imported_capsule["status"] == "quarantined"
     assert Path(imported_capsule["quarantine_path"]).exists()
@@ -1053,6 +1057,10 @@ def test_capsules_reference_global_objects_and_snapshot_health(client):
     assert imported_note_review["payload"]["merge_preview"]["action"] == "linked_existing"
     assert imported_note_review["payload"]["merge_preview"]["canonical_target_id"] == note["id"]
     assert "no duplicate" in imported_note_review["payload"]["merge_preview"]["summary"]
+    note_comparison = imported_note_review["payload"]["merge_preview"]["comparison"]
+    assert imported_note_review["payload"]["merge_preview"]["conflict_count"] >= 1
+    assert any(item["field"] == "content_markdown" and item["changed"] for item in note_comparison)
+    assert any(item["field"] == "content_markdown" and "Local note changed" in item["local"] for item in note_comparison)
     assert imported_source_review["payload"]["merge_preview"]["action"] == "linked_existing"
     assert imported_claim_review["payload"]["merge_preview"]["action"] == "linked_existing"
     approved_import_note = client.post(

@@ -292,6 +292,8 @@ Latest capsule import-merge preview verification on 2026-06-15:
 - Capsule import review items now include backend merge preview metadata before any approval:
   link existing local object, create new object, create weakly supported claim, or create disabled tool.
 - Review shows a compact `Merge preview` block for imported capsule items, including the approval consequence, imported ID, and existing local ID when available.
+- Merge preview now includes changed-field comparisons for imported notes, sources, claims, concepts, and tools when a matching local object exists.
+- Review shows the compact conflict comparison only when imported and local fields differ.
 - The preview keeps quarantine-first behavior intact: imported objects still merge only through Review approval.
 - Focused backend capsule import/merge test: passed.
 - Focused desktop capsule import Review handoff test: passed.
@@ -2689,7 +2691,6 @@ Remaining tasks:
 - Harden/export follow-ups:
   - add richer copyrighted-file and secret scanning.
 - Complete import merge workflow:
-  - expand conflict-aware selective merge beyond the current Review-item preview into explicit side-by-side conflict comparison where imported and local content differ,
   - add richer merge decisions for evidence links, source blocks, graph edges, and capsule membership,
   - add an explicit enable step for reviewed imported tools.
 - Generate/update OpenAPI contract after routes settle.

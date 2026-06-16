@@ -1002,7 +1002,17 @@ describe("App", () => {
                   canonical_target_id: null,
                   action: "created",
                   summary: "Approval creates a weakly supported local claim that still needs evidence review.",
-                  requires_review: true
+                  requires_review: true,
+                  conflict_count: 1,
+                  comparison: [
+                    {
+                      field: "normalized_text",
+                      label: "Claim",
+                      imported: "Resonance depends on boundary conditions.",
+                      local: "Resonance depends on room boundaries.",
+                      changed: true
+                    }
+                  ]
                 }
               },
               status: "pending",
@@ -1081,6 +1091,9 @@ describe("App", () => {
     fireEvent.click(screen.getByRole("button", { name: /open review/i }));
     await waitFor(() => expect(useUIStore.getState().surface).toBe("review"));
     expect(await screen.findByLabelText("Capsule import merge preview")).toBeTruthy();
+    const conflictComparison = await screen.findByLabelText("Capsule import conflict comparison");
+    expect(within(conflictComparison).getByText("Resonance depends on boundary conditions.")).toBeTruthy();
+    expect(within(conflictComparison).getByText("Resonance depends on room boundaries.")).toBeTruthy();
     expect(await screen.findByText("Create new")).toBeTruthy();
     expect(await screen.findByText("Approval creates a weakly supported local claim that still needs evidence review.")).toBeTruthy();
   });

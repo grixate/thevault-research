@@ -1659,6 +1659,7 @@ def add_capsule_import_merge_preview(conn: sqlite3.Connection, workspace_id: str
     existing = local_row_by_original_id(conn, target_table, workspace_id, original_id) if target_table else None
     action = "linked_existing" if existing else capsule_import_create_action(target_type)
     summary = capsule_import_merge_preview_summary(target_type, action)
+    comparison = capsule_import_merge_comparison(target_type, payload.get("record") if isinstance(payload.get("record"), dict) else {}, existing)
     enriched_payload = {
         **payload,
         "merge_preview": {
@@ -1669,6 +1670,8 @@ def add_capsule_import_merge_preview(conn: sqlite3.Connection, workspace_id: str
             "action": action,
             "summary": summary,
             "requires_review": True,
+            "comparison": comparison,
+            "conflict_count": sum(1 for item in comparison if item.get("changed")),
         },
         "merge_action_preview": action,
         "merge_summary": summary,
@@ -1679,6 +1682,84 @@ def add_capsule_import_merge_preview(conn: sqlite3.Connection, workspace_id: str
     if target_type == "tool" and not existing:
         enriched_payload["tool_import_status"] = "disabled_until_reviewed"
     return {**proposal, "payload": enriched_payload}
+
+
+def capsule_import_merge_comparison(target_type: str, imported: dict[str, Any], existing: sqlite3.Row | None) -> list[dict[str, Any]]:
+    if not existing:
+        return []
+    local = dict(existing)
+    if target_type == "note":
+        return compare_import_fields(
+            [
+                ("title", "Title", imported.get("title"), local.get("title")),
+                ("content_markdown", "Body", compact_text(str(imported.get("content_markdown") or ""), 180), compact_text(str(local.get("content_markdown") or ""), 180)),
+                ("status", "Status", imported.get("status"), local.get("status")),
+            ]
+        )
+    if target_type == "source":
+        return compare_import_fields(
+            [
+                ("title", "Title", imported.get("title"), local.get("title")),
+                ("type", "Type", imported.get("type"), local.get("type")),
+                ("content_hash", "Hash", imported.get("content_hash"), local.get("content_hash")),
+                ("trust_level", "Trust", imported.get("trust_level"), local.get("trust_level")),
+            ]
+        )
+    if target_type == "claim":
+        return compare_import_fields(
+            [
+                ("normalized_text", "Claim", compact_text(str(imported.get("normalized_text") or ""), 180), compact_text(str(local.get("normalized_text") or ""), 180)),
+                ("status", "Status", imported.get("status"), local.get("status")),
+                ("confidence", "Confidence", imported.get("confidence"), local.get("confidence")),
+                ("evidence_strength", "Evidence", imported.get("evidence_strength"), local.get("evidence_strength")),
+            ]
+        )
+    if target_type == "kg_node":
+        return compare_import_fields(
+            [
+                ("title", "Title", imported.get("title"), local.get("title")),
+                ("canonical_text", "Text", compact_text(str(imported.get("canonical_text") or ""), 180), compact_text(str(local.get("canonical_text") or ""), 180)),
+                ("node_type", "Type", imported.get("node_type"), local.get("node_type")),
+                ("status", "Status", imported.get("status"), local.get("status")),
+            ]
+        )
+    if target_type == "tool":
+        manifest = loads(local.get("manifest_json"), {}) if "manifest_json" in local else {}
+        imported_manifest = imported.get("manifest") if isinstance(imported.get("manifest"), dict) else {}
+        return compare_import_fields(
+            [
+                ("name", "Name", imported.get("name") or imported_manifest.get("name"), local.get("name")),
+                ("version", "Version", imported.get("version") or imported_manifest.get("version"), local.get("version")),
+                ("status", "Status", imported.get("status"), local.get("status")),
+                ("runtime", "Runtime", imported_manifest.get("runtime"), manifest.get("runtime")),
+            ]
+        )
+    return []
+
+
+def compare_import_fields(fields: list[tuple[str, str, Any, Any]]) -> list[dict[str, Any]]:
+    comparison = []
+    for key, label, imported_value, local_value in fields:
+        imported_text = comparable_text(imported_value)
+        local_text = comparable_text(local_value)
+        comparison.append(
+            {
+                "field": key,
+                "label": label,
+                "imported": imported_text,
+                "local": local_text,
+                "changed": imported_text != local_text,
+            }
+        )
+    return comparison
+
+
+def comparable_text(value: Any) -> str:
+    if value is None:
+        return ""
+    if isinstance(value, float):
+        return f"{value:.3f}".rstrip("0").rstrip(".")
+    return str(value)
 
 
 def capsule_import_target_table(target_type: str) -> str | None:
