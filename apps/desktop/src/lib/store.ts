@@ -22,6 +22,7 @@ type UIState = {
   selectedClaimId?: string;
   selectedCapsuleId?: string;
   quickNoteRequestId: number;
+  quickTaskRequestId: number;
   sourceDialogRequestId: number;
   sourceDialogDraftText: string;
   setSurface: (surface: Surface) => void;
@@ -32,12 +33,14 @@ type UIState = {
   setSelectedClaimId: (id?: string) => void;
   setSelectedCapsuleId: (id?: string) => void;
   requestQuickNote: () => void;
+  requestQuickTask: () => void;
   requestAddSource: (draftText?: string) => void;
 };
 
 export const useUIStore = create<UIState>((set) => ({
   surface: "dashboard",
   quickNoteRequestId: 0,
+  quickTaskRequestId: 0,
   sourceDialogRequestId: 0,
   sourceDialogDraftText: "",
   setSurface: (surface) => set({ surface }),
@@ -48,5 +51,6 @@ export const useUIStore = create<UIState>((set) => ({
   setSelectedClaimId: (selectedClaimId) => set({ selectedClaimId }),
   setSelectedCapsuleId: (selectedCapsuleId) => set({ selectedCapsuleId }),
   requestQuickNote: () => set((state) => ({ quickNoteRequestId: state.quickNoteRequestId + 1 })),
+  requestQuickTask: () => set((state) => ({ quickTaskRequestId: state.quickTaskRequestId + 1 })),
   requestAddSource: (draftText = "") => set((state) => ({ sourceDialogRequestId: state.sourceDialogRequestId + 1, sourceDialogDraftText: draftText }))
 }));

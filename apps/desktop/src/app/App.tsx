@@ -437,6 +437,8 @@ type CommandAction = {
   action: () => void;
 };
 
+type QuickCaptureDestination = "notes" | "tasks" | "storage";
+
 type AssistantAskInput = {
   question: string;
   mode: AssistantEvidenceMode;
@@ -461,7 +463,9 @@ function TopBar() {
   const setSelectedSourceBlockId = useUIStore((state) => state.setSelectedSourceBlockId);
   const setSelectedClaimId = useUIStore((state) => state.setSelectedClaimId);
   const quickNoteRequestId = useUIStore((state) => state.quickNoteRequestId);
+  const quickTaskRequestId = useUIStore((state) => state.quickTaskRequestId);
   const requestQuickNote = useUIStore((state) => state.requestQuickNote);
+  const requestQuickTask = useUIStore((state) => state.requestQuickTask);
   const requestAddSource = useUIStore((state) => state.requestAddSource);
   const [query, setQuery] = useState("");
   const [searchMode, setSearchMode] = useState<"fts" | "hybrid">("hybrid");
@@ -472,7 +476,7 @@ function TopBar() {
   const [selectedSearchIndex, setSelectedSearchIndex] = useState(0);
   const [quickNoteOpen, setQuickNoteOpen] = useState(false);
   const [quickNoteText, setQuickNoteText] = useState("");
-  const [quickNoteDestination, setQuickNoteDestination] = useState<"notes" | "storage">("notes");
+  const [quickNoteDestination, setQuickNoteDestination] = useState<QuickCaptureDestination>("notes");
   const searchRef = useRef<HTMLDivElement | null>(null);
   const searchInputRef = useRef<HTMLInputElement | null>(null);
   const quickNoteInputRef = useRef<HTMLTextAreaElement | null>(null);
@@ -494,6 +498,19 @@ function TopBar() {
       queryClient.invalidateQueries({ queryKey: ["stats"] });
     }
   });
+  const quickTaskCapture = useMutation({
+    mutationFn: (text: string) => vaultRequest<TodoItem>("todos.create", { text }),
+    onSuccess: () => {
+      setSurface("tasks");
+      setQuickNoteText("");
+      setQuickNoteDestination("notes");
+      setQuickNoteOpen(false);
+      queryClient.invalidateQueries({ queryKey: ["todos"] });
+      queryClient.invalidateQueries({ queryKey: ["todo-lists"] });
+      queryClient.invalidateQueries({ queryKey: ["stats"] });
+      queryClient.invalidateQueries({ queryKey: ["events"] });
+    }
+  });
   const createNote = useMutation({
     mutationFn: () => vaultRequest<Note>("notes.create", blankResearchNoteInput()),
     onSuccess: (note) => {
@@ -509,11 +526,16 @@ function TopBar() {
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
       const wantsQuickNote = (event.metaKey || event.ctrlKey) && event.shiftKey && !event.altKey && event.code === "KeyN";
+      const wantsQuickTask = (event.metaKey || event.ctrlKey) && event.shiftKey && !event.altKey && event.code === "KeyT";
       const wantsAddSource = (event.metaKey || event.ctrlKey) && event.shiftKey && !event.altKey && event.code === "KeyE";
       const wantsSearch = (event.metaKey || event.ctrlKey) && !event.shiftKey && !event.altKey && event.code === "KeyK";
       if (wantsQuickNote) {
         event.preventDefault();
         requestQuickNote();
+      }
+      if (wantsQuickTask) {
+        event.preventDefault();
+        requestQuickTask();
       }
       if (wantsAddSource) {
         event.preventDefault();
@@ -526,11 +548,15 @@ function TopBar() {
     }
     document.addEventListener("keydown", onKeyDown);
     return () => document.removeEventListener("keydown", onKeyDown);
-  }, [query, requestQuickNote, requestAddSource, setSurface]);
+  }, [query, requestQuickNote, requestQuickTask, requestAddSource, setSurface]);
 
   useEffect(() => {
     return window.vault?.onQuickNote?.(() => requestQuickNote());
   }, [requestQuickNote]);
+
+  useEffect(() => {
+    return window.vault?.onQuickTask?.(() => requestQuickTask());
+  }, [requestQuickTask]);
 
   useEffect(() => {
     return window.vault?.onAddSource?.(() => openSourceCapture());
@@ -554,8 +580,12 @@ function TopBar() {
   }, [quickNoteOpen]);
 
   useEffect(() => {
-    if (quickNoteRequestId > 0) setQuickNoteOpen(true);
+    if (quickNoteRequestId > 0) openQuickCapture("notes");
   }, [quickNoteRequestId]);
+
+  useEffect(() => {
+    if (quickTaskRequestId > 0) openQuickCapture("tasks");
+  }, [quickTaskRequestId]);
 
   async function runSearch(value: string, mode = searchMode) {
     setQuery(value);
@@ -639,7 +669,7 @@ function TopBar() {
   }
 
   function closeQuickNote() {
-    if (quickCapture.isPending) return;
+    if (quickCapture.isPending || quickTaskCapture.isPending) return;
     setQuickNoteOpen(false);
     setQuickNoteDestination("notes");
   }
@@ -650,8 +680,14 @@ function TopBar() {
     quickCapture.mutate(text);
   }
 
+  function saveQuickTask() {
+    const text = quickNoteText.trim();
+    if (!text || quickTaskCapture.isPending) return;
+    quickTaskCapture.mutate(text);
+  }
+
   function importQuickNoteAsSource() {
-    if (quickCapture.isPending) return;
+    if (quickCapture.isPending || quickTaskCapture.isPending) return;
     const text = quickNoteText.trim();
     openSourceCapture(text);
     setQuickNoteOpen(false);
@@ -664,7 +700,16 @@ function TopBar() {
       importQuickNoteAsSource();
       return;
     }
+    if (quickNoteDestination === "tasks") {
+      saveQuickTask();
+      return;
+    }
     saveQuickNote();
+  }
+
+  function openQuickCapture(destination: QuickCaptureDestination) {
+    setQuickNoteDestination(destination);
+    setQuickNoteOpen(true);
   }
 
   function openSourceCapture(draftText = "") {
@@ -702,6 +747,14 @@ function TopBar() {
       shortcut: "Cmd/Ctrl+Shift+N",
       icon: NotebookPen,
       action: () => requestQuickNote()
+    },
+    {
+      id: "quick-task",
+      title: "Quick task",
+      description: "Capture a follow-up without leaving the current surface.",
+      shortcut: "Cmd/Ctrl+Shift+T",
+      icon: List,
+      action: () => requestQuickTask()
     },
     {
       id: "new-note",
@@ -867,14 +920,14 @@ function TopBar() {
                 saveQuickCapture();
               }}
             >
-              <Dialog.Title className="visually-hidden">Quick note</Dialog.Title>
+              <Dialog.Title className="visually-hidden">{quickCaptureTitle(quickNoteDestination)}</Dialog.Title>
               <div className="quick-note-spotlight">
                 <div className="quick-note-input-shell">
                   <Textarea
                     ref={quickNoteInputRef}
-                    aria-label="Quick note text"
+                    aria-label={quickCaptureInputLabel(quickNoteDestination)}
                     value={quickNoteText}
-                    placeholder={quickNoteDestination === "storage" ? "Paste source material..." : "Write a note..."}
+                    placeholder={quickCapturePlaceholder(quickNoteDestination)}
                     onChange={(event) => setQuickNoteText(event.target.value)}
                     onKeyDown={(event) => {
                       if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
@@ -888,6 +941,7 @@ function TopBar() {
                   </Dialog.Close>
                 </div>
                 {quickCapture.error && <small className="model-test-error">{quickCapture.error.message}</small>}
+                {quickTaskCapture.error && <small className="model-test-error">{quickTaskCapture.error.message}</small>}
                 <div className="quick-note-footer">
                   <div className="quick-note-route-grid" aria-label="Capture destination">
                     <button
@@ -899,6 +953,16 @@ function TopBar() {
                     >
                       <NotebookPen size={14} />
                       <strong>Note</strong>
+                    </button>
+                    <button
+                      type="button"
+                      className={`quick-note-route-option ${quickNoteDestination === "tasks" ? "active" : ""}`}
+                      aria-pressed={quickNoteDestination === "tasks"}
+                      aria-label="Save as task"
+                      onClick={() => setQuickNoteDestination("tasks")}
+                    >
+                      <List size={14} />
+                      <strong>Task</strong>
                     </button>
                     <button
                       type="button"
@@ -918,8 +982,8 @@ function TopBar() {
                       size="icon"
                       variant="primary"
                       icon={<ArrowUp size={16} />}
-                      aria-label={quickNoteDestination === "storage" ? "Save to Storage" : "Save to Notes"}
-                      disabled={!quickNoteText.trim() || quickCapture.isPending}
+                      aria-label={quickCaptureSaveLabel(quickNoteDestination)}
+                      disabled={!quickNoteText.trim() || quickCapture.isPending || quickTaskCapture.isPending}
                     />
                   </div>
                 </div>
@@ -958,6 +1022,30 @@ function quickNoteContent(text: string): Record<string, unknown> {
     editor_engine: "tiptap",
     editor_doc: quickNoteEditorDoc(text)
   };
+}
+
+function quickCaptureTitle(destination: QuickCaptureDestination): string {
+  if (destination === "tasks") return "Quick task";
+  if (destination === "storage") return "Quick source";
+  return "Quick note";
+}
+
+function quickCaptureInputLabel(destination: QuickCaptureDestination): string {
+  if (destination === "tasks") return "Quick task text";
+  if (destination === "storage") return "Quick source text";
+  return "Quick note text";
+}
+
+function quickCapturePlaceholder(destination: QuickCaptureDestination): string {
+  if (destination === "tasks") return "Add task...";
+  if (destination === "storage") return "Paste source material...";
+  return "Write a note...";
+}
+
+function quickCaptureSaveLabel(destination: QuickCaptureDestination): string {
+  if (destination === "tasks") return "Save to Tasks";
+  if (destination === "storage") return "Save to Storage";
+  return "Save to Notes";
 }
 
 function searchResultMeta(result: SearchResult): { label: string; action: string; icon: typeof FileText } {

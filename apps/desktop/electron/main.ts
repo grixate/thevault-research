@@ -12,6 +12,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const MAX_AUDIO_RECORDING_BYTES = 80 * 1024 * 1024;
 const MAX_REGISTRY_FILE_BYTES = 5 * 1024 * 1024;
 const QUICK_NOTE_ACCELERATOR = "CommandOrControl+Shift+N";
+const QUICK_TASK_ACCELERATOR = "CommandOrControl+Shift+T";
 const QUICK_SOURCE_ACCELERATOR = "CommandOrControl+Shift+E";
 const SEARCH_ACCELERATOR = "CommandOrControl+K";
 let mainWindow: BrowserWindow | null = null;
@@ -67,6 +68,14 @@ function openQuickNote() {
   mainWindow.webContents.send("vault:quickNote");
 }
 
+function openQuickTask() {
+  if (!mainWindow || mainWindow.isDestroyed()) return;
+  if (mainWindow.isMinimized()) mainWindow.restore();
+  mainWindow.show();
+  mainWindow.focus();
+  mainWindow.webContents.send("vault:quickTask");
+}
+
 function openQuickSource() {
   if (!mainWindow || mainWindow.isDestroyed()) return;
   if (mainWindow.isMinimized()) mainWindow.restore();
@@ -110,6 +119,11 @@ function installApplicationMenu() {
           label: "Quick Note",
           accelerator: QUICK_NOTE_ACCELERATOR,
           click: openQuickNote
+        },
+        {
+          label: "Quick Task",
+          accelerator: QUICK_TASK_ACCELERATOR,
+          click: openQuickTask
         },
         {
           label: "Add Source",
@@ -162,6 +176,10 @@ function registerGlobalShortcuts() {
   const quickNoteRegistered = globalShortcut.register(QUICK_NOTE_ACCELERATOR, openQuickNote);
   if (!quickNoteRegistered) {
     console.warn(`Could not register ${QUICK_NOTE_ACCELERATOR} for Quick Note.`);
+  }
+  const quickTaskRegistered = globalShortcut.register(QUICK_TASK_ACCELERATOR, openQuickTask);
+  if (!quickTaskRegistered) {
+    console.warn(`Could not register ${QUICK_TASK_ACCELERATOR} for Quick Task.`);
   }
   const quickSourceRegistered = globalShortcut.register(QUICK_SOURCE_ACCELERATOR, openQuickSource);
   if (!quickSourceRegistered) {

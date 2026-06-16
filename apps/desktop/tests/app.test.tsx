@@ -632,6 +632,7 @@ describe("App", () => {
       selectedClaimId: undefined,
       selectedCapsuleId: undefined,
       quickNoteRequestId: 0,
+      quickTaskRequestId: 0,
       sourceDialogRequestId: 0,
       sourceDialogDraftText: ""
     });
@@ -1293,6 +1294,69 @@ describe("App", () => {
     );
     expect(await screen.findByRole("button", { name: /new note/i })).toBeTruthy();
     expect(await screen.findByDisplayValue("Shortcut thought")).toBeTruthy();
+  });
+
+  it("captures a quick task from the global shortcut", async () => {
+    let todoRows: any[] = [];
+    const request = vi.fn(async (route: string, payload?: any) => {
+      if (route === "health.get") return { ok: true, version: "0.1.0", db_ready: true, workspace_id: "wrk_default" };
+      if (route === "jobs.list") return [];
+      if (route === "stats.get") {
+        return {
+          sources: 0,
+          source_blocks: 0,
+          notes: 0,
+          claims: 0,
+          claims_without_evidence: 0,
+          contradicted_claims: 0,
+          pending_review_items: 0,
+          generated_notes_pending_review: 0,
+          installed_tools: 0,
+          failed_jobs: 0,
+          learning_items: 0
+        };
+      }
+      if (route === "events.list") return [];
+      if (route === "todos.create") {
+        const todo = {
+          id: "todo_quick_task",
+          title: "Email Anna about quote mismatch",
+          description: "",
+          status: "open",
+          priority: 2,
+          due_date: "2026-06-17",
+          due_time: null,
+          recurrence_rule: null,
+          list_id: null,
+          list_name: null,
+          labels: [],
+          context_links: [],
+          source_kind: "user",
+          source_ref: {},
+          provenance: {},
+          created_at: "2026-06-16T10:00:00Z",
+          updated_at: "2026-06-16T10:00:00Z",
+          completed_at: null
+        };
+        todoRows = [todo];
+        return todo;
+      }
+      if (route === "todos.list") return { items: todoRows, total: todoRows.length, view: payload?.view ?? "inbox" };
+      if (route === "todoLists.list") return [];
+      return [];
+    });
+    window.vault = { request, selectFiles: vi.fn(async () => []) };
+    renderApp();
+
+    fireEvent.keyDown(document, { code: "KeyT", key: "T", metaKey: true, shiftKey: true });
+    const quickTaskText = await screen.findByLabelText("Quick task text");
+    expect(screen.getByRole("button", { name: /save as task/i }).getAttribute("aria-pressed")).toBe("true");
+    fireEvent.change(quickTaskText, { target: { value: "Email Anna about quote mismatch tomorrow p2" } });
+    fireEvent.keyDown(quickTaskText, { key: "Enter", code: "Enter", metaKey: true });
+
+    await waitFor(() => expect(request).toHaveBeenCalledWith("todos.create", { text: "Email Anna about quote mismatch tomorrow p2" }));
+    await waitFor(() => expect(useUIStore.getState().surface).toBe("tasks"));
+    expect(await screen.findByText("Email Anna about quote mismatch")).toBeTruthy();
   });
 
   it("routes captured evidence from quick note into Storage intake", async () => {
@@ -1961,6 +2025,44 @@ describe("App", () => {
     expect(await screen.findByLabelText("Quick note text")).toBeTruthy();
   });
 
+  it("opens quick task from the Electron app shortcut event", async () => {
+    let quickTaskListener: (() => void) | undefined;
+    window.vault = {
+      request: vi.fn(async (route: string) => {
+        if (route === "health.get") return { ok: true, version: "0.1.0", db_ready: true, workspace_id: "wrk_default" };
+        if (route === "jobs.list") return [];
+        if (route === "stats.get") {
+          return {
+            sources: 0,
+            source_blocks: 0,
+            notes: 0,
+            claims: 0,
+            claims_without_evidence: 0,
+            contradicted_claims: 0,
+            pending_review_items: 0,
+            generated_notes_pending_review: 0,
+            installed_tools: 0,
+            failed_jobs: 0,
+            learning_items: 0
+          };
+        }
+        if (route === "events.list") return [];
+        return [];
+      }),
+      selectFiles: vi.fn(async () => []),
+      onQuickTask: vi.fn((callback) => {
+        quickTaskListener = callback;
+        return vi.fn();
+      })
+    };
+    renderApp();
+
+    await screen.findByText("The Vault");
+    act(() => quickTaskListener?.());
+
+    expect(await screen.findByLabelText("Quick task text")).toBeTruthy();
+  });
+
   it("opens Storage source intake from the global shortcut", async () => {
     window.vault = {
       request: vi.fn(async (route: string) => {
@@ -2108,6 +2210,7 @@ describe("App", () => {
     const commands = await screen.findByLabelText("Search and actions");
     expect(within(commands).getByText("Fast actions")).toBeTruthy();
     expect(within(commands).getByRole("option", { name: /Quick note/i })).toBeTruthy();
+    expect(within(commands).getByRole("option", { name: /Quick task/i })).toBeTruthy();
   });
 
   it("focuses command search from the Electron app shortcut event", async () => {
@@ -2208,6 +2311,41 @@ describe("App", () => {
     );
     expect(await screen.findByRole("button", { name: /new note/i })).toBeTruthy();
     expect(await screen.findByDisplayValue("Untitled research note")).toBeTruthy();
+  });
+
+  it("opens quick task from the command palette", async () => {
+    window.vault = {
+      request: vi.fn(async (route: string) => {
+        if (route === "health.get") return { ok: true, version: "0.1.0", db_ready: true, workspace_id: "wrk_default" };
+        if (route === "jobs.list") return [];
+        if (route === "stats.get") {
+          return {
+            sources: 0,
+            source_blocks: 0,
+            notes: 0,
+            claims: 0,
+            claims_without_evidence: 0,
+            contradicted_claims: 0,
+            pending_review_items: 0,
+            generated_notes_pending_review: 0,
+            installed_tools: 0,
+            failed_jobs: 0,
+            learning_items: 0
+          };
+        }
+        if (route === "events.list") return [];
+        return [];
+      }),
+      selectFiles: vi.fn(async () => [])
+    };
+    renderApp();
+
+    fireEvent.keyDown(document, { code: "KeyK", key: "k", metaKey: true });
+    const commands = await screen.findByLabelText("Search and actions");
+    fireEvent.click(within(commands).getByRole("option", { name: /Quick task/i }));
+
+    expect(await screen.findByLabelText("Quick task text")).toBeTruthy();
+    expect(screen.getByRole("button", { name: /save as task/i }).getAttribute("aria-pressed")).toBe("true");
   });
 
   it("opens Storage source intake from the command palette", async () => {

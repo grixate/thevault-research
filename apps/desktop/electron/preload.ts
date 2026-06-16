@@ -14,6 +14,11 @@ contextBridge.exposeInMainWorld("vault", {
     ipcRenderer.on("vault:quickNote", listener);
     return () => ipcRenderer.removeListener("vault:quickNote", listener);
   },
+  onQuickTask: (callback: () => void) => {
+    const listener = () => callback();
+    ipcRenderer.on("vault:quickTask", listener);
+    return () => ipcRenderer.removeListener("vault:quickTask", listener);
+  },
   onAddSource: (callback: () => void) => {
     const listener = () => callback();
     ipcRenderer.on("vault:addSource", listener);

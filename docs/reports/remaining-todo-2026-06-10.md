@@ -301,10 +301,11 @@ Latest native Tasks verification on 2026-06-16:
 - Added `Tasks` to the Workspace navigation with a minimalist v1 surface: Inbox, Today, Upcoming, Done, one-line quick add, dense task rows, list side rail, and short empty states.
 - List filters now work with the Inbox view, and quick-add automatically selects a parsed destination list so listed tasks do not appear to vanish.
 - Added a minimal task detail side rail for editing title, due date, priority, and description.
+- Added global quick-task capture through the existing Spotlight-style quick capture panel, command palette, native app menu, and `Cmd/Ctrl+Shift+T` shortcut.
 - Fixed quick-add parsed priority so schema defaults do not override `p1`-`p4`.
 - Preserved typed list/label casing while keeping backend matching case-insensitive.
 - Focused backend todo route/parser test: passed.
-- Desktop task quick-add/complete test path: passed.
+- Desktop task quick-add/complete and quick-task capture test paths: passed.
 - Desktop production build: passed.
 - Playwright desktop Tasks smoke: Tasks rendered at 1440x950 with `scrollWidth` equal to viewport width and no detected overflowing elements. Screenshot captured at `/tmp/vault-tasks-desktop.png`.
 - Python lint: passed.
@@ -2724,8 +2725,9 @@ Current good state:
 - List filtering is live from the side rail, including listed tasks under the Inbox view.
 - Quick-add selects the parsed destination list after creation so the created task remains visible.
 - A minimal detail rail can edit task title, due date, priority, and description.
+- Global quick-task capture is live from `Cmd/Ctrl+Shift+T`, the native app menu, and the command palette, using the same minimal Spotlight-style panel as Quick note.
 - Contextual task creation now exists from current Note, selected Storage source/source block, Review item, Graph claim, Capsule detail, and Assistant answer.
-- Focused backend and desktop tests cover quick add, parsed list/label/priority/due date, list filtering, context links, task list counts, detail editing, completion, stats, the desktop create/complete flow, and note-origin contextual task creation.
+- Focused backend and desktop tests cover quick add, parsed list/label/priority/due date, list filtering, context links, task list counts, detail editing, global quick-task capture, completion, stats, the desktop create/complete flow, and note-origin contextual task creation.
 
 Remaining tasks:
 
@@ -2735,7 +2737,6 @@ Remaining tasks:
   - Night Lab brief,
   - Learning item/tool result surfaces,
   - richer tests for Storage/Review/Capsule/Assistant task payloads.
-- Add global quick-task capture, ideally alongside Quick note with a Spotlight-style command, without adding clutter to the top bar.
 - Expand task detail editing to cover list, labels, context, recurrence, and source link without making the rail feel like a project-management panel.
 - Add list management: create/rename/archive lists without overbuilding projects.
 - Add recurrence UI and generated next occurrences after completion.
@@ -2759,7 +2760,7 @@ Acceptance evidence:
 
 1. If continuing UX, keep the Notion/Obsidian/Apple Notes reset active: inspect Notes, Storage, Quick Note, Review, Assistant, Capsules, and Settings screenshots, then simplify the most overloaded flow first.
 2. If continuing Capsules, polish the alpha surface and attach dialog first, then continue from import review items into conflict-aware merge decisions or package contract docs.
-3. If continuing Tasks, add global quick-task capture and then list management/detail metadata editing before bigger task-management concepts.
+3. If continuing Tasks, add list management/detail metadata editing before bigger task-management concepts.
 4. If continuing local AI production, pick the first real approved runtime/model candidate set and run the release-packet tooling.
 5. If stabilizing before bigger registry edits, stage or commit the current v1 state.
 6. After any slice:

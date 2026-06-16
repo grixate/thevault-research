@@ -1113,6 +1113,7 @@ export type VaultApi = {
   saveAudioRecording?: (input: { data: ArrayBuffer; mimeType?: string }) => Promise<{ filePath: string; mimeType: string; sizeBytes: number }>;
   saveTextFile?: (input: { filename: string; contents: string; mimeType?: string }) => Promise<{ saved: boolean; filePath?: string | null; mimeType?: string; sizeBytes?: number }>;
   onQuickNote?: (callback: () => void) => () => void;
+  onQuickTask?: (callback: () => void) => () => void;
   onAddSource?: (callback: () => void) => () => void;
   onFocusSearch?: (callback: () => void) => () => void;
 };
