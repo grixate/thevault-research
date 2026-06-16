@@ -899,6 +899,14 @@ def test_capsules_reference_global_objects_and_snapshot_health(client):
     assert preview["manifest"]["object_counts"]["kg_nodes"] >= 2
     assert preview["manifest"]["object_counts"]["learning_items"] >= 1
     assert preview["manifest"]["object_counts"]["tools"] == 1
+    version_preview = client.post(
+        f"/capsules/{capsule['id']}/export/preview",
+        json={"export_mode": "sanitized", "version_id": baseline_snapshot["version_id"]},
+    ).json()
+    assert version_preview["status"] == "ready"
+    assert version_preview["export_scope"]["version_id"] == baseline_snapshot["version_id"]
+    assert version_preview["export_scope"]["version"] == "0.1.1"
+    assert version_preview["validation_report"]["item_count"] < preview["validation_report"]["item_count"]
 
     forked = client.post(
         f"/capsules/{capsule['id']}/fork",
@@ -913,10 +921,12 @@ def test_capsules_reference_global_objects_and_snapshot_health(client):
     assert forked["dependencies"][0]["target_capsule_id"] == capsule["id"]
     assert {item["target_id"] for item in forked["items"]} == {item["target_id"] for item in capsule_after_learning["items"]}
 
-    exported = client.post(f"/capsules/{capsule['id']}/export", json={"export_mode": "sanitized"}).json()
+    exported = client.post(f"/capsules/{capsule['id']}/export", json={"export_mode": "sanitized", "version_id": snapshot["version_id"]}).json()
     export_path = Path(exported["file_path"])
     assert export_path.exists()
     assert exported["filename"].endswith(".vaultcapsule")
+    assert "-0.2.0-" in exported["filename"]
+    assert exported["export_scope"]["version_id"] == snapshot["version_id"]
     assert exported["sha256"]
     with zipfile.ZipFile(export_path) as archive:
         names = set(archive.namelist())
@@ -933,6 +943,8 @@ def test_capsules_reference_global_objects_and_snapshot_health(client):
         assert "manifest.json" in archive.read("manifest-sha256.txt").decode("utf-8")
         evidence_rows = [json.loads(line) for line in archive.read("data/evidence_links.jsonl").decode("utf-8").splitlines()]
         assert any("Resonance in acoustics" in row["exact_quote"] for row in evidence_rows)
+        assert manifest["export_scope"]["version_id"] == snapshot["version_id"]
+        assert manifest["export_scope"]["version"] == "0.2.0"
 
     exports = client.get(f"/capsules/{capsule['id']}/exports").json()
     assert exports["total"] == 1

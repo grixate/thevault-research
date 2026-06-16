@@ -227,11 +227,12 @@ Latest capsule workflow verification on 2026-06-15:
 
 Latest capsule export verification on 2026-06-15:
 
-- Added backend capsule export preview, `.vaultcapsule` package creation, and export history listing.
+- Added backend capsule export preview, `.vaultcapsule` package creation, export history listing, and version-specific export.
 - Export preview now reports mode, privacy status, private item count, full-source private policy count, disabled tools, unsupported claims, exact quote count, estimated records, warnings, blockers, and checksum readiness.
 - Non-private export modes are blocked when private capsule items or `full_sources_private` source policies are present.
-- `.vaultcapsule` export writes a zip package with `manifest.json`, `manifest-sha256.txt`, capsule/items/source/note/claim/evidence/graph/learning/tool records, health report, privacy report, validation report, note markdown, file checksums, and audit rows in `capsule_exports`.
-- Added a compact desktop Export dialog from capsule detail with mode selection, preview counters, blockers/warnings, disabled export when blocked, saved package result, and recent export history.
+- Version export can target a saved capsule snapshot, freezes membership from that snapshot, records `export_scope` in preview, package manifest, validation report, export result, history, changelog, and event metadata, and keeps canonical object resolution at export time.
+- `.vaultcapsule` export writes a zip package with `manifest.json`, `manifest-sha256.txt`, capsule/items/source/note/claim/evidence/graph/learning/tool records, health report, privacy report, validation report, note markdown, file checksums, export scope, and audit rows in `capsule_exports`.
+- Added a compact desktop Export dialog from capsule detail with mode selection, saved-version selector, preview counters, blockers/warnings, disabled export when blocked, saved package result, and recent export history.
 - Focused backend capsule test: passed.
 - Desktop capsule/export-history test path: passed.
 - Desktop production build: passed.
@@ -2641,8 +2642,8 @@ Current good state:
   - add existing note/source/claim/concept/practice/tool,
   - evidence auto-include toggle for claims,
   - manual snapshot action.
-- Backend capsule export preview and package creation exist for reference-only, sanitized, private-full, learning, tool, and public modes.
-- Desktop capsule detail has a compact Export dialog with preview, package creation, and recent export history.
+- Backend capsule export preview and package creation exist for reference-only, sanitized, private-full, learning, tool, and public modes, including optional export from a saved capsule version.
+- Desktop capsule detail has a compact Export dialog with preview, package creation, saved-version selection, and recent export history.
 - Backend `.vaultcapsule` import quarantine exists with safe zip/path/checksum validation, quarantine file output, `capsule_imports` audit rows, and no canonical graph mutation.
 - Desktop Capsules has a compact Import action and quarantine inspection view.
 - Desktop Capsules shows recent import history and can reopen prior quarantine details from the list rail.
@@ -2685,7 +2686,6 @@ Remaining tasks:
 - Harden/export follow-ups:
   - add richer copyrighted-file and secret scanning,
   - add full source blob inclusion only for explicit private-full mode,
-  - add version-specific export,
   - add package format contract docs once import stabilizes.
 - Complete import merge workflow:
   - expand conflict-aware selective merge beyond the current Review-item preview into explicit side-by-side conflict comparison where imported and local content differ,

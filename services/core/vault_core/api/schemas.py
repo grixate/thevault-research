@@ -241,6 +241,7 @@ class CapsuleSnapshotRequest(BaseModel):
 
 class CapsuleExportRequest(BaseModel):
     export_mode: str = "reference_only"
+    version_id: str | None = None
 
 
 class CapsuleImportRequest(BaseModel):

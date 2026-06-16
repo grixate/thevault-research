@@ -307,6 +307,7 @@ export type CapsuleExportPreview = {
   export_mode: string;
   status: "ready" | "blocked" | string;
   filename: string;
+  export_scope?: Record<string, any>;
   manifest: Record<string, any>;
   privacy_report: CapsuleExportReport;
   validation_report: Record<string, any>;

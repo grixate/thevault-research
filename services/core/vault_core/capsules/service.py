@@ -615,13 +615,15 @@ def capsule_dependencies(conn: sqlite3.Connection, workspace_id: str, capsule_id
 
 def preview_capsule_export(db: VaultDatabase, capsule_id: str, payload: dict[str, Any] | None = None) -> dict[str, Any]:
     export_mode = normalize_export_mode((payload or {}).get("export_mode"))
+    version_id = nullable_text((payload or {}).get("version_id"))
     with db.connect() as conn:
-        package = build_capsule_export_payload(conn, db.workspace_id, capsule_id, export_mode)
+        package = build_capsule_export_payload(conn, db.workspace_id, capsule_id, export_mode, version_id=version_id)
         return {
             "capsule_id": capsule_id,
             "export_mode": export_mode,
             "status": "blocked" if package["privacy_report"]["blockers"] else "ready",
-            "filename": capsule_export_filename(package["capsule"]),
+            "filename": capsule_export_filename(package["capsule"], version=package["export_scope"].get("version")),
+            "export_scope": package["export_scope"],
             "manifest": package["manifest"],
             "privacy_report": package["privacy_report"],
             "validation_report": package["validation_report"],
@@ -630,11 +632,12 @@ def preview_capsule_export(db: VaultDatabase, capsule_id: str, payload: dict[str
 
 def export_capsule_package(db: VaultDatabase, capsule_id: str, output_dir: Path, payload: dict[str, Any] | None = None) -> dict[str, Any]:
     export_mode = normalize_export_mode((payload or {}).get("export_mode"))
+    version_id = nullable_text((payload or {}).get("version_id"))
     ts = now_iso()
     export_id = new_id("capexp")
     output_dir.mkdir(parents=True, exist_ok=True)
     with db.connect() as conn:
-        package = build_capsule_export_payload(conn, db.workspace_id, capsule_id, export_mode)
+        package = build_capsule_export_payload(conn, db.workspace_id, capsule_id, export_mode, version_id=version_id)
         privacy_report = package["privacy_report"]
         validation_report = package["validation_report"]
         if privacy_report["blockers"]:
@@ -664,7 +667,7 @@ def export_capsule_package(db: VaultDatabase, capsule_id: str, output_dir: Path,
             )
             raise HTTPException(409, {"message": "Capsule export blocked by privacy policy.", "preview": preview_from_package(capsule_id, export_mode, package)})
 
-        output_path = output_dir / capsule_export_filename(package["capsule"], export_id)
+        output_path = output_dir / capsule_export_filename(package["capsule"], export_id, version=package["export_scope"].get("version"))
         file_checksums = write_capsule_export_zip(output_path, package)
         archive_sha = sha256_file(output_path)
         manifest = {**package["manifest"], "checksums": file_checksums, "archive_sha256": archive_sha}
@@ -701,14 +704,15 @@ def export_capsule_package(db: VaultDatabase, capsule_id: str, output_dir: Path,
             capsule_id,
             "export_created",
             summary=f"Exported {export_mode.replace('_', ' ')} capsule",
-            payload={"export_id": export_id, "file_size_bytes": size_bytes, "sha256": archive_sha},
+            payload={"export_id": export_id, "file_size_bytes": size_bytes, "sha256": archive_sha, "export_scope": package["export_scope"]},
         )
-        db.event(conn, "capsule.export_created", "capsule", capsule_id, {"export_id": export_id, "export_mode": export_mode}, "user")
+        db.event(conn, "capsule.export_created", "capsule", capsule_id, {"export_id": export_id, "export_mode": export_mode, "export_scope": package["export_scope"]}, "user")
         return {
             "export_id": export_id,
             "capsule_id": capsule_id,
             "export_mode": export_mode,
             "status": "completed",
+            "export_scope": package["export_scope"],
             "filename": output_path.name,
             "file_path": str(output_path),
             "mime_type": "application/vnd.thevault.capsule+zip",
@@ -748,7 +752,11 @@ def list_capsule_exports(db: VaultDatabase, capsule_id: str, limit: int = 20, of
             record["validation_report"] = loads(record.pop("validation_report_json"), {})
             record["warnings"] = loads(record.pop("warnings_json"), [])
             record["size_bytes"] = int(record.get("file_size_bytes") or 0)
-            record["filename"] = Path(str(record.get("file_path") or "")).name if record.get("file_path") else capsule_export_filename({"name": "capsule"})
+            manifest = record["manifest"]
+            scope = manifest.get("export_scope") if isinstance(manifest, dict) else {}
+            version = scope.get("version") if isinstance(scope, dict) else None
+            fallback_capsule = manifest.get("capsule", {"name": "capsule"}) if isinstance(manifest, dict) else {"name": "capsule"}
+            record["filename"] = Path(str(record.get("file_path") or "")).name if record.get("file_path") else capsule_export_filename(fallback_capsule, version=version)
             items.append(record)
         return {"items": items, "total": total}
 
@@ -1374,7 +1382,8 @@ def preview_from_package(capsule_id: str, export_mode: str, package: dict[str, A
         "capsule_id": capsule_id,
         "export_mode": export_mode,
         "status": "blocked" if package["privacy_report"]["blockers"] else "ready",
-        "filename": capsule_export_filename(package["capsule"]),
+        "filename": capsule_export_filename(package["capsule"], version=package["export_scope"].get("version")),
+        "export_scope": package["export_scope"],
         "manifest": package["manifest"],
         "privacy_report": package["privacy_report"],
         "validation_report": package["validation_report"],
@@ -1718,11 +1727,32 @@ def normalize_export_mode(value: Any) -> str:
     return mode
 
 
-def build_capsule_export_payload(conn: sqlite3.Connection, workspace_id: str, capsule_id: str, export_mode: str) -> dict[str, Any]:
+def build_capsule_export_payload(conn: sqlite3.Connection, workspace_id: str, capsule_id: str, export_mode: str, version_id: str | None = None) -> dict[str, Any]:
     capsule = inflate_capsule(ensure_capsule(conn, workspace_id, capsule_id))
-    items = list_capsule_items_for_conn(conn, workspace_id, capsule_id, limit=10000)
-    records = collect_capsule_export_records(conn, workspace_id, capsule_id, items, export_mode)
+    counts = capsule_counts(conn, capsule_id)
     health = summarize_health(compute_health_payload(conn, workspace_id, capsule_id))
+    export_scope: dict[str, Any] = {"type": "live"}
+    if version_id:
+        version_row = capsule_version_row(conn, workspace_id, capsule_id, version_id)
+        version_manifest = loads(version_row["manifest_json"], {})
+        snapshot_capsule = version_manifest.get("capsule") if isinstance(version_manifest, dict) else None
+        if isinstance(snapshot_capsule, dict):
+            capsule = snapshot_capsule
+        items = hydrate_capsule_snapshot_items(conn, workspace_id, capsule_id, loads(version_row["item_snapshot_json"], []))
+        counts = capsule_counts_from_items(items)
+        snapshot_health = loads(version_row["health_snapshot_json"], {})
+        if isinstance(snapshot_health, dict) and {"score", "status", "warnings", "counts"} <= set(snapshot_health):
+            health = summarize_health(snapshot_health)
+        export_scope = {
+            "type": "version",
+            "version_id": version_row["id"],
+            "version": version_row["version"],
+            "title": version_row["title"],
+            "created_at": version_row["created_at"],
+        }
+    else:
+        items = list_capsule_items_for_conn(conn, workspace_id, capsule_id, limit=10000)
+    records = collect_capsule_export_records(conn, workspace_id, capsule_id, items, export_mode)
     privacy_report = capsule_export_privacy_report(conn, capsule_id, export_mode, items, records, health)
     object_counts = {key: len(value) for key, value in records.items()}
     manifest = {
@@ -1731,8 +1761,9 @@ def build_capsule_export_payload(conn: sqlite3.Connection, workspace_id: str, ca
         "workspace_id": workspace_id,
         "capsule": capsule,
         "export_mode": export_mode,
+        "export_scope": export_scope,
         "created_at": now_iso(),
-        "counts": capsule_counts(conn, capsule_id),
+        "counts": counts,
         "object_counts": object_counts,
         "formats": {
             "manifest": "JSON",
@@ -1756,6 +1787,7 @@ def build_capsule_export_payload(conn: sqlite3.Connection, workspace_id: str, ca
         "status": "blocked" if privacy_report["blockers"] else "ready",
         "checksums_ready": True,
         "item_count": len(items),
+        "export_scope": export_scope,
         "object_counts": object_counts,
         "warnings": privacy_report["warnings"],
         "blockers": privacy_report["blockers"],
@@ -1765,10 +1797,48 @@ def build_capsule_export_payload(conn: sqlite3.Connection, workspace_id: str, ca
         "items": items,
         "records": records,
         "health": health,
+        "export_scope": export_scope,
         "manifest": manifest,
         "privacy_report": privacy_report,
         "validation_report": validation_report,
     }
+
+
+def hydrate_capsule_snapshot_items(conn: sqlite3.Connection, workspace_id: str, capsule_id: str, snapshot_items: Any) -> list[dict[str, Any]]:
+    if not isinstance(snapshot_items, list):
+        return []
+    items = []
+    for raw in snapshot_items:
+        if not isinstance(raw, dict):
+            continue
+        item = dict(raw)
+        item.setdefault("capsule_id", capsule_id)
+        item.setdefault("workspace_id", workspace_id)
+        item.setdefault("status", "active")
+        target_type = str(item.get("target_type") or "")
+        target_id = str(item.get("target_id") or "")
+        if not target_type or not target_id or item.get("status") != "active":
+            continue
+        item["target"] = target_summary(conn, workspace_id, target_type, target_id)
+        items.append(item)
+    return items
+
+
+def capsule_counts_from_items(items: list[dict[str, Any]]) -> dict[str, int]:
+    counts = empty_counts()
+    for item in items:
+        target_type = item.get("target_type")
+        if target_type == "source":
+            counts["sources"] += 1
+        elif target_type == "note":
+            counts["notes"] += 1
+        elif target_type == "claim":
+            counts["claims"] += 1
+        elif target_type == "kg_node":
+            counts["concepts"] += 1
+        elif target_type == "tool":
+            counts["tools"] += 1
+    return counts
 
 
 def collect_capsule_export_records(
@@ -1897,9 +1967,10 @@ def write_capsule_export_zip(output_path: Path, package: dict[str, Any]) -> dict
     return checksums
 
 
-def capsule_export_filename(capsule: dict[str, Any], export_id: str | None = None) -> str:
+def capsule_export_filename(capsule: dict[str, Any], export_id: str | None = None, version: str | None = None) -> str:
+    version_suffix = f"-{capsule_safe_filename(version)}" if version else ""
     suffix = f"-{export_id.removeprefix('capexp_')}" if export_id else ""
-    return f"{capsule_safe_filename(capsule.get('slug') or capsule.get('name') or 'capsule')}{suffix}.vaultcapsule"
+    return f"{capsule_safe_filename(capsule.get('slug') or capsule.get('name') or 'capsule')}{version_suffix}{suffix}.vaultcapsule"
 
 
 def capsule_safe_filename(value: str) -> str:

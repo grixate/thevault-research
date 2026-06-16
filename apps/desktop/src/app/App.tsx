@@ -7713,9 +7713,20 @@ function capsuleVersionDiffItemLabel(item: CapsuleVersionDiff["added"][number]):
 function CapsuleExportDialog({ capsule, open, onOpenChange }: { capsule: Capsule; open: boolean; onOpenChange: (open: boolean) => void }) {
   const queryClient = useQueryClient();
   const [exportMode, setExportMode] = useState("reference_only");
+  const [exportVersionId, setExportVersionId] = useState("live");
+  const versions = capsule.versions ?? [];
+  const exportData = useMemo(
+    () => ({ export_mode: exportMode, ...(exportVersionId !== "live" ? { version_id: exportVersionId } : {}) }),
+    [exportMode, exportVersionId]
+  );
+  useEffect(() => {
+    if (exportVersionId !== "live" && !versions.some((version) => version.id === exportVersionId)) {
+      setExportVersionId("live");
+    }
+  }, [exportVersionId, versions]);
   const preview = useQuery({
-    queryKey: ["capsule-export-preview", capsule.id, exportMode],
-    queryFn: () => vaultRequest<CapsuleExportPreview>("capsules.exportPreview", { capsuleId: capsule.id, data: { export_mode: exportMode } }),
+    queryKey: ["capsule-export-preview", capsule.id, exportMode, exportVersionId],
+    queryFn: () => vaultRequest<CapsuleExportPreview>("capsules.exportPreview", { capsuleId: capsule.id, data: exportData }),
     enabled: open
   });
   const exports = useQuery({
@@ -7724,7 +7735,7 @@ function CapsuleExportDialog({ capsule, open, onOpenChange }: { capsule: Capsule
     enabled: open
   });
   const exportCapsule = useMutation({
-    mutationFn: () => vaultRequest<CapsuleExportResult>("capsules.export", { capsuleId: capsule.id, data: { export_mode: exportMode } }),
+    mutationFn: () => vaultRequest<CapsuleExportResult>("capsules.export", { capsuleId: capsule.id, data: exportData }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["capsule", capsule.id] });
       queryClient.invalidateQueries({ queryKey: ["capsules"] });
@@ -7773,6 +7784,30 @@ function CapsuleExportDialog({ capsule, open, onOpenChange }: { capsule: Capsule
               </SelectContent>
             </SelectRoot>
           </label>
+          {versions.length > 0 && (
+            <label className="field">
+              <span>Version</span>
+              <SelectRoot
+                value={exportVersionId}
+                onValueChange={(value) => {
+                  setExportVersionId(value);
+                  exportCapsule.reset();
+                }}
+              >
+                <SelectTrigger aria-label="Capsule export version">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="live">Live</SelectItem>
+                  {versions.map((version) => (
+                    <SelectItem key={version.id} value={version.id}>
+                      {version.version}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </SelectRoot>
+            </label>
+          )}
           {report && (
             <div className="capsule-export-grid" aria-label="Capsule export preview">
               <span><strong>{report.private_item_count}</strong> private</span>
@@ -7837,7 +7872,7 @@ function CapsuleExportHistory({ exports, loading }: { exports: CapsuleExportHist
               <span title={label}>{label}</span>
             </div>
             <small>
-              {capsuleOptionLabel(item.export_mode)} · {compactDate(item.created_at)}
+              {capsuleOptionLabel(item.export_mode)} · {capsuleExportScopeLabel(item.manifest)} · {compactDate(item.created_at)}
               {(item.size_bytes ?? item.file_size_bytes ?? 0) > 0 ? ` · ${formatBytes(Number(item.size_bytes ?? item.file_size_bytes))}` : ""}
             </small>
             {item.error && <small>{item.error}</small>}
@@ -7846,6 +7881,12 @@ function CapsuleExportHistory({ exports, loading }: { exports: CapsuleExportHist
       })}
     </section>
   );
+}
+
+function capsuleExportScopeLabel(manifest: Record<string, any> | undefined): string {
+  const scope = manifest?.export_scope;
+  if (scope?.type === "version" && scope.version) return `v${scope.version}`;
+  return "Live";
 }
 
 function parseCsv(value: string): string[] {
