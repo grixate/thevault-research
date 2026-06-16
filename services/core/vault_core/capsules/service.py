@@ -1752,7 +1752,7 @@ def build_capsule_export_payload(conn: sqlite3.Connection, workspace_id: str, ca
         }
     else:
         items = list_capsule_items_for_conn(conn, workspace_id, capsule_id, limit=10000)
-    records = collect_capsule_export_records(conn, workspace_id, capsule_id, items, export_mode)
+    records, source_blob_files = collect_capsule_export_records(conn, workspace_id, capsule_id, items, export_mode)
     privacy_report = capsule_export_privacy_report(conn, capsule_id, export_mode, items, records, health)
     object_counts = {key: len(value) for key, value in records.items()}
     manifest = {
@@ -1770,6 +1770,7 @@ def build_capsule_export_payload(conn: sqlite3.Connection, workspace_id: str, ca
             "items": "JSON",
             "notes": "Markdown + JSONL metadata",
             "sources": "JSON",
+            "source_blobs": "Private-full source files",
             "source_blocks": "JSONL",
             "claims": "JSONL",
             "evidence_links": "JSONL",
@@ -1796,6 +1797,7 @@ def build_capsule_export_payload(conn: sqlite3.Connection, workspace_id: str, ca
         "capsule": capsule,
         "items": items,
         "records": records,
+        "source_blob_files": source_blob_files,
         "health": health,
         "export_scope": export_scope,
         "manifest": manifest,
@@ -1847,7 +1849,7 @@ def collect_capsule_export_records(
     capsule_id: str,
     items: list[dict[str, Any]],
     export_mode: str,
-) -> dict[str, list[dict[str, Any]]]:
+) -> tuple[dict[str, list[dict[str, Any]]], dict[str, bytes]]:
     ids: dict[str, set[str]] = {target_type: set() for target_type in SUPPORTED_TARGET_TYPES}
     for item in items:
         ids.setdefault(item["target_type"], set()).add(item["target_id"])
@@ -1878,10 +1880,15 @@ def collect_capsule_export_records(
     kg_edge_rows = capsule_edge_rows(conn, workspace_id, ids.get("kg_edge", set()), {row["id"] for row in kg_node_rows})
     learning_rows = rows_by_ids(conn, "learning_items", "id", ids.get("learning_item", set()), workspace_id=workspace_id)
     tool_rows = rows_by_ids(conn, "tool_registry", "id", ids.get("tool", set()), workspace_id=workspace_id)
+    source_blobs, source_blob_files = source_blob_records_for_export(source_rows, export_mode)
+    blob_refs_by_source: dict[str, list[dict[str, Any]]] = {}
+    for blob in source_blobs:
+        blob_refs_by_source.setdefault(str(blob["source_id"]), []).append({key: blob[key] for key in ("kind", "package_path", "sha256", "size_bytes")})
 
     return {
         "items": items,
-        "sources": [sanitize_source_for_export(row, export_mode) for row in source_rows],
+        "sources": [sanitize_source_for_export(row, blob_refs_by_source.get(str(row["id"]), [])) for row in source_rows],
+        "source_blobs": source_blobs,
         "source_blocks": [sanitize_source_block_for_export(row, export_mode) for row in source_block_rows],
         "notes": [export_note_row(row, export_mode) for row in note_rows],
         "kg_nodes": [export_json_fields(row, {"metadata_json": "metadata"}) for row in kg_node_rows],
@@ -1890,7 +1897,7 @@ def collect_capsule_export_records(
         "graph_edges": [export_json_fields(row, {"metadata_json": "metadata"}) for row in kg_edge_rows],
         "learning_items": [export_json_fields(row, {"body_json": "body"}) for row in learning_rows],
         "tools": [sanitize_tool_for_export(row) for row in tool_rows],
-    }
+    }, source_blob_files
 
 
 def capsule_export_privacy_report(
@@ -1942,6 +1949,7 @@ def write_capsule_export_zip(output_path: Path, package: dict[str, Any]) -> dict
         "data/capsule.json": stable_json_bytes(package["capsule"]),
         "data/items.json": stable_json_bytes(package["items"]),
         "data/sources.json": stable_json_bytes(package["records"]["sources"]),
+        "data/source_blobs.jsonl": jsonl_bytes(package["records"]["source_blobs"]),
         "data/health.json": stable_json_bytes(package["health"]),
         "privacy_report.json": stable_json_bytes(package["privacy_report"]),
         "validation_report.json": stable_json_bytes(package["validation_report"]),
@@ -1956,6 +1964,7 @@ def write_capsule_export_zip(output_path: Path, package: dict[str, Any]) -> dict
     }
     for note in package["records"]["notes"]:
         files[f"notes/{capsule_safe_filename(note.get('title') or 'untitled')}-{note['id']}.md"] = capsule_note_markdown(note).encode("utf-8")
+    files.update(package.get("source_blob_files") or {})
     checksums = {path: hashlib.sha256(content).hexdigest() for path, content in files.items()}
     manifest = {**package["manifest"], "checksums": checksums}
     manifest_bytes = stable_json_bytes(manifest)
@@ -2240,10 +2249,40 @@ def export_json_fields(row: dict[str, Any], json_fields: dict[str, str]) -> dict
     return record
 
 
-def sanitize_source_for_export(row: dict[str, Any], export_mode: str) -> dict[str, Any]:
-    record = export_json_fields(row, {"metadata_json": "metadata"})
+def source_blob_records_for_export(source_rows: list[dict[str, Any]], export_mode: str) -> tuple[list[dict[str, Any]], dict[str, bytes]]:
     if export_mode != "private_full":
-        record["raw_path"] = None
+        return [], {}
+    records: list[dict[str, Any]] = []
+    files: dict[str, bytes] = {}
+    for row in source_rows:
+        source_id = str(row.get("id") or "")
+        for kind, field in (("raw", "raw_path"), ("extracted_text", "extracted_text_path")):
+            source_path = Path(str(row.get(field) or ""))
+            if not source_id or not row.get(field) or not source_path.exists() or not source_path.is_file():
+                continue
+            content = source_path.read_bytes()
+            filename = capsule_safe_filename(source_path.name or f"{kind}.txt")
+            package_path = f"sources/{kind}/{source_id}-{filename}"
+            digest = hashlib.sha256(content).hexdigest()
+            files[package_path] = content
+            records.append(
+                {
+                    "source_id": source_id,
+                    "kind": kind,
+                    "filename": source_path.name,
+                    "package_path": package_path,
+                    "sha256": digest,
+                    "size_bytes": len(content),
+                }
+            )
+    return records, files
+
+
+def sanitize_source_for_export(row: dict[str, Any], blob_refs: list[dict[str, Any]]) -> dict[str, Any]:
+    record = export_json_fields(row, {"metadata_json": "metadata"})
+    record["raw_path"] = None
+    record["extracted_text_path"] = None
+    record["blob_refs"] = blob_refs
     return record
 
 

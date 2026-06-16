@@ -732,6 +732,53 @@ def test_workspace_export_contains_notes_sources_graph_review_and_backup(client)
         assert any(item["id"] == capsule_export["export_id"] and item["privacy_report"]["status"] == "ready" for item in capsule_exports)
 
 
+def test_capsule_private_full_export_includes_source_blobs(client, tmp_path):
+    source_path = tmp_path / "private-source.md"
+    source_path.write_text("# Private source\n\nFull source payload for capsule export.", encoding="utf-8")
+    imported = client.post(
+        "/sources/import-file",
+        json={"file_path": str(source_path), "title": "Private Source", "type": "markdown"},
+    ).json()
+    capsule = client.post(
+        "/capsules",
+        json={"name": "Private Full Source Capsule", "capsule_type": "project"},
+    ).json()
+    client.post(
+        f"/capsules/{capsule['id']}/items",
+        json={
+            "items": [
+                {
+                    "target_type": "source",
+                    "target_id": imported["source"]["id"],
+                    "role": "primary_source",
+                    "export_policy": "full_sources_private",
+                    "private_flag": True,
+                }
+            ]
+        },
+    ).json()
+
+    blocked = client.post(f"/capsules/{capsule['id']}/export/preview", json={"export_mode": "reference_only"}).json()
+    assert blocked["status"] == "blocked"
+    assert {item["code"] for item in blocked["privacy_report"]["blockers"]} >= {"private_items", "full_sources_private"}
+    private_preview = client.post(f"/capsules/{capsule['id']}/export/preview", json={"export_mode": "private_full"}).json()
+    assert private_preview["status"] == "ready"
+    assert private_preview["manifest"]["object_counts"]["source_blobs"] >= 2
+
+    exported = client.post(f"/capsules/{capsule['id']}/export", json={"export_mode": "private_full"}).json()
+    with zipfile.ZipFile(Path(exported["file_path"])) as archive:
+        names = set(archive.namelist())
+        assert "data/source_blobs.jsonl" in names
+        blob_rows = [json.loads(line) for line in archive.read("data/source_blobs.jsonl").decode("utf-8").splitlines()]
+        assert {row["kind"] for row in blob_rows} >= {"raw", "extracted_text"}
+        assert all(row["package_path"] in names for row in blob_rows)
+        assert any("Full source payload" in archive.read(row["package_path"]).decode("utf-8") for row in blob_rows)
+        sources = json.loads(archive.read("data/sources.json").decode("utf-8"))
+        assert sources[0]["raw_path"] is None
+        assert sources[0]["extracted_text_path"] is None
+        assert {ref["kind"] for ref in sources[0]["blob_refs"]} >= {"raw", "extracted_text"}
+
+
 def test_capsules_reference_global_objects_and_snapshot_health(client):
     note = client.post(
         "/notes",
