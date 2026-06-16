@@ -145,6 +145,7 @@ function mapRoute(route: string, payload?: any): { method: string; path: string;
     "capsules.versionDiff": { method: "GET", path: `/capsules/${payload?.capsuleId}/versions/diff?from_version_id=${encodeURIComponent(payload?.fromVersionId ?? "")}&to_version_id=${encodeURIComponent(payload?.toVersionId ?? "")}` },
     "capsules.exportPreview": { method: "POST", path: `/capsules/${payload?.capsuleId}/export/preview`, body: payload?.data ?? {} },
     "capsules.export": { method: "POST", path: `/capsules/${payload?.capsuleId}/export`, body: payload?.data ?? {} },
+    "capsules.exports": { method: "GET", path: `/capsules/${payload?.capsuleId}/exports?limit=${payload?.limit ?? 20}&offset=${payload?.offset ?? 0}` },
     "capsules.imports": { method: "GET", path: `/capsules/imports?limit=${payload?.limit ?? 50}&offset=${payload?.offset ?? 0}` },
     "capsules.import": { method: "POST", path: "/capsules/imports", body: payload ?? {} },
     "capsules.import.get": { method: "GET", path: `/capsules/imports/${payload?.importId}` },

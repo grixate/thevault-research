@@ -175,6 +175,7 @@ from vault_core.capsules.service import (
     get_capsule_import_detail,
     get_capsule_detail,
     import_capsule_quarantine,
+    list_capsule_exports,
     list_capsule_items,
     list_capsule_imports,
     list_capsule_versions,
@@ -535,6 +536,10 @@ def register_routes(app: FastAPI) -> None:
     def capsule_export(capsule_id: str, req: CapsuleExportRequest, request: Request, db: VaultDatabase = Depends(get_db)) -> dict[str, Any]:
         settings: Settings = request.app.state.settings
         return export_capsule_package(db, capsule_id, settings.data_dir / "capsules" / "exports", req.model_dump())
+
+    @app.get("/capsules/{capsule_id}/exports", dependencies=[auth])
+    def capsule_exports(capsule_id: str, limit: int = 20, offset: int = 0, db: VaultDatabase = Depends(get_db)) -> dict[str, Any]:
+        return list_capsule_exports(db, capsule_id, limit=limit, offset=offset)
 
     @app.get("/ai/providers", dependencies=[auth])
     def ai_providers() -> list[dict[str, Any]]:

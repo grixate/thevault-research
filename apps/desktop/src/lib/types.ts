@@ -321,6 +321,30 @@ export type CapsuleExportResult = CapsuleExportPreview & {
   created_at: string;
 };
 
+export type CapsuleExportHistoryItem = {
+  id: string;
+  capsule_id: string;
+  export_mode: string;
+  status: string;
+  file_path?: string | null;
+  file_size_bytes?: number | null;
+  size_bytes?: number;
+  sha256?: string | null;
+  filename?: string;
+  error?: string | null;
+  manifest: Record<string, any>;
+  privacy_report: Record<string, any>;
+  validation_report: Record<string, any>;
+  warnings: Array<{ code?: string; message?: string } | string>;
+  created_at: string;
+  finished_at?: string | null;
+};
+
+export type CapsuleExportListResponse = {
+  items: CapsuleExportHistoryItem[];
+  total: number;
+};
+
 export type CapsuleVersionDiff = {
   capsule_id: string;
   from: { id: string; version: string; title?: string | null; changelog?: string | null; created_at: string };

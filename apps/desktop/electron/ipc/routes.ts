@@ -24,6 +24,7 @@ export type VaultRoute =
   | "capsules.versionDiff"
   | "capsules.exportPreview"
   | "capsules.export"
+  | "capsules.exports"
   | "capsules.imports"
   | "capsules.import"
   | "capsules.import.get"
@@ -183,6 +184,7 @@ export const allowedRoutes: Record<VaultRoute, RouteSpec> = {
   },
   "capsules.exportPreview": { method: "POST", path: (p) => `/capsules/${p.capsuleId}/export/preview`, body: (p) => p.data ?? {} },
   "capsules.export": { method: "POST", path: (p) => `/capsules/${p.capsuleId}/export`, body: (p) => p.data ?? {} },
+  "capsules.exports": { method: "GET", path: (p) => `/capsules/${p.capsuleId}/exports?limit=${p?.limit ?? 20}&offset=${p?.offset ?? 0}` },
   "capsules.imports": { method: "GET", path: (p) => `/capsules/imports?limit=${p?.limit ?? 50}&offset=${p?.offset ?? 0}` },
   "capsules.import": { method: "POST", path: () => "/capsules/imports", body: (p) => p ?? {} },
   "capsules.import.get": { method: "GET", path: (p) => `/capsules/imports/${p.importId}` },

@@ -105,6 +105,8 @@ import type {
   AIProviderInfo,
   CapabilityBinding,
   Capsule,
+  CapsuleExportHistoryItem,
+  CapsuleExportListResponse,
   CapsuleExportPreview,
   CapsuleExportResult,
   CapsuleImportListResponse,
@@ -7716,11 +7718,17 @@ function CapsuleExportDialog({ capsule, open, onOpenChange }: { capsule: Capsule
     queryFn: () => vaultRequest<CapsuleExportPreview>("capsules.exportPreview", { capsuleId: capsule.id, data: { export_mode: exportMode } }),
     enabled: open
   });
+  const exports = useQuery({
+    queryKey: ["capsule-exports", capsule.id],
+    queryFn: () => vaultRequest<CapsuleExportListResponse>("capsules.exports", { capsuleId: capsule.id, limit: 6, offset: 0 }),
+    enabled: open
+  });
   const exportCapsule = useMutation({
     mutationFn: () => vaultRequest<CapsuleExportResult>("capsules.export", { capsuleId: capsule.id, data: { export_mode: exportMode } }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["capsule", capsule.id] });
       queryClient.invalidateQueries({ queryKey: ["capsules"] });
+      queryClient.invalidateQueries({ queryKey: ["capsule-exports", capsule.id] });
     }
   });
   const report = preview.data?.privacy_report;
@@ -7790,6 +7798,7 @@ function CapsuleExportDialog({ capsule, open, onOpenChange }: { capsule: Capsule
               <small>{formatBytes(exportCapsule.data.size_bytes)} · {middleTruncate(exportCapsule.data.sha256, 18)}</small>
             </div>
           )}
+          <CapsuleExportHistory exports={exports.data?.items ?? []} loading={exports.isLoading} />
           {(preview.error || exportCapsule.error) && <small className="model-test-error">{preview.error?.message || exportCapsule.error?.message}</small>}
           <div className="capsule-attach-actions">
             <Button type="button" variant="quiet" onClick={() => onOpenChange(false)}>
@@ -7802,6 +7811,40 @@ function CapsuleExportDialog({ capsule, open, onOpenChange }: { capsule: Capsule
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>
+  );
+}
+
+function CapsuleExportHistory({ exports, loading }: { exports: CapsuleExportHistoryItem[]; loading: boolean }) {
+  if (loading) {
+    return (
+      <section className="capsule-export-history" aria-label="Capsule export history">
+        <strong>History</strong>
+        <span>Loading</span>
+      </section>
+    );
+  }
+  if (exports.length === 0) return null;
+  return (
+    <section className="capsule-export-history" aria-label="Capsule export history">
+      <strong>History</strong>
+      {exports.map((item) => {
+        const blocked = item.status === "blocked";
+        const label = item.filename || (item.file_path ? item.file_path.split("/").at(-1) : `${capsuleOptionLabel(item.export_mode)} export`);
+        return (
+          <article key={item.id}>
+            <div>
+              <Badge tone={blocked ? "bad" : item.status === "completed" ? "good" : "neutral"}>{capsuleOptionLabel(item.status)}</Badge>
+              <span title={label}>{label}</span>
+            </div>
+            <small>
+              {capsuleOptionLabel(item.export_mode)} · {compactDate(item.created_at)}
+              {(item.size_bytes ?? item.file_size_bytes ?? 0) > 0 ? ` · ${formatBytes(Number(item.size_bytes ?? item.file_size_bytes))}` : ""}
+            </small>
+            {item.error && <small>{item.error}</small>}
+          </article>
+        );
+      })}
+    </section>
   );
 }
 

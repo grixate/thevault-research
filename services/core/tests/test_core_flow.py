@@ -934,6 +934,15 @@ def test_capsules_reference_global_objects_and_snapshot_health(client):
         evidence_rows = [json.loads(line) for line in archive.read("data/evidence_links.jsonl").decode("utf-8").splitlines()]
         assert any("Resonance in acoustics" in row["exact_quote"] for row in evidence_rows)
 
+    exports = client.get(f"/capsules/{capsule['id']}/exports").json()
+    assert exports["total"] == 1
+    assert exports["items"][0]["id"] == exported["export_id"]
+    assert exports["items"][0]["status"] == "completed"
+    assert exports["items"][0]["export_mode"] == "sanitized"
+    assert exports["items"][0]["filename"] == exported["filename"]
+    assert exports["items"][0]["size_bytes"] > 0
+    assert exports["items"][0]["privacy_report"]["status"] == "ready"
+
     private_note = client.post(
         "/notes",
         json={

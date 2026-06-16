@@ -721,6 +721,38 @@ def export_capsule_package(db: VaultDatabase, capsule_id: str, output_dir: Path,
         }
 
 
+def list_capsule_exports(db: VaultDatabase, capsule_id: str, limit: int = 20, offset: int = 0) -> dict[str, Any]:
+    with db.connect() as conn:
+        ensure_capsule(conn, db.workspace_id, capsule_id)
+        rows = conn.execute(
+            """
+            SELECT *
+            FROM capsule_exports
+            WHERE workspace_id=? AND capsule_id=?
+            ORDER BY created_at DESC
+            LIMIT ? OFFSET ?
+            """,
+            (db.workspace_id, capsule_id, limit, offset),
+        ).fetchall()
+        total = int(
+            conn.execute(
+                "SELECT COUNT(*) FROM capsule_exports WHERE workspace_id=? AND capsule_id=?",
+                (db.workspace_id, capsule_id),
+            ).fetchone()[0]
+        )
+        items = []
+        for row in rows:
+            record = dict(row)
+            record["manifest"] = loads(record.pop("manifest_json"), {})
+            record["privacy_report"] = loads(record.pop("privacy_report_json"), {})
+            record["validation_report"] = loads(record.pop("validation_report_json"), {})
+            record["warnings"] = loads(record.pop("warnings_json"), [])
+            record["size_bytes"] = int(record.get("file_size_bytes") or 0)
+            record["filename"] = Path(str(record.get("file_path") or "")).name if record.get("file_path") else capsule_export_filename({"name": "capsule"})
+            items.append(record)
+        return {"items": items, "total": total}
+
+
 def import_capsule_quarantine(db: VaultDatabase, imports_dir: Path, payload: dict[str, Any]) -> dict[str, Any]:
     source_path = Path(str(payload.get("file_path") or "")).expanduser()
     if not source_path.exists() or not source_path.is_file():

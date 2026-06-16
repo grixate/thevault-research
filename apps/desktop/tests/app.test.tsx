@@ -877,6 +877,7 @@ describe("App", () => {
     let capsuleRows: any[] = [];
     let reviewRows: any[] = [];
     let importRows: any[] = [];
+    let exportRows: any[] = [];
     const selectFiles = vi.fn(async () => ["/tmp/acoustic-science-foundations.vaultcapsule"]);
     window.vault = {
       request: vi.fn(async (route: string, payload?: any) => {
@@ -929,7 +930,7 @@ describe("App", () => {
           };
         }
         if (route === "capsules.export") {
-          return {
+          const exported = {
             export_id: "capexp_test",
             capsule_id: capsule.id,
             export_mode: "reference_only",
@@ -944,7 +945,10 @@ describe("App", () => {
             privacy_report: {},
             validation_report: {}
           };
+          exportRows = [{ id: "capexp_test", ...exported, file_size_bytes: exported.size_bytes, error: null, warnings: [] }];
+          return exported;
         }
+        if (route === "capsules.exports") return { items: exportRows, total: exportRows.length };
         if (route === "capsules.import") {
           const imported = {
             import_id: "capimp_test",
@@ -1054,7 +1058,11 @@ describe("App", () => {
     const dialog = await screen.findByRole("dialog", { name: "Export capsule" });
     expect(await within(dialog).findByLabelText("Capsule export preview")).toBeTruthy();
     fireEvent.click(within(dialog).getByRole("button", { name: /^export$/i }));
-    expect(await within(dialog).findByText("acoustic-science-foundations.vaultcapsule")).toBeTruthy();
+    const exportResult = await within(dialog).findByLabelText("Capsule export result");
+    expect(within(exportResult).getByText("acoustic-science-foundations.vaultcapsule")).toBeTruthy();
+    const exportHistory = await within(dialog).findByLabelText("Capsule export history");
+    expect(within(exportHistory).getByText("acoustic-science-foundations.vaultcapsule")).toBeTruthy();
+    expect(within(exportHistory).getByText(/Reference Only/)).toBeTruthy();
     fireEvent.click(within(dialog).getByRole("button", { name: "Close" }));
     fireEvent.click(screen.getByRole("button", { name: "Import" }));
     expect(await screen.findByLabelText("Capsule import quarantine")).toBeTruthy();
