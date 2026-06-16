@@ -1276,6 +1276,73 @@ textarea:not(.ui-textarea) {
   white-space: nowrap;
 }
 
+.capsule-import-history {
+  display: grid;
+  gap: 4px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.capsule-import-history-head,
+.capsule-import-history > span {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-width: 0;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.capsule-import-history-head strong {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.capsule-import-history button {
+  display: grid;
+  gap: 3px;
+  width: 100%;
+  min-width: 0;
+  padding: 8px 10px;
+  color: inherit;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.capsule-import-history button:hover,
+.capsule-import-history button.active {
+  background: var(--muted-surface);
+  border-color: var(--line);
+}
+
+.capsule-import-history button > span {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.capsule-import-history button strong {
+  min-width: 0;
+  color: var(--foreground);
+  font-size: 12px;
+  font-weight: 650;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.capsule-import-history button small {
+  color: var(--muted);
+  font-size: 11px;
+}
+
 .capsule-import-plan {
   display: grid;
   gap: 0;

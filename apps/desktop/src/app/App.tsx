@@ -107,6 +107,7 @@ import type {
   Capsule,
   CapsuleExportPreview,
   CapsuleExportResult,
+  CapsuleImportListResponse,
   CapsuleImportReviewItemsResult,
   CapsuleImportResult,
   CapsuleLearningGenerateResult,
@@ -6994,6 +6995,10 @@ function CapsulesView() {
     queryKey: ["capsules", query],
     queryFn: () => vaultRequest<CapsuleListResponse>("capsules.list", { query, limit: 100 })
   });
+  const capsuleImports = useQuery({
+    queryKey: ["capsule-imports"],
+    queryFn: () => vaultRequest<CapsuleImportListResponse>("capsules.imports", { limit: 6, offset: 0 })
+  });
   const rows = capsules.data?.items ?? [];
   const selected = rows.find((capsule) => capsule.id === selectedCapsuleId) ?? rows[0];
   const detail = useQuery({
@@ -7048,6 +7053,10 @@ function CapsulesView() {
       queryClient.invalidateQueries({ queryKey: ["capsule-imports"] });
       queryClient.invalidateQueries({ queryKey: ["events"] });
     }
+  });
+  const openImportDetail = useMutation({
+    mutationFn: (importId: string) => vaultRequest<CapsuleImportResult>("capsules.import.get", { importId }),
+    onSuccess: (result) => setImportResult(result)
   });
   function openCapsuleTarget(item: CapsuleItem) {
     if (item.target_type === "note") {
@@ -7112,6 +7121,14 @@ function CapsulesView() {
             </button>
           ))}
         </div>
+        <CapsuleImportHistory
+          imports={capsuleImports.data?.items ?? []}
+          total={capsuleImports.data?.total ?? 0}
+          loading={capsuleImports.isLoading}
+          selectedImportId={importResult?.import_id}
+          onOpen={(importId) => openImportDetail.mutate(importId)}
+        />
+        {openImportDetail.error && <small className="model-test-error">{openImportDetail.error.message}</small>}
       </Panel>
       <Panel className="capsule-detail detail-pane">
         {importResult ? (
@@ -7213,6 +7230,51 @@ function CapsulesView() {
         </Dialog.Portal>
       </Dialog.Root>
     </div>
+  );
+}
+
+function CapsuleImportHistory({
+  imports,
+  total,
+  loading,
+  selectedImportId,
+  onOpen
+}: {
+  imports: CapsuleImportResult[];
+  total: number;
+  loading: boolean;
+  selectedImportId?: string;
+  onOpen: (importId: string) => void;
+}) {
+  if (loading) {
+    return (
+      <section className="capsule-import-history" aria-label="Capsule import history">
+        <strong>Imports</strong>
+        <span>Loading</span>
+      </section>
+    );
+  }
+  if (imports.length === 0) return null;
+  return (
+    <section className="capsule-import-history" aria-label="Capsule import history">
+      <div className="capsule-import-history-head">
+        <strong>Imports</strong>
+        {total > imports.length && <small>{imports.length}/{total}</small>}
+      </div>
+      {imports.map((item) => {
+        const capsule = item.manifest?.capsule ?? {};
+        const name = String(capsule.name || item.merge_plan?.capsule_name || "Imported capsule");
+        return (
+          <button key={item.import_id} type="button" className={selectedImportId === item.import_id ? "active" : ""} onClick={() => onOpen(item.import_id)}>
+            <span>
+              <strong title={name}>{name}</strong>
+              <Badge tone={item.status === "invalid" ? "bad" : item.status === "review_ready" ? "good" : "warn"}>{capsuleOptionLabel(item.status)}</Badge>
+            </span>
+            <small>{compactDate(item.created_at)}</small>
+          </button>
+        );
+      })}
+    </section>
   );
 }
 

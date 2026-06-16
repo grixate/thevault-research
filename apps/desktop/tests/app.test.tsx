@@ -876,12 +876,15 @@ describe("App", () => {
     };
     let capsuleRows: any[] = [];
     let reviewRows: any[] = [];
+    let importRows: any[] = [];
     const selectFiles = vi.fn(async () => ["/tmp/acoustic-science-foundations.vaultcapsule"]);
     window.vault = {
       request: vi.fn(async (route: string, payload?: any) => {
         if (route === "health.get") return { ok: true, version: "0.1.0", db_ready: true, workspace_id: "wrk_default" };
         if (route === "jobs.list") return [];
         if (route === "capsules.list") return { items: capsuleRows, total: capsuleRows.length };
+        if (route === "capsules.imports") return { items: importRows, total: importRows.length };
+        if (route === "capsules.import.get") return importRows.find((item) => item.import_id === payload?.importId);
         if (route === "capsules.create") {
           capsuleRows = [capsule];
           return capsule;
@@ -943,7 +946,7 @@ describe("App", () => {
           };
         }
         if (route === "capsules.import") {
-          return {
+          const imported = {
             import_id: "capimp_test",
             status: "quarantined",
             source_file_path: "/tmp/acoustic-science-foundations.vaultcapsule",
@@ -968,6 +971,8 @@ describe("App", () => {
             warnings: [],
             created_at: "2026-06-14T12:00:00Z"
           };
+          importRows = [imported];
+          return imported;
         }
         if (route === "capsules.import.reviewItems") {
           reviewRows = [
@@ -1053,9 +1058,15 @@ describe("App", () => {
     fireEvent.click(within(dialog).getByRole("button", { name: "Close" }));
     fireEvent.click(screen.getByRole("button", { name: "Import" }));
     expect(await screen.findByLabelText("Capsule import quarantine")).toBeTruthy();
+    const history = await screen.findByLabelText("Capsule import history");
+    expect(within(history).getByRole("button", { name: /Acoustic Science Foundations/i })).toBeTruthy();
     expect(await screen.findByText("quarantined")).toBeTruthy();
     expect(await screen.findByText("Claims")).toBeTruthy();
     expect(await screen.findByText("1 · Create Review Items")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Close" }));
+    fireEvent.click(within(history).getByRole("button", { name: /Acoustic Science Foundations/i }));
+    await waitFor(() => expect(window.vault.request).toHaveBeenCalledWith("capsules.import.get", { importId: "capimp_test" }));
+    expect(await screen.findByLabelText("Capsule import quarantine")).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: /review items/i }));
     expect(await screen.findByLabelText("Capsule import review items")).toBeTruthy();
     expect(await screen.findByText("2 created")).toBeTruthy();

@@ -353,6 +353,11 @@ export type CapsuleImportResult = {
   created_at: string;
 };
 
+export type CapsuleImportListResponse = {
+  items: CapsuleImportResult[];
+  total: number;
+};
+
 export type CapsuleImportReviewItemsResult = {
   import_id: string;
   status: "review_ready" | string;
