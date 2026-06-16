@@ -299,6 +299,8 @@ Latest native Tasks verification on 2026-06-16:
 - Tasks can attach context links to notes, sources, source blocks, claims, graph nodes, review items, capsules, learning items, tools, lab jobs, and Assistant answers.
 - Added desktop/Electron route wiring for `todos.list`, `todos.create`, `todos.update`, `todos.complete`, and `todoLists.list`.
 - Added `Tasks` to the Workspace navigation with a minimalist v1 surface: Inbox, Today, Upcoming, Done, one-line quick add, dense task rows, list side rail, and short empty states.
+- List filters now work with the Inbox view, and quick-add automatically selects a parsed destination list so listed tasks do not appear to vanish.
+- Added a minimal task detail side rail for editing title, due date, priority, and description.
 - Fixed quick-add parsed priority so schema defaults do not override `p1`-`p4`.
 - Preserved typed list/label casing while keeping backend matching case-insensitive.
 - Focused backend todo route/parser test: passed.
@@ -2719,8 +2721,11 @@ Current good state:
 - Context links can attach tasks to notes, sources, source blocks, claims, graph nodes, review items, capsules, learning items, tools, lab jobs, and Assistant answers.
 - Desktop has a first `Tasks` surface in Workspace navigation.
 - Tasks UI is intentionally sparse: one input, compact view tabs, dense rows, list side rail, and no explanatory subtitles.
+- List filtering is live from the side rail, including listed tasks under the Inbox view.
+- Quick-add selects the parsed destination list after creation so the created task remains visible.
+- A minimal detail rail can edit task title, due date, priority, and description.
 - Contextual task creation now exists from current Note, selected Storage source/source block, Review item, Graph claim, Capsule detail, and Assistant answer.
-- Focused backend and desktop tests cover quick add, parsed list/label/priority/due date, context links, task list counts, completion, stats, the desktop create/complete flow, and note-origin contextual task creation.
+- Focused backend and desktop tests cover quick add, parsed list/label/priority/due date, list filtering, context links, task list counts, detail editing, completion, stats, the desktop create/complete flow, and note-origin contextual task creation.
 
 Remaining tasks:
 
@@ -2731,8 +2736,8 @@ Remaining tasks:
   - Learning item/tool result surfaces,
   - richer tests for Storage/Review/Capsule/Assistant task payloads.
 - Add global quick-task capture, ideally alongside Quick note with a Spotlight-style command, without adding clutter to the top bar.
-- Add a minimal task detail drawer for editing title, due date, list, labels, context, description, recurrence, and source link.
-- Add list management: create/rename/archive lists and filter by list without overbuilding projects.
+- Expand task detail editing to cover list, labels, context, recurrence, and source link without making the rail feel like a project-management panel.
+- Add list management: create/rename/archive lists without overbuilding projects.
 - Add recurrence UI and generated next occurrences after completion.
 - Add subtasks only after detail drawer and list management are stable.
 - Integrate AI-suggested todos as reviewable suggestions, not silent canonical tasks.
@@ -2754,7 +2759,7 @@ Acceptance evidence:
 
 1. If continuing UX, keep the Notion/Obsidian/Apple Notes reset active: inspect Notes, Storage, Quick Note, Review, Assistant, Capsules, and Settings screenshots, then simplify the most overloaded flow first.
 2. If continuing Capsules, polish the alpha surface and attach dialog first, then continue from import review items into conflict-aware merge decisions or package contract docs.
-3. If continuing Tasks, add contextual creation from Notes/Storage/Review/Capsules/Assistant before adding bigger task-management concepts.
+3. If continuing Tasks, add global quick-task capture and then list management/detail metadata editing before bigger task-management concepts.
 4. If continuing local AI production, pick the first real approved runtime/model candidate set and run the release-packet tooling.
 5. If stabilizing before bigger registry edits, stage or commit the current v1 state.
 6. After any slice:

@@ -693,11 +693,20 @@ describe("App", () => {
     const request = vi.fn(async (route: string, payload?: any) => {
       if (route === "health.get") return { ok: true, version: "0.1.0", db_ready: true, workspace_id: "wrk_default" };
       if (route === "jobs.list") return [];
-      if (route === "todos.list") return { items: todoRows, total: todoRows.length, view: payload?.view ?? "inbox" };
+      if (route === "todos.list") {
+        const items = payload?.listId
+          ? todoRows.filter((todo) => todo.list_id === payload.listId)
+          : todoRows.filter((todo) => payload?.view !== "inbox" || !todo.list_id);
+        return { items, total: items.length, view: payload?.view ?? "inbox" };
+      }
       if (route === "todoLists.list") return [{ id: "tdl_paper", name: "Paper review", status: "active", open_count: todoRows.filter((todo) => todo.status === "open").length }];
       if (route === "todos.create") {
         todoRows = [createdTodo];
         return createdTodo;
+      }
+      if (route === "todos.update") {
+        todoRows = todoRows.map((todo) => (todo.id === payload?.todoId ? { ...todo, ...payload.data, updated_at: "2026-06-16T10:03:00Z" } : todo));
+        return todoRows.find((todo) => todo.id === payload?.todoId);
       }
       if (route === "todos.complete") {
         todoRows = todoRows.map((todo) => (todo.id === payload?.todoId ? { ...todo, status: "completed", completed_at: "2026-06-16T10:05:00Z" } : todo));
@@ -715,11 +724,35 @@ describe("App", () => {
     fireEvent.click(screen.getByRole("button", { name: "Add task" }));
 
     await waitFor(() => expect(request).toHaveBeenCalledWith("todos.create", { text: "Email Anna about citation mismatch tomorrow @waiting #Paper review p2" }));
+    await waitFor(() => expect(request).toHaveBeenCalledWith("todos.list", { view: "inbox", listId: "tdl_paper", limit: 100, offset: 0 }));
     expect(await screen.findByText("Email Anna about citation mismatch")).toBeTruthy();
     expect(screen.getByText(/#Paper review/)).toBeTruthy();
     expect(screen.getByText("@waiting")).toBeTruthy();
+    fireEvent.click(screen.getByText("Email Anna about citation mismatch"));
+    expect(await screen.findByLabelText("Task detail")).toBeTruthy();
+    fireEvent.change(screen.getByLabelText("Task detail title"), { target: { value: "Email Anna about quote mismatch" } });
+    fireEvent.change(screen.getByLabelText("Task due date"), { target: { value: "2026-06-18" } });
+    fireEvent.click(within(screen.getByLabelText("Task detail")).getByRole("button", { name: "Save" }));
+    await waitFor(() =>
+      expect(request).toHaveBeenCalledWith("todos.update", {
+        todoId: "todo_follow_up",
+        data: {
+          title: "Email Anna about quote mismatch",
+          description: "",
+          due_date: "2026-06-18",
+          priority: 2
+        }
+      })
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Close task detail" }));
+    expect(await screen.findByText("Email Anna about quote mismatch")).toBeTruthy();
+    fireEvent.click(within(screen.getByLabelText("Task lists")).getByRole("button", { name: "Inbox" }));
+    expect(await screen.findByText("Inbox clear.")).toBeTruthy();
+    fireEvent.click(screen.getByTitle("Paper review"));
+    await waitFor(() => expect(request).toHaveBeenCalledWith("todos.list", { view: "inbox", listId: "tdl_paper", limit: 100, offset: 0 }));
+    expect(await screen.findByText("Email Anna about quote mismatch")).toBeTruthy();
 
-    fireEvent.click(screen.getByRole("button", { name: "Complete Email Anna about citation mismatch" }));
+    fireEvent.click(screen.getByRole("button", { name: "Complete Email Anna about quote mismatch" }));
     await waitFor(() => expect(request).toHaveBeenCalledWith("todos.complete", { todoId: "todo_follow_up" }));
   });
 

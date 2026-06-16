@@ -34,13 +34,15 @@ WEEKDAYS = {
 }
 
 
-def list_todos(db: VaultDatabase, *, view: str = "inbox", limit: int = 100, offset: int = 0) -> dict[str, Any]:
+def list_todos(db: VaultDatabase, *, view: str = "inbox", list_id: str | None = None, limit: int = 100, offset: int = 0) -> dict[str, Any]:
     today = date.today().isoformat()
     view = normalize_todo_view(view)
     where = ["t.workspace_id=?"]
     params: list[Any] = [db.workspace_id]
     if view == "inbox":
-        where.extend(["t.status='open'", "t.list_id IS NULL"])
+        where.append("t.status='open'")
+        if not list_id:
+            where.append("t.list_id IS NULL")
     elif view == "today":
         where.extend(["t.status='open'", "t.due_date IS NOT NULL", "t.due_date<=?"])
         params.append(today)
@@ -51,6 +53,9 @@ def list_todos(db: VaultDatabase, *, view: str = "inbox", limit: int = 100, offs
         where.append("t.status='completed'")
     else:
         where.append("t.status!='archived'")
+    if list_id:
+        where.append("t.list_id=?")
+        params.append(list_id)
     order = "t.completed_at DESC, t.updated_at DESC" if view == "completed" else "COALESCE(t.due_date, '9999-12-31'), t.priority, t.sort_index, t.created_at DESC"
     sql = f"""
         SELECT t.*, l.name AS list_name
@@ -153,6 +158,10 @@ def update_todo(db: VaultDatabase, todo_id: str, payload: dict[str, Any]) -> dic
         if key not in payload:
             continue
         value = normalize_priority(payload[key]) if key == "priority" else payload[key]
+        if key == "title":
+            value = str(value or "").strip()
+            if not value:
+                raise HTTPException(422, "Todo title is required")
         assignments.append(f"{column}=?")
         values.append(value)
     if "status" in payload:

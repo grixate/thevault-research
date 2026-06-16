@@ -423,8 +423,8 @@ def register_routes(app: FastAPI) -> None:
             return [inflate_json(row, "payload_json") for row in rows_to_dicts(rows)]
 
     @app.get("/todos", dependencies=[auth])
-    def todos(view: str = "inbox", limit: int = 100, offset: int = 0, db: VaultDatabase = Depends(get_db)) -> dict[str, Any]:
-        return list_todos(db, view=view, limit=limit, offset=offset)
+    def todos(view: str = "inbox", list_id: str | None = None, limit: int = 100, offset: int = 0, db: VaultDatabase = Depends(get_db)) -> dict[str, Any]:
+        return list_todos(db, view=view, list_id=list_id, limit=limit, offset=offset)
 
     @app.get("/todo-lists", dependencies=[auth])
     def todo_lists(db: VaultDatabase = Depends(get_db)) -> list[dict[str, Any]]:

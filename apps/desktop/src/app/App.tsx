@@ -4106,15 +4106,19 @@ function TasksView() {
   const queryClient = useQueryClient();
   const [view, setView] = useState<TodoView>("inbox");
   const [quickAdd, setQuickAdd] = useState("");
+  const [selectedListId, setSelectedListId] = useState<string | null>(null);
+  const [selectedTodoId, setSelectedTodoId] = useState<string | null>(null);
   const todos = useQuery({
-    queryKey: ["todos", view],
-    queryFn: () => vaultRequest<TodoListResponse>("todos.list", { view, limit: 100, offset: 0 })
+    queryKey: ["todos", view, selectedListId],
+    queryFn: () => vaultRequest<TodoListResponse>("todos.list", { view, listId: selectedListId, limit: 100, offset: 0 })
   });
   const lists = useQuery({ queryKey: ["todo-lists"], queryFn: () => vaultRequest<TodoList[]>("todoLists.list") });
+  const listRows = lists.data ?? [];
   const createTodo = useMutation({
     mutationFn: (text: string) => vaultRequest<TodoItem>("todos.create", { text }),
-    onSuccess: () => {
+    onSuccess: (created) => {
       setQuickAdd("");
+      if (created.list_id) setSelectedListId(created.list_id);
       queryClient.invalidateQueries({ queryKey: ["todos"] });
       queryClient.invalidateQueries({ queryKey: ["todo-lists"] });
       queryClient.invalidateQueries({ queryKey: ["stats"] });
@@ -4132,6 +4136,11 @@ function TasksView() {
   });
   const rows = todos.data?.items ?? [];
   const openRows = view === "completed" ? rows : rows.filter((todo) => todo.status !== "completed");
+  const selectedTodo = rows.find((todo) => todo.id === selectedTodoId) ?? null;
+  const selectedList = listRows.find((list) => list.id === selectedListId);
+  useEffect(() => {
+    if (selectedTodoId && !rows.some((todo) => todo.id === selectedTodoId)) setSelectedTodoId(null);
+  }, [rows, selectedTodoId]);
 
   function submitQuickAdd(event: ReactFormEvent) {
     event.preventDefault();
@@ -4158,7 +4167,7 @@ function TasksView() {
               </button>
             ))}
           </div>
-          <span>{todos.data?.total ?? 0}</span>
+          <span>{selectedList ? selectedList.name : todos.data?.total ?? 0}</span>
         </div>
         <form className="task-quick-add" onSubmit={submitQuickAdd}>
           <Input
@@ -4175,42 +4184,56 @@ function TasksView() {
           {todos.isLoading && <p className="empty-copy">Loading tasks...</p>}
           {!todos.isLoading && openRows.length === 0 && <p className="empty-copy">{todoEmptyCopy(view)}</p>}
           {openRows.map((todo) => (
-            <TaskRow key={todo.id} todo={todo} completing={completeTodo.isPending} onComplete={() => completeTodo.mutate(todo)} />
+            <TaskRow
+              key={todo.id}
+              todo={todo}
+              selected={selectedTodoId === todo.id}
+              completing={completeTodo.isPending}
+              onSelect={() => setSelectedTodoId(todo.id)}
+              onComplete={() => completeTodo.mutate(todo)}
+            />
           ))}
         </div>
       </Panel>
       <aside className="tasks-side" aria-label="Task lists">
-        <div className="tasks-side-section">
-          <strong>Lists</strong>
-          {lists.isLoading && <span>Loading...</span>}
-          {!lists.isLoading && (lists.data ?? []).length === 0 && <span>No lists</span>}
-          {(lists.data ?? []).map((list) => (
-            <button key={list.id} type="button" title={list.name}>
-              <span>{list.name}</span>
-              <small>{list.open_count}</small>
-            </button>
-          ))}
-        </div>
-        <div className="tasks-side-section">
-          <strong>Quick syntax</strong>
-          <span>today, tomorrow, monday</span>
-          <span>@label, #list, p1-p4</span>
-        </div>
+        {selectedTodo ? (
+          <TaskDetail todo={selectedTodo} onClose={() => setSelectedTodoId(null)} />
+        ) : (
+          <>
+            <div className="tasks-side-section">
+              <strong>Lists</strong>
+              <button type="button" className={!selectedListId ? "active" : ""} onClick={() => setSelectedListId(null)}>
+                <span>{view === "inbox" ? "Inbox" : "All"}</span>
+              </button>
+              {lists.isLoading && <span>Loading...</span>}
+              {!lists.isLoading && listRows.length === 0 && <span>No lists</span>}
+              {listRows.map((list) => (
+                <button key={list.id} type="button" className={selectedListId === list.id ? "active" : ""} title={list.name} onClick={() => setSelectedListId(list.id)}>
+                  <span>{list.name}</span>
+                  <small>{list.open_count}</small>
+                </button>
+              ))}
+            </div>
+          </>
+        )}
       </aside>
     </div>
   );
 }
 
-function TaskRow({ todo, completing, onComplete }: { todo: TodoItem; completing: boolean; onComplete: () => void }) {
+function TaskRow({ todo, selected, completing, onSelect, onComplete }: { todo: TodoItem; selected: boolean; completing: boolean; onSelect: () => void; onComplete: () => void }) {
   const meta = todoMetaLine(todo);
   return (
-    <article className={`task-row ${todo.status === "completed" ? "completed" : ""}`}>
+    <article className={`task-row ${selected ? "active" : ""} ${todo.status === "completed" ? "completed" : ""}`} onClick={onSelect}>
       <button
         type="button"
         className="task-check"
         aria-label={todo.status === "completed" ? `${todo.title} completed` : `Complete ${todo.title}`}
         disabled={todo.status === "completed" || completing}
-        onClick={onComplete}
+        onClick={(event) => {
+          event.stopPropagation();
+          onComplete();
+        }}
       >
         {todo.status === "completed" && <Check size={13} />}
       </button>
@@ -4230,6 +4253,84 @@ function TaskRow({ todo, completing, onComplete }: { todo: TodoItem; completing:
       </div>
       {todo.priority < 4 && <Badge tone={todo.priority === 1 ? "bad" : todo.priority === 2 ? "warn" : "neutral"}>p{todo.priority}</Badge>}
     </article>
+  );
+}
+
+function TaskDetail({ todo, onClose }: { todo: TodoItem; onClose: () => void }) {
+  const queryClient = useQueryClient();
+  const [title, setTitle] = useState(todo.title);
+  const [description, setDescription] = useState(todo.description ?? "");
+  const [dueDate, setDueDate] = useState(todo.due_date ?? "");
+  const [priority, setPriority] = useState(String(todo.priority || 4));
+  useEffect(() => {
+    setTitle(todo.title);
+    setDescription(todo.description ?? "");
+    setDueDate(todo.due_date ?? "");
+    setPriority(String(todo.priority || 4));
+  }, [todo.id, todo.title, todo.description, todo.due_date, todo.priority]);
+  const updateTodo = useMutation({
+    mutationFn: () =>
+      vaultRequest<TodoItem>("todos.update", {
+        todoId: todo.id,
+        data: {
+          title: title.trim(),
+          description,
+          due_date: dueDate || null,
+          priority: Number(priority)
+        }
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["todos"] });
+      queryClient.invalidateQueries({ queryKey: ["todo-lists"] });
+      queryClient.invalidateQueries({ queryKey: ["stats"] });
+      queryClient.invalidateQueries({ queryKey: ["events"] });
+    }
+  });
+  return (
+    <div className="task-detail" aria-label="Task detail">
+      <div className="task-detail-header">
+        <strong>Task</strong>
+        <Button type="button" size="icon" variant="quiet" icon={<X size={14} />} aria-label="Close task detail" onClick={onClose} />
+      </div>
+      <label className="field">
+        <span>Title</span>
+        <Input aria-label="Task detail title" value={title} onChange={(event) => setTitle(event.target.value)} />
+      </label>
+      <label className="field">
+        <span>Due</span>
+        <Input aria-label="Task due date" type="date" value={dueDate} onChange={(event) => setDueDate(event.target.value)} />
+      </label>
+      <label className="field">
+        <span>Priority</span>
+        <SelectRoot value={priority} onValueChange={setPriority}>
+          <SelectTrigger aria-label="Task priority">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="1">p1</SelectItem>
+            <SelectItem value="2">p2</SelectItem>
+            <SelectItem value="3">p3</SelectItem>
+            <SelectItem value="4">p4</SelectItem>
+          </SelectContent>
+        </SelectRoot>
+      </label>
+      <label className="field">
+        <span>Note</span>
+        <Textarea aria-label="Task description" value={description} onChange={(event) => setDescription(event.target.value)} />
+      </label>
+      {todo.context_links.length > 0 && (
+        <div className="task-detail-context">
+          <strong>Context</strong>
+          {todo.context_links.map((link) => (
+            <span key={link.id} title={link.target_title ?? link.target_id}>{todoContextLabel(link)}</span>
+          ))}
+        </div>
+      )}
+      {updateTodo.error && <small className="model-test-error">{updateTodo.error.message}</small>}
+      <Button type="button" variant="primary" disabled={!title.trim() || updateTodo.isPending} onClick={() => updateTodo.mutate()}>
+        {updateTodo.isPending ? "Saving" : "Save"}
+      </Button>
+    </div>
   );
 }
 

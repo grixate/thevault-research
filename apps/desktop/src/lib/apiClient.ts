@@ -120,7 +120,10 @@ function mapRoute(route: string, payload?: any): { method: string; path: string;
     "health.get": { method: "GET", path: "/health" },
     "stats.get": { method: "GET", path: "/stats" },
     "events.list": { method: "GET", path: `/events?limit=${payload?.limit ?? 50}` },
-    "todos.list": { method: "GET", path: `/todos?view=${encodeURIComponent(payload?.view ?? "inbox")}&limit=${payload?.limit ?? 100}&offset=${payload?.offset ?? 0}` },
+    "todos.list": {
+      method: "GET",
+      path: `/todos?view=${encodeURIComponent(payload?.view ?? "inbox")}&list_id=${encodeURIComponent(payload?.listId ?? "")}&limit=${payload?.limit ?? 100}&offset=${payload?.offset ?? 0}`
+    },
     "todos.create": { method: "POST", path: "/todos", body: payload ?? {} },
     "todos.update": { method: "PUT", path: `/todos/${payload?.todoId}`, body: payload?.data ?? {} },
     "todos.complete": { method: "POST", path: `/todos/${payload?.todoId}/complete`, body: {} },

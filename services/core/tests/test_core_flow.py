@@ -579,6 +579,19 @@ def test_todos_quick_add_views_and_completion(client):
     lists = client.get("/todo-lists").json()
     assert lists[0]["name"] == "Paper review"
     assert lists[0]["open_count"] == 1
+    list_rows = client.get(f"/todos?view=inbox&list_id={lists[0]['id']}").json()
+    assert [todo["id"] for todo in list_rows["items"]] == [created["id"]]
+
+    empty_title = client.put(f"/todos/{created['id']}", json={"title": "   "})
+    assert empty_title.status_code == 422
+
+    updated = client.put(
+        f"/todos/{created['id']}",
+        json={"title": "Email Anna about quote mismatch", "due_date": tomorrow, "priority": 1, "description": "Ask for exact source."},
+    ).json()
+    assert updated["title"] == "Email Anna about quote mismatch"
+    assert updated["priority"] == 1
+    assert updated["description"] == "Ask for exact source."
 
     completed = client.post(f"/todos/{created['id']}/complete").json()
     assert completed["status"] == "completed"
