@@ -983,21 +983,71 @@ textarea:not(.ui-textarea) {
 
 .capsule-workbench {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 148px;
-  gap: 10px;
-  align-items: start;
+  gap: 0;
+  border-block: 1px solid var(--line);
+}
+
+.capsule-add-panel,
+.capsule-snapshot-panel {
+  display: grid;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding-block: 8px;
 }
 
 .capsule-add-panel {
-  display: grid;
-  grid-template-columns: 104px minmax(180px, 1fr) 132px auto auto;
-  gap: 8px;
-  align-items: center;
-  min-width: 0;
+  grid-template-columns: 82px 104px minmax(180px, 1fr) 132px auto auto;
 }
 
 .capsule-snapshot-panel {
+  grid-template-columns: 82px minmax(120px, 180px) auto;
+  border-top: 1px solid var(--line);
+}
+
+.capsule-action-label {
   min-width: 0;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.capsule-snapshot-panel .button {
+  justify-self: start;
+}
+
+.capsule-add-panel .button {
+  white-space: nowrap;
+}
+
+@media (max-width: 1100px) {
+  .capsule-add-panel,
+  .capsule-snapshot-panel {
+    grid-template-columns: 82px minmax(0, 1fr);
+  }
+
+  .capsule-add-panel .capsule-check,
+  .capsule-add-panel .button {
+    grid-column: 2;
+    justify-self: start;
+  }
+
+  .capsule-snapshot-panel .button {
+    grid-column: 2;
+  }
+}
+
+@media (max-width: 820px) {
+  .capsule-add-panel,
+  .capsule-snapshot-panel {
+    grid-template-columns: 1fr;
+  }
+
+  .capsule-action-label {
+    font-size: 12px;
+  }
 }
 
 .capsule-check {

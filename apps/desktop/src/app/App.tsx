@@ -7560,9 +7560,6 @@ function CapsuleDetail({ capsule, onOpenTarget }: { capsule: Capsule; onOpenTarg
               Fork
             </Button>
             <TaskCreateButton targetType="capsule" targetId={capsule.id} targetTitle={capsule.name} />
-            <Button icon={<Save size={15} />} variant="secondary" disabled={!snapshotVersion.trim() || snapshot.isPending} onClick={() => snapshot.mutate()}>
-              Snapshot
-            </Button>
             <Button icon={<Download size={15} />} variant="quiet" onClick={() => setExportOpen(true)}>
               Export
             </Button>
@@ -7591,6 +7588,7 @@ function CapsuleDetail({ capsule, onOpenTarget }: { capsule: Capsule; onOpenTarg
       </div>
       <div className="capsule-workbench">
         <section className="capsule-add-panel" aria-label="Add to capsule">
+          <span className="capsule-action-label">Add item</span>
           <SelectRoot value={targetType} onValueChange={(value) => setTargetType(value as CapsuleAddTargetType)}>
             <SelectTrigger aria-label="Capsule target type">
               <SelectValue />
@@ -7639,7 +7637,11 @@ function CapsuleDetail({ capsule, onOpenTarget }: { capsule: Capsule; onOpenTarg
           </Button>
         </section>
         <section className="capsule-snapshot-panel" aria-label="Snapshot version">
+          <span className="capsule-action-label">Snapshot</span>
           <Input aria-label="Snapshot version" value={snapshotVersion} onChange={(event) => setSnapshotVersion(event.target.value)} />
+          <Button size="sm" icon={<Save size={14} />} variant="quiet" disabled={!snapshotVersion.trim() || snapshot.isPending} onClick={() => snapshot.mutate()}>
+            Save
+          </Button>
         </section>
       </div>
       {(addItem.error || runHealth.error || forkCapsule.error || generateOverview.error || generateLearning.error || snapshot.error || versionDiff.error) && (

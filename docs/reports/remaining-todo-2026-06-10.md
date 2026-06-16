@@ -300,6 +300,15 @@ Latest capsule import-merge preview verification on 2026-06-15:
 - Focused backend capsule import/merge test: passed.
 - Focused desktop capsule import Review handoff test: passed.
 
+Latest capsule UI polish verification on 2026-06-16:
+
+- Capsule detail header is less cluttered: Snapshot moved out of the primary action cluster and into the curation workbench.
+- The curation workbench now separates `Add item` and `Snapshot` as compact rows instead of presenting them as dashboard cards or explanatory blocks.
+- Snapshot saving uses a compact Save action beside the version field; the rendered desktop smoke measured the Save action at 74px rather than stretching across the row.
+- Desktop Playwright smoke at 1440x950 rendered Capsules with no horizontal overflow and screenshot output at `/tmp/vault-capsules-polish-desktop.png`.
+- Focused desktop capsule test path: passed.
+- Desktop production build: passed.
+
 Latest native Tasks verification on 2026-06-16:
 
 - Added proposed source spec `docs/specs/research_lab_native_todos_spec.md`.
