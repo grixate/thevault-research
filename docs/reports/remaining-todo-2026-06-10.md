@@ -302,7 +302,7 @@ Latest capsule import-merge preview verification on 2026-06-15:
 
 Latest capsule UI polish verification on 2026-06-16:
 
-- Capsule detail header is less cluttered: Snapshot moved out of the primary action cluster and into the curation workbench.
+- Capsule detail header is less cluttered: Snapshot moved out of the primary action cluster, then out of the always-visible curation row entirely.
 - Capsule detail primary actions now use a fixed-width icon cluster with accessible labels/titles for Run health, Generate overview, Generate practice, Fork capsule, Create task, and Export capsule.
 - The shared context task button supports icon-only usage without losing its accessible name, so compact surfaces do not need visible `Task` text.
 - Capsule purpose/description no longer renders as a separate subtitle block under the detail header; it is folded into the compact metadata row with truncation.
@@ -310,12 +310,17 @@ Latest capsule UI polish verification on 2026-06-16:
 - Capsule item rows now include a compact remove action that calls the existing `capsules.removeItem` route, so mistaken note/source/claim/concept/practice/tool attachments can be undone from the detail surface.
 - Capsule import quarantine header no longer accumulates `Review items`, `Open Review`, and `Close` text buttons at once. It shows one primary handoff action that changes from `Review items` to `Open Review`, plus an icon-only close action.
 - New Capsule creation is now name/type-first. Optional purpose, description, strictness, source policy, domains, and tags live behind a quiet `Details` disclosure instead of filling the first view.
-- The curation workbench now separates target-aware add and `Snapshot` as compact rows instead of presenting them as dashboard cards or explanatory blocks.
-- Snapshot saving uses a compact Save action beside the version field; the rendered desktop smoke measured the Save action at 74px rather than stretching across the row.
+- The separate capsule count strip was removed; counts now live in the compact metadata line so the detail pane reads as title, metadata, curation, items.
+- The curation workbench now stays focused on adding canonical notes/sources/claims/concepts/practice/tools. Snapshot, version list, and diff live behind a quiet `Versions` disclosure.
+- Capsule import quarantine internals are quieter: the primary row shows status and package filename, while checksum count, file count, unpacked size, and quarantine path live behind `Import details`.
+- Capsule export no longer has two close affordances; the dialog keeps the standard X close and the primary Export action.
+- Focused desktop capsule test path passed after updating expectations for collapsed `Versions`, icon close, and the quieter export/import surfaces.
+- Desktop production build passed after the latest minimalist structure changes.
+- In-app browser desktop smoke was attempted after starting local core and renderer, but the Browser webview timed out while attaching. Next session should rerun the 1440x950 visual smoke before calling Capsules production-polished.
 - Desktop browser smoke at 1440x950 with local core data rendered the Capsule detail header with 34px icon buttons, no visible action-caption text inside the header action cluster, and no horizontal overflow. Screenshot output at `/tmp/vault-capsules-icon-header-desktop.png`.
 - Desktop Playwright smoke at 1440x950 rendered Capsules with no horizontal overflow and screenshot output at `/tmp/vault-capsules-polish-desktop.png`.
-- Focused desktop capsule test path: passed after updating expectations for the new accessible button names.
-- Desktop production build: passed.
+- Earlier focused desktop capsule test path passed after updating expectations for the new accessible button names.
+- Earlier desktop production build passed.
 
 Latest capsule export safety verification on 2026-06-16:
 
@@ -2731,6 +2736,7 @@ Remaining tasks:
   - no card-heavy dashboard treatment,
   - clear source/note/claim attachment flow,
   - responsive desktop-first layout,
+  - rerun desktop visual smoke for the latest collapsed `Versions` and `Import details` structure,
   - mobile noted later with the broader mobile repair pass.
 - Polish capsule learning quality:
   - add learning-path controls only if they stay minimal.

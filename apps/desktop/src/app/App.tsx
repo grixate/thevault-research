@@ -7374,8 +7374,7 @@ function CapsuleImportDetail({ result, onClose }: { result: CapsuleImportResult;
       />
       <div className="capsule-import-summary" aria-label="Capsule import quarantine">
         <Badge tone={isInvalid ? "bad" : result.status === "quarantined" ? "warn" : "good"}>{result.status}</Badge>
-        <span title={result.source_file_path}>{middleTruncate(result.source_file_path, 64)}</span>
-        <small title={result.quarantine_path}>{middleTruncate(result.quarantine_path, 64)}</small>
+        <span title={result.source_file_path}>{fileNameFromPath(result.source_file_path)}</span>
       </div>
       {isInvalid && (
         <section className="capsule-import-diagnostics" aria-label="Capsule import validation errors">
@@ -7405,11 +7404,15 @@ function CapsuleImportDetail({ result, onClose }: { result: CapsuleImportResult;
           </article>
         ))}
       </section>
-      <div className="capsule-import-summary secondary" aria-label="Capsule import validation">
-        <span>{checksumResults.filter((item: any) => item.status === "pass").length}/{checksumResults.length} checksums</span>
-        <span>{String(validation.file_count ?? 0)} files</span>
-        <span>{formatBytes(Number(validation.unpacked_bytes ?? 0))}</span>
-      </div>
+      <details className="capsule-import-details">
+        <summary>Import details</summary>
+        <div className="capsule-import-summary secondary" aria-label="Capsule import validation">
+          <span>{checksumResults.filter((item: any) => item.status === "pass").length}/{checksumResults.length} checksums</span>
+          <span>{String(validation.file_count ?? 0)} files</span>
+          <span>{formatBytes(Number(validation.unpacked_bytes ?? 0))}</span>
+          <span title={result.quarantine_path}>{middleTruncate(result.quarantine_path, 64)}</span>
+        </div>
+      </details>
       {validationWarnings.length > 0 && (
         <div className="capsule-export-list" aria-label="Capsule import validation warnings">
           {validationWarnings.map((warning: any, index: number) => (
@@ -7610,15 +7613,9 @@ function CapsuleDetail({ capsule, onOpenTarget }: { capsule: Capsule; onOpenTarg
         <span>{capsuleOptionLabel(capsule.capsule_type)}</span>
         <span>{capsule.version}</span>
         <span>{Math.round((capsule.health?.score ?? 0) * 100)}%</span>
+        <span aria-label="Capsule counts">{capsuleCountsLine(capsule.counts)}</span>
         {capsuleForkParent(capsule) && <span>Fork of {capsuleForkParent(capsule)}</span>}
         {capsuleSummary && <span className="capsule-title-note" title={capsuleSummary}>{capsuleSummary}</span>}
-      </div>
-      <div className="capsule-stat-strip" aria-label="Capsule counts">
-        <span><strong>{capsule.counts.sources}</strong> sources</span>
-        <span><strong>{capsule.counts.notes}</strong> notes</span>
-        <span><strong>{capsule.counts.claims}</strong> claims</span>
-        <span><strong>{capsule.counts.concepts}</strong> concepts</span>
-        <span><strong>{capsule.counts.tools}</strong> tools</span>
       </div>
       <div className="capsule-workbench">
         <section className="capsule-add-panel" aria-label="Add to capsule">
@@ -7669,13 +7666,6 @@ function CapsuleDetail({ capsule, onOpenTarget }: { capsule: Capsule; onOpenTarg
             Add {capsuleTargetNoun(targetType)}
           </Button>
         </section>
-        <section className="capsule-snapshot-panel" aria-label="Snapshot version">
-          <span className="capsule-action-label">Snapshot</span>
-          <Input aria-label="Snapshot version" value={snapshotVersion} onChange={(event) => setSnapshotVersion(event.target.value)} />
-          <Button size="sm" icon={<Save size={14} />} variant="quiet" disabled={!snapshotVersion.trim() || snapshot.isPending} onClick={() => snapshot.mutate()}>
-            Save
-          </Button>
-        </section>
       </div>
       {(addItem.error || removeItem.error || runHealth.error || forkCapsule.error || generateOverview.error || generateLearning.error || snapshot.error || versionDiff.error) && (
         <small className="model-test-error">
@@ -7719,18 +7709,28 @@ function CapsuleDetail({ capsule, onOpenTarget }: { capsule: Capsule; onOpenTarg
         ))}
       </section>
       {versions.length > 0 && (
-        <section className="capsule-versions" aria-label="Capsule versions">
-          {versions.slice(0, 4).map((version) => (
-            <span key={version.id}>{version.version} · {compactDate(version.created_at)}</span>
-          ))}
-          {versions.length >= 2 && (
-            <Button size="sm" variant="quiet" disabled={versionDiff.isPending} onClick={compareLatestVersions}>
-              Diff
+        <details className="capsule-history">
+          <summary>Versions</summary>
+          <section className="capsule-versions" aria-label="Capsule versions">
+            {versions.slice(0, 4).map((version) => (
+              <span key={version.id}>{version.version} · {compactDate(version.created_at)}</span>
+            ))}
+            {versions.length >= 2 && (
+              <Button size="sm" variant="quiet" disabled={versionDiff.isPending} onClick={compareLatestVersions}>
+                Diff
+              </Button>
+            )}
+          </section>
+          <section className="capsule-snapshot-panel" aria-label="Snapshot version">
+            <span className="capsule-action-label">Snapshot</span>
+            <Input aria-label="Snapshot version" value={snapshotVersion} onChange={(event) => setSnapshotVersion(event.target.value)} />
+            <Button size="sm" icon={<Save size={14} />} variant="quiet" disabled={!snapshotVersion.trim() || snapshot.isPending} onClick={() => snapshot.mutate()}>
+              Save
             </Button>
-          )}
-        </section>
+          </section>
+          {versionDiff.data && <CapsuleVersionDiffSummary diff={versionDiff.data} />}
+        </details>
       )}
-      {versionDiff.data && <CapsuleVersionDiffSummary diff={versionDiff.data} />}
       <CapsuleExportDialog capsule={capsule} open={exportOpen} onOpenChange={setExportOpen} />
     </>
   );
@@ -7920,9 +7920,6 @@ function CapsuleExportDialog({ capsule, open, onOpenChange }: { capsule: Capsule
           <CapsuleExportHistory exports={exports.data?.items ?? []} loading={exports.isLoading} />
           {(preview.error || exportCapsule.error) && <small className="model-test-error">{preview.error?.message || exportCapsule.error?.message}</small>}
           <div className="capsule-attach-actions">
-            <Button type="button" variant="quiet" onClick={() => onOpenChange(false)}>
-              Close
-            </Button>
             <Button type="button" variant="primary" disabled={!preview.data || blocked || exportCapsule.isPending} onClick={() => exportCapsule.mutate()}>
               {exportCapsule.isPending ? "Exporting" : "Export"}
             </Button>
@@ -7971,6 +7968,10 @@ function capsuleExportScopeLabel(manifest: Record<string, any> | undefined): str
   const scope = manifest?.export_scope;
   if (scope?.type === "version" && scope.version) return `v${scope.version}`;
   return "Live";
+}
+
+function fileNameFromPath(path: string): string {
+  return path.split(/[\\/]/).filter(Boolean).at(-1) || path;
 }
 
 function parseCsv(value: string): string[] {

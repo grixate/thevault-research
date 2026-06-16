@@ -909,7 +909,6 @@ textarea:not(.ui-textarea) {
 }
 
 .capsule-title-meta,
-.capsule-stat-strip,
 .capsule-health-row,
 .capsule-versions {
   display: flex;
@@ -970,27 +969,10 @@ textarea:not(.ui-textarea) {
   white-space: nowrap;
 }
 
-.capsule-stat-strip {
-  padding-block: 10px;
-  border-block: 1px solid var(--line);
-}
-
-.capsule-stat-strip span {
-  color: var(--muted);
-  font-size: 12px;
-  line-height: 1.3;
-  white-space: nowrap;
-}
-
-.capsule-stat-strip strong {
-  color: var(--foreground);
-  font-size: 13px;
-}
-
 .capsule-workbench {
   display: grid;
   gap: 0;
-  border-block: 1px solid var(--line);
+  border-top: 1px solid var(--line);
 }
 
 .capsule-add-panel,
@@ -1150,6 +1132,40 @@ textarea:not(.ui-textarea) {
 .capsule-items span {
   color: var(--muted);
   font-size: 12px;
+}
+
+.capsule-history,
+.capsule-import-details {
+  display: grid;
+  gap: 0;
+  border-top: 1px solid var(--line);
+}
+
+.capsule-history > summary,
+.capsule-import-details > summary {
+  width: max-content;
+  padding-block: 10px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 1.2;
+  list-style: none;
+  cursor: pointer;
+}
+
+.capsule-history > summary::-webkit-details-marker,
+.capsule-import-details > summary::-webkit-details-marker {
+  display: none;
+}
+
+.capsule-history > summary::after,
+.capsule-import-details > summary::after {
+  content: " +";
+}
+
+.capsule-history[open] > summary::after,
+.capsule-import-details[open] > summary::after {
+  content: " -";
 }
 
 .capsule-create-dialog {
@@ -1435,8 +1451,8 @@ textarea:not(.ui-textarea) {
 
 .capsule-import-summary.secondary {
   flex-wrap: wrap;
-  padding-block: 10px;
-  border-block: 1px solid var(--line);
+  padding-block: 0 10px;
+  border-block: 0;
 }
 
 .capsule-import-diagnostics {
@@ -1511,7 +1527,7 @@ textarea:not(.ui-textarea) {
   font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0;
 }
 
 .capsule-import-history button {

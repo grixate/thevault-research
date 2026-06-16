@@ -1085,6 +1085,7 @@ describe("App", () => {
     await waitFor(() => expect(window.vault.request).toHaveBeenCalledWith("graph.nodes", { limit: 100 }));
     expect(window.vault.request).toHaveBeenCalledWith("learning.items", undefined);
     expect(window.vault.request).toHaveBeenCalledWith("tools.list", undefined);
+    fireEvent.click(await screen.findByText("Versions"));
     fireEvent.click(await screen.findByRole("button", { name: "Diff" }));
     expect(await screen.findByLabelText("Capsule version diff")).toBeTruthy();
     expect(await screen.findByText("1 added")).toBeTruthy();
@@ -1100,7 +1101,7 @@ describe("App", () => {
     const exportHistory = await within(dialog).findByLabelText("Capsule export history");
     expect(within(exportHistory).getByText("acoustic-science-foundations.vaultcapsule")).toBeTruthy();
     expect(within(exportHistory).getByText(/Reference Only/)).toBeTruthy();
-    fireEvent.click(within(dialog).getByRole("button", { name: "Close" }));
+    fireEvent.click(within(dialog).getByRole("button", { name: "Close export dialog" }));
     fireEvent.click(screen.getByRole("button", { name: "Import" }));
     expect(await screen.findByLabelText("Capsule import quarantine")).toBeTruthy();
     const history = await screen.findByLabelText("Capsule import history");
