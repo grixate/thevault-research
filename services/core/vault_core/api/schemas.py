@@ -118,6 +118,55 @@ class DecisionRequest(BaseModel):
     edits: dict[str, Any] = Field(default_factory=dict)
 
 
+class TodoContextLinkInput(BaseModel):
+    target_type: Literal[
+        "note",
+        "source",
+        "source_block",
+        "claim",
+        "kg_node",
+        "review_item",
+        "capsule",
+        "learning_item",
+        "tool",
+        "lab_job",
+        "assistant_answer",
+    ]
+    target_id: str
+    target_title: str | None = None
+    relation: str = "related"
+    exact_quote: str | None = None
+    locator: str | None = None
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+class TodoCreateRequest(BaseModel):
+    text: str | None = None
+    title: str | None = None
+    description: str = ""
+    due_date: str | None = None
+    priority: int | None = None
+    labels: list[str] = Field(default_factory=list)
+    list_name: str | None = None
+    recurrence_rule: str | None = None
+    source_kind: str = "user"
+    source_ref: dict[str, Any] = Field(default_factory=dict)
+    provenance: dict[str, Any] = Field(default_factory=dict)
+    context_links: list[TodoContextLinkInput] = Field(default_factory=list)
+
+
+class TodoUpdateRequest(BaseModel):
+    title: str | None = None
+    description: str | None = None
+    status: Literal["open", "completed", "cancelled", "archived"] | None = None
+    priority: int | None = None
+    due_date: str | None = None
+    due_time: str | None = None
+    deadline_date: str | None = None
+    recurrence_rule: str | None = None
+    scheduled_for: str | None = None
+
+
 class BulkReviewRequest(BaseModel):
     action: Literal["approve", "reject"]
     item_ids: list[str] = Field(min_length=1)

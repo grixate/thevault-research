@@ -87,6 +87,8 @@ from vault_core.api.schemas import (
     SearchRequest,
     SpeechSynthesisRequest,
     SourcePipelineResponse,
+    TodoCreateRequest,
+    TodoUpdateRequest,
     TranscriptionRequest,
     ToolProposeRequest,
     ToolRunRequest,
@@ -188,6 +190,7 @@ from vault_core.db.session import VaultDatabase, dumps, loads, new_id, now_iso, 
 from vault_core.deps import get_db, require_auth
 from vault_core.domain.chunking import chunk_markdown, content_hash, estimate_tokens
 from vault_core.domain.extraction import deterministic_extract, validate_extracted_object
+from vault_core.todos import complete_todo, create_todo, list_todo_lists, list_todos, update_todo
 from vault_core.scripts.prepare_ai_registry_release_candidate import build_release_candidate_packet_from_overlay
 
 BUILTIN_TOOL_ID = "tool_claim_citation_checker"
@@ -405,6 +408,8 @@ def register_routes(app: FastAPI) -> None:
                 ),
                 "installed_tools": count("SELECT COUNT(*) FROM tool_registry WHERE status='installed'"),
                 "capsules": count("SELECT COUNT(*) FROM capsules WHERE status!='archived'"),
+                "open_todos": count("SELECT COUNT(*) FROM todos WHERE status='open'"),
+                "due_todos": count("SELECT COUNT(*) FROM todos WHERE status='open' AND due_date IS NOT NULL AND due_date<=date('now')"),
                 "failed_jobs": count("SELECT COUNT(*) FROM lab_jobs WHERE status='failed'"),
                 "learning_items": count("SELECT COUNT(*) FROM learning_items"),
             }
@@ -416,6 +421,26 @@ def register_routes(app: FastAPI) -> None:
                 "SELECT * FROM event_log ORDER BY created_at DESC LIMIT ?", (limit,)
             ).fetchall()
             return [inflate_json(row, "payload_json") for row in rows_to_dicts(rows)]
+
+    @app.get("/todos", dependencies=[auth])
+    def todos(view: str = "inbox", limit: int = 100, offset: int = 0, db: VaultDatabase = Depends(get_db)) -> dict[str, Any]:
+        return list_todos(db, view=view, limit=limit, offset=offset)
+
+    @app.get("/todo-lists", dependencies=[auth])
+    def todo_lists(db: VaultDatabase = Depends(get_db)) -> list[dict[str, Any]]:
+        return list_todo_lists(db)
+
+    @app.post("/todos", dependencies=[auth])
+    def todo_create(req: TodoCreateRequest, db: VaultDatabase = Depends(get_db)) -> dict[str, Any]:
+        return create_todo(db, req.model_dump())
+
+    @app.put("/todos/{todo_id}", dependencies=[auth])
+    def todo_update(todo_id: str, req: TodoUpdateRequest, db: VaultDatabase = Depends(get_db)) -> dict[str, Any]:
+        return update_todo(db, todo_id, req.model_dump(exclude_unset=True))
+
+    @app.post("/todos/{todo_id}/complete", dependencies=[auth])
+    def todo_complete(todo_id: str, db: VaultDatabase = Depends(get_db)) -> dict[str, Any]:
+        return complete_todo(db, todo_id)
 
     @app.get("/capsules", dependencies=[auth])
     def capsules(

@@ -5,6 +5,7 @@ export type Surface =
   | "notes"
   | "sources"
   | "review"
+  | "tasks"
   | "graph"
   | "capsules"
   | "assistant"

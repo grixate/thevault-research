@@ -547,6 +547,85 @@ CREATE TABLE IF NOT EXISTS capsule_changelog (
   FOREIGN KEY(workspace_id) REFERENCES workspaces(id)
 );
 
+CREATE TABLE IF NOT EXISTS todo_lists (
+  id TEXT PRIMARY KEY,
+  workspace_id TEXT NOT NULL,
+  name TEXT NOT NULL,
+  color TEXT,
+  icon TEXT,
+  status TEXT NOT NULL DEFAULT 'active',
+  sort_index INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  archived_at TEXT,
+  UNIQUE(workspace_id, name),
+  FOREIGN KEY(workspace_id) REFERENCES workspaces(id)
+);
+
+CREATE TABLE IF NOT EXISTS todos (
+  id TEXT PRIMARY KEY,
+  workspace_id TEXT NOT NULL,
+  list_id TEXT,
+  parent_todo_id TEXT,
+  title TEXT NOT NULL,
+  description TEXT NOT NULL DEFAULT '',
+  status TEXT NOT NULL DEFAULT 'open',
+  priority INTEGER NOT NULL DEFAULT 4,
+  due_date TEXT,
+  due_time TEXT,
+  deadline_date TEXT,
+  recurrence_rule TEXT,
+  scheduled_for TEXT,
+  completed_at TEXT,
+  cancelled_at TEXT,
+  source_kind TEXT NOT NULL DEFAULT 'user',
+  source_ref_json TEXT NOT NULL DEFAULT '{}',
+  provenance_json TEXT NOT NULL DEFAULT '{}',
+  sort_index INTEGER NOT NULL DEFAULT 0,
+  created_by TEXT NOT NULL DEFAULT 'user',
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  FOREIGN KEY(workspace_id) REFERENCES workspaces(id),
+  FOREIGN KEY(list_id) REFERENCES todo_lists(id),
+  FOREIGN KEY(parent_todo_id) REFERENCES todos(id)
+);
+
+CREATE TABLE IF NOT EXISTS todo_labels (
+  id TEXT PRIMARY KEY,
+  workspace_id TEXT NOT NULL,
+  name TEXT NOT NULL,
+  color TEXT,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  UNIQUE(workspace_id, name),
+  FOREIGN KEY(workspace_id) REFERENCES workspaces(id)
+);
+
+CREATE TABLE IF NOT EXISTS todo_label_links (
+  todo_id TEXT NOT NULL,
+  label_id TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  PRIMARY KEY(todo_id, label_id),
+  FOREIGN KEY(todo_id) REFERENCES todos(id),
+  FOREIGN KEY(label_id) REFERENCES todo_labels(id)
+);
+
+CREATE TABLE IF NOT EXISTS todo_context_links (
+  id TEXT PRIMARY KEY,
+  workspace_id TEXT NOT NULL,
+  todo_id TEXT NOT NULL,
+  target_type TEXT NOT NULL,
+  target_id TEXT NOT NULL,
+  target_title TEXT,
+  relation TEXT NOT NULL DEFAULT 'related',
+  exact_quote TEXT,
+  locator TEXT,
+  metadata_json TEXT NOT NULL DEFAULT '{}',
+  created_at TEXT NOT NULL,
+  FOREIGN KEY(workspace_id) REFERENCES workspaces(id),
+  FOREIGN KEY(todo_id) REFERENCES todos(id)
+);
+
 CREATE TABLE IF NOT EXISTS event_log (
   id TEXT PRIMARY KEY,
   workspace_id TEXT NOT NULL,
@@ -589,5 +668,8 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_capsule_items_unique_active ON capsule_ite
 CREATE INDEX IF NOT EXISTS idx_capsule_versions_capsule ON capsule_versions(capsule_id);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_capsule_versions_unique ON capsule_versions(capsule_id, version);
 CREATE INDEX IF NOT EXISTS idx_capsule_health_capsule_created ON capsule_health_snapshots(capsule_id, created_at);
+CREATE INDEX IF NOT EXISTS idx_todos_workspace_status_due ON todos(workspace_id, status, due_date);
+CREATE INDEX IF NOT EXISTS idx_todos_workspace_list ON todos(workspace_id, list_id, status);
+CREATE INDEX IF NOT EXISTS idx_todo_context_links_target ON todo_context_links(workspace_id, target_type, target_id);
 CREATE INDEX IF NOT EXISTS idx_event_log_workspace_created ON event_log(workspace_id, created_at);
 """

@@ -2,6 +2,11 @@ export type VaultRoute =
   | "health.get"
   | "stats.get"
   | "events.list"
+  | "todos.list"
+  | "todos.create"
+  | "todos.update"
+  | "todos.complete"
+  | "todoLists.list"
   | "capsules.list"
   | "capsules.create"
   | "capsules.fork"
@@ -142,6 +147,11 @@ export const allowedRoutes: Record<VaultRoute, RouteSpec> = {
   "health.get": { method: "GET", path: () => "/health" },
   "stats.get": { method: "GET", path: () => "/stats" },
   "events.list": { method: "GET", path: (p) => `/events?limit=${p?.limit ?? 50}` },
+  "todos.list": { method: "GET", path: (p) => `/todos?view=${encodeURIComponent(p?.view ?? "inbox")}&limit=${p?.limit ?? 100}&offset=${p?.offset ?? 0}` },
+  "todos.create": { method: "POST", path: () => "/todos", body: (p) => p ?? {} },
+  "todos.update": { method: "PUT", path: (p) => `/todos/${p.todoId}`, body: (p) => p.data ?? {} },
+  "todos.complete": { method: "POST", path: (p) => `/todos/${p.todoId}/complete` },
+  "todoLists.list": { method: "GET", path: () => "/todo-lists" },
   "capsules.list": {
     method: "GET",
     path: (p) =>

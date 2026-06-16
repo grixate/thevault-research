@@ -16,6 +16,8 @@ export type Stats = {
   generated_notes_pending_review: number;
   installed_tools: number;
   capsules: number;
+  open_todos?: number;
+  due_todos?: number;
   failed_jobs: number;
   learning_items: number;
 };
@@ -156,6 +158,55 @@ export type LearningItem = {
   title: string;
   body?: Record<string, any>;
   status: string;
+};
+
+export type TodoContextLink = {
+  id: string;
+  todo_id: string;
+  target_type: string;
+  target_id: string;
+  target_title?: string | null;
+  relation: string;
+  exact_quote?: string | null;
+  locator?: string | null;
+  metadata?: Record<string, any>;
+  created_at: string;
+};
+
+export type TodoItem = {
+  id: string;
+  title: string;
+  description: string;
+  status: string;
+  priority: number;
+  due_date?: string | null;
+  due_time?: string | null;
+  recurrence_rule?: string | null;
+  list_id?: string | null;
+  list_name?: string | null;
+  labels: string[];
+  context_links: TodoContextLink[];
+  source_kind: string;
+  source_ref?: Record<string, any>;
+  provenance?: Record<string, any>;
+  created_at: string;
+  updated_at: string;
+  completed_at?: string | null;
+};
+
+export type TodoList = {
+  id: string;
+  name: string;
+  color?: string | null;
+  icon?: string | null;
+  status: string;
+  open_count: number;
+};
+
+export type TodoListResponse = {
+  items: TodoItem[];
+  total: number;
+  view: string;
 };
 
 export type CapsuleHealth = {
