@@ -232,6 +232,7 @@ Latest capsule export verification on 2026-06-15:
 - Non-private export modes are blocked when private capsule items or `full_sources_private` source policies are present.
 - Private-full export writes raw and extracted source files into internal package paths, records them in `data/source_blobs.jsonl`, and strips local absolute source paths from exported source records.
 - Version export can target a saved capsule snapshot, freezes membership from that snapshot, records `export_scope` in preview, package manifest, validation report, export result, history, changelog, and event metadata, and keeps canonical object resolution at export time.
+- Added the `.vaultcapsule` v1 alpha package-format contract covering required files, optional private blobs, checksum rules, export modes, source path privacy, quarantine import, and compatibility.
 - `.vaultcapsule` export writes a zip package with `manifest.json`, `manifest-sha256.txt`, capsule/items/source/source-blob/note/claim/evidence/graph/learning/tool records, health report, privacy report, validation report, note markdown, file checksums, export scope, and audit rows in `capsule_exports`.
 - Added a compact desktop Export dialog from capsule detail with mode selection, saved-version selector, preview counters, blockers/warnings, disabled export when blocked, saved package result, and recent export history.
 - Focused backend capsule test: passed.
@@ -2622,6 +2623,7 @@ Goal: capsules become transferable, versioned, evidence-backed projections of th
 Source spec:
 
 - `docs/specs/the_vault_research_lab_knowledge_capsules_codex_spec.md`
+- `docs/specs/vaultcapsule_package_format.md`
 
 Current good state:
 
@@ -2685,8 +2687,7 @@ Remaining tasks:
   - add richer quiz scoring/review UX,
   - add learning-path controls only if they stay minimal.
 - Harden/export follow-ups:
-  - add richer copyrighted-file and secret scanning,
-  - add package format contract docs once import stabilizes.
+  - add richer copyrighted-file and secret scanning.
 - Complete import merge workflow:
   - expand conflict-aware selective merge beyond the current Review-item preview into explicit side-by-side conflict comparison where imported and local content differ,
   - add richer merge decisions for evidence links, source blocks, graph edges, and capsule membership,
