@@ -4977,6 +4977,7 @@ function NoteEditor({ note }: { note?: Note }) {
                 <Button icon={<Archive size={16} />} onClick={() => generate.mutate()}>
                   Draft memo
                 </Button>
+                <TaskCreateButton targetType="note" targetId={note.id} targetTitle={title || note.title} />
                 <CapsuleAttachButton targetType="note" targetId={note.id} targetTitle={title || note.title} defaultRole="core" />
               </div>
             </section>
@@ -5507,6 +5508,7 @@ async function copyBlock(block: SourceBlock) {
                   Open note
                 </Button>
               )}
+              <TaskCreateButton targetType="source" targetId={selected.id} targetTitle={selected.title} />
               <CapsuleAttachButton targetType="source" targetId={selected.id} targetTitle={selected.title} defaultRole="primary_source" showExportPolicy />
               <Button icon={<Sparkles size={16} />} disabled={!selected} onClick={() => extract.mutate()}>
                 Find claims
@@ -5606,6 +5608,13 @@ async function copyBlock(block: SourceBlock) {
                       <Button icon={<Copy size={15} />} variant="quiet" onClick={() => void copyBlock(selectedBlock)}>
                         {copiedBlockId === selectedBlock.id ? "Copied" : "Copy quote"}
                       </Button>
+                      <TaskCreateButton
+                        targetType="source_block"
+                        targetId={selectedBlock.id}
+                        targetTitle={`${selected.title} ${sourceBlockLocator(selectedBlock)}`}
+                        exactQuote={selectedBlock.text}
+                        locator={sourceBlockLocator(selectedBlock)}
+                      />
                       <CapsuleAttachButton
                         targetType="source_block"
                         targetId={selectedBlock.id}
@@ -6386,19 +6395,24 @@ function ReviewView() {
               title={item.title}
               eyebrow={reviewItemLabel(item.item_type)}
               actions={
-                item.status === "pending" ? (
+                item ? (
                   <>
                     {(target.sourceId || target.claimId) && (
                       <Button icon={<Link2 size={16} />} variant="quiet" onClick={openReviewEvidence}>
                         Open evidence
                       </Button>
                     )}
-                    <Button icon={<Check size={16} />} variant="primary" disabled={approve.isPending || reject.isPending} onClick={() => approve.mutate(item)}>
-                      {approve.isPending ? "Approving" : "Approve"}
-                    </Button>
-                    <Button icon={<X size={16} />} variant="danger" disabled={approve.isPending || reject.isPending} onClick={() => reject.mutate(item)}>
-                      {reject.isPending ? "Rejecting" : "Reject"}
-                    </Button>
+                    <TaskCreateButton targetType="review_item" targetId={item.id} targetTitle={item.title} />
+                    {item.status === "pending" && (
+                      <>
+                        <Button icon={<Check size={16} />} variant="primary" disabled={approve.isPending || reject.isPending} onClick={() => approve.mutate(item)}>
+                          {approve.isPending ? "Approving" : "Approve"}
+                        </Button>
+                        <Button icon={<X size={16} />} variant="danger" disabled={approve.isPending || reject.isPending} onClick={() => reject.mutate(item)}>
+                          {reject.isPending ? "Rejecting" : "Reject"}
+                        </Button>
+                      </>
+                    )}
                   </>
                 ) : undefined
               }
@@ -6460,6 +6474,128 @@ function ReviewView() {
 }
 
 type CapsuleAddTargetType = "note" | "source" | "source_block" | "claim" | "kg_node" | "learning_item" | "tool";
+type TaskContextTargetType =
+  | "note"
+  | "source"
+  | "source_block"
+  | "claim"
+  | "kg_node"
+  | "review_item"
+  | "capsule"
+  | "learning_item"
+  | "tool"
+  | "lab_job"
+  | "assistant_answer";
+
+type TaskCreateButtonProps = {
+  targetType: TaskContextTargetType;
+  targetId: string;
+  targetTitle: string;
+  defaultTitle?: string;
+  relation?: string;
+  exactQuote?: string | null;
+  locator?: string | null;
+  metadata?: Record<string, unknown>;
+  buttonLabel?: string;
+};
+
+function TaskCreateButton({
+  targetType,
+  targetId,
+  targetTitle,
+  defaultTitle,
+  relation = "follow_up",
+  exactQuote,
+  locator,
+  metadata,
+  buttonLabel = "Task"
+}: TaskCreateButtonProps) {
+  const queryClient = useQueryClient();
+  const [open, setOpen] = useState(false);
+  const [text, setText] = useState(defaultTitle ?? taskDefaultTitle(targetType, targetTitle));
+  useEffect(() => {
+    if (open) setText(defaultTitle ?? taskDefaultTitle(targetType, targetTitle));
+  }, [defaultTitle, open, targetId, targetTitle, targetType]);
+  const createTask = useMutation({
+    mutationFn: () =>
+      vaultRequest<TodoItem>("todos.create", {
+        text: text.trim(),
+        provenance: { created_from: targetType },
+        context_links: [
+          {
+            target_type: targetType,
+            target_id: targetId,
+            target_title: targetTitle,
+            relation,
+            exact_quote: exactQuote || undefined,
+            locator: locator || undefined,
+            metadata: metadata ?? {}
+          }
+        ]
+      }),
+    onSuccess: () => {
+      setOpen(false);
+      queryClient.invalidateQueries({ queryKey: ["todos"] });
+      queryClient.invalidateQueries({ queryKey: ["todo-lists"] });
+      queryClient.invalidateQueries({ queryKey: ["stats"] });
+      queryClient.invalidateQueries({ queryKey: ["events"] });
+    }
+  });
+  return (
+    <Dialog.Root open={open} onOpenChange={setOpen}>
+      <Dialog.Trigger asChild>
+        <Button type="button" icon={<List size={15} />} variant="quiet">
+          {buttonLabel}
+        </Button>
+      </Dialog.Trigger>
+      <Dialog.Portal>
+        <Dialog.Overlay className="dialog-overlay" />
+        <Dialog.Content className="dialog-content task-context-dialog" aria-describedby={undefined}>
+          <div className="dialog-header">
+            <div>
+              <Dialog.Title>New task</Dialog.Title>
+            </div>
+            <Dialog.Close asChild>
+              <button className="dialog-close" aria-label="Close task dialog">
+                <X size={16} />
+              </button>
+            </Dialog.Close>
+          </div>
+          <div className="task-context-target">
+            <Badge>{capsuleOptionLabel(targetType)}</Badge>
+            <strong title={targetTitle}>{targetTitle}</strong>
+          </div>
+          <form
+            className="task-context-form"
+            onSubmit={(event) => {
+              event.preventDefault();
+              if (text.trim() && !createTask.isPending) createTask.mutate();
+            }}
+          >
+            <Input aria-label="Task title" value={text} placeholder="Task" onChange={(event) => setText(event.target.value)} />
+            {createTask.error && <small className="model-test-error">{createTask.error.message}</small>}
+            <div className="task-context-actions">
+              <Button type="button" variant="quiet" onClick={() => setOpen(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" variant="primary" disabled={!text.trim() || createTask.isPending}>
+                {createTask.isPending ? "Saving" : "Save"}
+              </Button>
+            </div>
+          </form>
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
+  );
+}
+
+function taskDefaultTitle(targetType: TaskContextTargetType, targetTitle: string): string {
+  const title = targetTitle.trim();
+  if (targetType === "review_item") return `Review ${title}`;
+  if (targetType === "source" || targetType === "source_block") return `Check ${title}`;
+  if (targetType === "assistant_answer") return `Follow up on ${title}`;
+  return `Follow up: ${title}`;
+}
 
 type CapsuleAttachButtonProps = {
   targetType: CapsuleAddTargetType;
@@ -7130,6 +7266,7 @@ function CapsuleDetail({ capsule, onOpenTarget }: { capsule: Capsule; onOpenTarg
             <Button icon={<GitBranch size={15} />} variant="quiet" disabled={forkCapsule.isPending} onClick={() => forkCapsule.mutate()}>
               Fork
             </Button>
+            <TaskCreateButton targetType="capsule" targetId={capsule.id} targetTitle={capsule.name} />
             <Button icon={<Save size={15} />} variant="secondary" disabled={!snapshotVersion.trim() || snapshot.isPending} onClick={() => snapshot.mutate()}>
               Snapshot
             </Button>
@@ -7559,7 +7696,10 @@ function GraphView() {
           eyebrow={selected?.status?.replace(/_/g, " ")}
           actions={
             selected ? (
-              <CapsuleAttachButton targetType="claim" targetId={selected.id} targetTitle={selected.title} defaultRole="core" autoIncludeEvidence />
+              <>
+                <TaskCreateButton targetType="claim" targetId={selected.id} targetTitle={selected.title} />
+                <CapsuleAttachButton targetType="claim" targetId={selected.id} targetTitle={selected.title} defaultRole="core" autoIncludeEvidence />
+              </>
             ) : undefined
           }
         />
@@ -7864,6 +8004,14 @@ function AssistantView() {
                       <Button icon={<GitBranch size={15} />} variant="quiet" onClick={openReviewFollowUp}>
                         Review follow-up
                       </Button>
+                    )}
+                    {answer?.ai_run_id && (
+                      <TaskCreateButton
+                        targetType="assistant_answer"
+                        targetId={String(answer.ai_run_id)}
+                        targetTitle={question.trim() || "Assistant answer"}
+                        defaultTitle={`Follow up on ${assistantAnswerNoteTitle(question.trim() || "Assistant answer")}`}
+                      />
                     )}
                     {answer?.answer_markdown && (
                       <Button icon={<FilePlus2 size={15} />} variant="secondary" disabled={saveAssistantAnswer.isPending} onClick={() => saveAssistantAnswer.mutate()}>

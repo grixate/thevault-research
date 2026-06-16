@@ -307,6 +307,21 @@ Latest native Tasks verification on 2026-06-16:
 - Playwright desktop Tasks smoke: Tasks rendered at 1440x950 with `scrollWidth` equal to viewport width and no detected overflowing elements. Screenshot captured at `/tmp/vault-tasks-desktop.png`.
 - Python lint: passed.
 
+Latest contextual Tasks verification on 2026-06-16:
+
+- Added a compact contextual `Task` action/dialog that creates a task with a Vault context link instead of duplicating source text.
+- Added contextual task entry points from:
+  - current Note,
+  - selected Storage source,
+  - selected Storage source block with exact quote and locator,
+  - selected Review item,
+  - selected Graph claim,
+  - Capsule detail,
+  - Assistant answer when an `ai_run_id` is available.
+- The contextual dialog stays minimal: target chip, one editable task title, Cancel/Save.
+- Focused desktop contextual task test path: passed.
+- Desktop production build: passed.
+
 Latest focused verification on 2026-06-11 before the current claim-grammar slice:
 
 - Python core tests: 125 passed.
@@ -2704,18 +2719,17 @@ Current good state:
 - Context links can attach tasks to notes, sources, source blocks, claims, graph nodes, review items, capsules, learning items, tools, lab jobs, and Assistant answers.
 - Desktop has a first `Tasks` surface in Workspace navigation.
 - Tasks UI is intentionally sparse: one input, compact view tabs, dense rows, list side rail, and no explanatory subtitles.
-- Focused backend and desktop tests cover quick add, parsed list/label/priority/due date, context links, task list counts, completion, stats, and the desktop create/complete flow.
+- Contextual task creation now exists from current Note, selected Storage source/source block, Review item, Graph claim, Capsule detail, and Assistant answer.
+- Focused backend and desktop tests cover quick add, parsed list/label/priority/due date, context links, task list counts, completion, stats, the desktop create/complete flow, and note-origin contextual task creation.
 
 Remaining tasks:
 
-- Add contextual task creation from the real work surfaces:
-  - selected Note text,
-  - selected Storage source/source block,
-  - selected Graph claim,
-  - Review item,
-  - Capsule detail,
-  - Assistant answer,
-  - Night Lab brief.
+- Finish contextual task creation:
+  - selected Note text, not only the current note,
+  - individual Assistant citations,
+  - Night Lab brief,
+  - Learning item/tool result surfaces,
+  - richer tests for Storage/Review/Capsule/Assistant task payloads.
 - Add global quick-task capture, ideally alongside Quick note with a Spotlight-style command, without adding clutter to the top bar.
 - Add a minimal task detail drawer for editing title, due date, list, labels, context, description, recurrence, and source link.
 - Add list management: create/rename/archive lists and filter by list without overbuilding projects.

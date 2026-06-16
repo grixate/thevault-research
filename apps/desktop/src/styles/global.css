@@ -1082,7 +1082,12 @@ textarea:not(.ui-textarea) {
   width: min(440px, calc(100vw - 28px));
 }
 
-.capsule-attach-target {
+.task-context-dialog {
+  width: min(460px, calc(100vw - 28px));
+}
+
+.capsule-attach-target,
+.task-context-target {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
   gap: 8px;
@@ -1091,7 +1096,8 @@ textarea:not(.ui-textarea) {
   border-bottom: 1px solid var(--line);
 }
 
-.capsule-attach-target strong {
+.capsule-attach-target strong,
+.task-context-target strong {
   min-width: 0;
   color: var(--foreground);
   font-size: 13px;
@@ -1101,14 +1107,25 @@ textarea:not(.ui-textarea) {
   white-space: nowrap;
 }
 
-.capsule-attach-form {
+.capsule-attach-form,
+.task-context-form {
   display: grid;
   gap: 10px;
   padding-top: 12px;
 }
 
+.task-context-form .ui-input {
+  min-height: 40px;
+}
+
 .capsule-attach-form .field {
   gap: 6px;
+}
+
+.task-context-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
 }
 
 .capsule-attach-empty {

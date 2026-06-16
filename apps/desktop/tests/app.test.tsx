@@ -723,6 +723,76 @@ describe("App", () => {
     await waitFor(() => expect(request).toHaveBeenCalledWith("todos.complete", { todoId: "todo_follow_up" }));
   });
 
+  it("creates a contextual task from the note editor", async () => {
+    const note = {
+      id: "note_context_task",
+      title: "Citation follow-up",
+      content: {},
+      content_markdown: "Check this citation.",
+      origin: "user_written",
+      status: "draft",
+      version: 1,
+      source_id: "src_note_context",
+      updated_at: "2026-06-16T10:00:00Z"
+    };
+    const request = vi.fn(async (route: string, payload?: any) => {
+      if (route === "health.get") return { ok: true, version: "0.1.0", db_ready: true, workspace_id: "wrk_default" };
+      if (route === "jobs.list") return [];
+      if (route === "notes.list") return [note];
+      if (route === "ai.capabilities") return [];
+      if (route === "ai.providers") return [];
+      if (route === "todos.create") {
+        return {
+          id: "todo_from_note",
+          title: payload.text,
+          description: "",
+          status: "open",
+          priority: 4,
+          labels: [],
+          context_links: payload.context_links,
+          source_kind: "user",
+          source_ref: {},
+          provenance: payload.provenance,
+          created_at: "2026-06-16T10:01:00Z",
+          updated_at: "2026-06-16T10:01:00Z"
+        };
+      }
+      return [];
+    });
+    window.vault = { request, selectFiles: vi.fn(async () => []) };
+
+    renderApp();
+    fireEvent.click(await screen.findByRole("button", { name: "Notes" }));
+    await screen.findByDisplayValue("Citation follow-up");
+    await openNoteTools();
+    const tools = document.querySelector(".note-tools-body");
+    expect(tools).toBeTruthy();
+    fireEvent.click(within(tools as HTMLElement).getByRole("button", { name: "Task" }));
+    expect(await screen.findByDisplayValue("Follow up: Citation follow-up")).toBeTruthy();
+    const dialog = screen.getByRole("dialog", { name: "New task" });
+
+    fireEvent.change(within(dialog).getByLabelText("Task title"), { target: { value: "Verify citation tomorrow @review" } });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Save" }));
+
+    await waitFor(() =>
+      expect(request).toHaveBeenCalledWith("todos.create", {
+        text: "Verify citation tomorrow @review",
+        provenance: { created_from: "note" },
+        context_links: [
+          {
+            target_type: "note",
+            target_id: "note_context_task",
+            target_title: "Citation follow-up",
+            relation: "follow_up",
+            exact_quote: undefined,
+            locator: undefined,
+            metadata: {}
+          }
+        ]
+      })
+    );
+  });
+
   it("creates a capsule from the Capsules surface", async () => {
     const capsule = {
       id: "cap_acoustics",
