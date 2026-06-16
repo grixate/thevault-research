@@ -328,6 +328,13 @@ Latest capsule learning-quality verification on 2026-06-16:
 - Desktop Playwright Practice smoke at 1440x950 rendered phase/pass-score badges with no horizontal overflow. Screenshot output at `/tmp/vault-learning-path-polish-desktop.png`.
 - Backend capsule learning path test, broader capsule backend tests, desktop production build, Python syntax check, undefined-name lint, and diff whitespace check: passed.
 
+Latest contract verification on 2026-06-16:
+
+- Regenerated `packages/contracts/openapi.json` with the repo contract script after capsule, task, and local-AI routes settled.
+- OpenAPI contract now reports 137 paths and includes the capsule route set: create/list/detail/update/archive, items, health, snapshots, diff, export preview/export/history, import quarantine/review handoff, fork, overview note, and learning generation.
+- Contract JSON sanity check passed for required capsule paths, `/todos`, and `/ai/models/downloads`.
+- Contract generation was rerun idempotently and diff whitespace check passed.
+
 Latest native Tasks verification on 2026-06-16:
 
 - Added proposed source spec `docs/specs/research_lab_native_todos_spec.md`.
@@ -2721,7 +2728,6 @@ Remaining tasks:
   - add learning-path controls only if they stay minimal.
 - Harden/export follow-ups:
   - tune scanner false positives and add a deliberate review/override flow only if product testing shows it is needed.
-- Generate/update OpenAPI contract after routes settle.
 
 Acceptance evidence:
 
