@@ -958,7 +958,15 @@ def test_capsules_reference_global_objects_and_snapshot_health(client):
     assert learning["source_policy"] == "reviewed_claims_only"
     assert {item["type"] for item in learning["items"]} >= {"course_outline", "course_lesson", "quiz", "explain_back", "flashcard"}
     assert learning["items"][0]["source_refs"][0]["claim_id"] == claim_id
+    assert learning["items"][0]["body"]["path"][0]["phase"] == "orient"
+    assert learning["items"][0]["body"]["path"][0]["sequence"] == 1
+    quiz = next(item for item in learning["items"] if item["type"] == "quiz")
+    assert quiz["body"]["scoring"]["passing_score"] <= quiz["body"]["scoring"]["max_score"]
+    assert quiz["body"]["questions"][0]["sequence"] == 1
+    assert quiz["body"]["questions"][0]["review_if_missed"]
     assert learning["cards"][0]["source_refs"][0]["claim_id"] == claim_id
+    assert learning["cards"][0]["capsule_learning"]["phase"] == "orient"
+    assert learning["cards"][0]["capsule_learning"]["sequence"] == 1
     approved_learning = client.post(
         f"/review/items/{learning['review_item_id']}/approve",
         json={"decision_note": "Capsule learning items checked."},
@@ -968,6 +976,8 @@ def test_capsules_reference_global_objects_and_snapshot_health(client):
     learning_items = client.get("/learning/items").json()
     assert {item["type"] for item in learning_items} >= {"course_outline", "course_lesson", "quiz", "explain_back", "flashcard"}
     assert any(item["source_refs"][0]["claim_id"] == claim_id for item in learning_items)
+    approved_quiz = next(item for item in learning_items if item["type"] == "quiz")
+    assert approved_quiz["body"]["scoring"]["points_per_question"] == 2
     capsule_after_learning = client.get(f"/capsules/{capsule['id']}").json()
     assert any(item["target_type"] == "learning_item" and item["role"] == "learning" for item in capsule_after_learning["items"])
 

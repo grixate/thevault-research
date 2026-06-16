@@ -4098,6 +4098,7 @@ blockquote span {
 }
 
 .learning-card > div,
+.learning-path-meta,
 .learning-review-schedule {
   display: flex;
   flex-wrap: wrap;

@@ -318,6 +318,16 @@ Latest capsule export safety verification on 2026-06-16:
 - Focused backend capsule export safety tests: passed.
 - Python syntax check and diff whitespace check: passed.
 
+Latest capsule learning-quality verification on 2026-06-16:
+
+- Capsule learning generation now orders claims by capsule curation role/order before evidence weight, instead of only replaying evidence-score order.
+- Generated learning decks carry an explicit orient/connect/apply path with sequence numbers, review timing, claim IDs, evidence strength, and confidence metadata.
+- Capsule quiz items now include scoring metadata, per-question points, passing score, and review prompts for missed answers.
+- Approved flashcards keep capsule learning phase/sequence metadata and adaptive review schedules in Practice.
+- Practice shows compact phase/sequence and quiz pass-score badges without adding new controls.
+- Desktop Playwright Practice smoke at 1440x950 rendered phase/pass-score badges with no horizontal overflow. Screenshot output at `/tmp/vault-learning-path-polish-desktop.png`.
+- Backend capsule learning path test, broader capsule backend tests, desktop production build, Python syntax check, undefined-name lint, and diff whitespace check: passed.
+
 Latest native Tasks verification on 2026-06-16:
 
 - Added proposed source spec `docs/specs/research_lab_native_todos_spec.md`.
@@ -2685,7 +2695,7 @@ Current good state:
 - Capsule import Review items now show a merge preview before approval, including whether approval links an existing object, creates a new object, creates a weak claim, or creates a disabled tool.
 - Capsules can generate an overview note from capsule-scoped sources and approved claims only.
 - Generated capsule overview notes enter Notes as `generated_pending_review`, keep normal generated-note metadata, and attach back to the capsule with role `overview`.
-- Capsules can generate reviewed-claims-only learning items into Review: course outline, first lesson, quiz, explain-back prompt, and flashcards. Approved items attach back to the capsule as `learning_item` references.
+- Capsules can generate reviewed-claims-only learning items into Review: course outline, first lesson, quiz, explain-back prompt, and flashcards. Generated items include an orient/connect/apply path, quiz scoring, review prompts, and sequence metadata. Approved items attach back to the capsule as `learning_item` references.
 - Capsules can diff the latest two snapshots and show added, removed, and changed capsule references.
 - Capsules can be forked into a new draft/project/course capsule while preserving global references and recording a `forked_from` dependency.
 - Assistant can answer inside a selected capsule context, using capsule canonical items first and citing canonical evidence without global fallback.
@@ -2708,8 +2718,6 @@ Remaining tasks:
   - responsive desktop-first layout,
   - mobile noted later with the broader mobile repair pass.
 - Polish capsule learning quality:
-  - improve lesson sequencing beyond deterministic claim order,
-  - add richer quiz scoring/review UX,
   - add learning-path controls only if they stay minimal.
 - Harden/export follow-ups:
   - tune scanner false positives and add a deliberate review/override flow only if product testing shows it is needed.

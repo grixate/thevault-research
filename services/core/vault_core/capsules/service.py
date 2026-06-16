@@ -2387,13 +2387,23 @@ def capsule_claim_rows_for_learning(conn: sqlite3.Connection, workspace_id: str,
         raise HTTPException(422, f"Unsupported capsule learning source policy: {source_policy}")
     rows = conn.execute(
         f"""
-        SELECT claims.id, claims.normalized_text, claims.status, claims.evidence_strength, claims.confidence
+        SELECT claims.id, claims.normalized_text, claims.status, claims.evidence_strength, claims.confidence,
+               capsule_items.role, capsule_items.sort_order
         FROM capsule_items
         JOIN claims ON claims.id=capsule_items.target_id
         WHERE capsule_items.workspace_id=? AND capsule_items.capsule_id=?
           AND capsule_items.target_type='claim' AND capsule_items.status='active'
           AND claims.status IN ({','.join('?' for _ in statuses)})
-        ORDER BY claims.evidence_strength DESC, claims.updated_at DESC
+        ORDER BY
+          CASE capsule_items.role
+            WHEN 'core' THEN 0
+            WHEN 'evidence' THEN 1
+            WHEN 'supporting' THEN 2
+            ELSE 3
+          END,
+          capsule_items.sort_order ASC,
+          claims.evidence_strength DESC,
+          claims.updated_at DESC
         LIMIT ?
         """,
         (workspace_id, capsule_id, *statuses, limit),
@@ -2407,8 +2417,9 @@ def capsule_learning_items(capsule_name: str, claims: list[sqlite3.Row], payload
     source_policy = str(payload.get("source_policy") or "reviewed_claims_only")
     include_flashcards = bool(payload.get("include_flashcards", True))
     include_quiz = bool(payload.get("include_quiz", True))
-    source_refs = [{"claim_id": row["id"], "status": row["status"]} for row in claims]
-    claim_texts = [str(row["normalized_text"]) for row in claims]
+    path = capsule_learning_path(claims, duration)
+    source_refs = [{"claim_id": step["claim_id"], "status": step["status"], "sequence": step["sequence"], "phase": step["phase"]} for step in path]
+    claim_texts = [step["summary"] for step in path]
     items: list[dict[str, Any]] = [
         {
             "type": "course_outline",
@@ -2418,12 +2429,15 @@ def capsule_learning_items(capsule_name: str, claims: list[sqlite3.Row], payload
                 "answer": "Start with the core claims, then explain them from memory and check the evidence.",
                 "sections": [
                     {
-                        "title": f"Step {index}",
-                        "claim_id": row["id"],
-                        "summary": str(row["normalized_text"]),
+                        "title": step["title"],
+                        "claim_id": step["claim_id"],
+                        "summary": step["summary"],
+                        "phase": step["phase"],
+                        "review_after": step["review_after"],
                     }
-                    for index, row in enumerate(claims, start=1)
+                    for step in path
                 ],
+                "path": path,
                 "difficulty": difficulty,
                 "duration": duration,
                 "source_policy": source_policy,
@@ -2437,6 +2451,8 @@ def capsule_learning_items(capsule_name: str, claims: list[sqlite3.Row], payload
                 "prompt": f"Read the first lesson for {capsule_name}.",
                 "answer": "\n".join(f"{index}. {text}" for index, text in enumerate(claim_texts[:4], start=1)),
                 "key_points": claim_texts[:4],
+                "path": path[:4],
+                "review_prompt": "Close the source, explain each point from memory, then reopen the evidence before rating yourself.",
                 "difficulty": difficulty,
                 "duration": duration,
                 "source_policy": source_policy,
@@ -2449,7 +2465,8 @@ def capsule_learning_items(capsule_name: str, claims: list[sqlite3.Row], payload
             "body": {
                 "prompt": f"Explain {capsule_name} back in your own words, using the claims below.",
                 "answer": "A strong answer should cover: " + "; ".join(claim_texts[:5]),
-                "checklist": claim_texts[:5],
+                "checklist": [{"claim_id": step["claim_id"], "expected": step["summary"], "phase": step["phase"]} for step in path[:5]],
+                "self_review": ["Name the core idea without reading.", "Cite the evidence that would change your mind.", "Mark any claim you could not explain as again."],
                 "difficulty": difficulty,
                 "duration": duration,
                 "source_policy": source_policy,
@@ -2464,14 +2481,19 @@ def capsule_learning_items(capsule_name: str, claims: list[sqlite3.Row], payload
                 "title": f"{capsule_name}: checkpoint quiz",
                 "body": {
                     "prompt": f"Answer this short quiz on {capsule_name}.",
-                    "answer": "Check your answers against the cited capsule claims.",
+                    "answer": "Score each answer against the cited capsule claim and review anything missed.",
+                    "scoring": {"max_score": len(path[:5]) * 2, "passing_score": max(2, len(path[:5]) * 2 - 2), "points_per_question": 2},
                     "questions": [
                         {
                             "question": f"What is the key idea in point {index}?",
                             "answer": text,
-                            "claim_id": row["id"],
+                            "claim_id": step["claim_id"],
+                            "sequence": step["sequence"],
+                            "phase": step["phase"],
+                            "points": 2,
+                            "review_if_missed": step["review_after"],
                         }
-                        for index, (row, text) in enumerate(zip(claims[:5], claim_texts[:5], strict=False), start=1)
+                        for index, (step, text) in enumerate(zip(path[:5], claim_texts[:5], strict=False), start=1)
                     ],
                     "difficulty": difficulty,
                     "duration": duration,
@@ -2483,24 +2505,63 @@ def capsule_learning_items(capsule_name: str, claims: list[sqlite3.Row], payload
     if not include_flashcards:
         return items
     cards = []
-    for index, row in enumerate(claims, start=1):
-        text = str(row["normalized_text"])
+    for step in path:
+        text = step["summary"]
         cards.append(
             {
-                "front": f"{capsule_name}: what should you remember about point {index}?",
+                "front": f"{capsule_name}: what should you remember about point {step['sequence']}?",
                 "back": text,
-                "source_refs": [{"claim_id": row["id"], "status": row["status"]}],
-                "schedule": {"again": "tomorrow", "good": "3 days", "easy": "7 days"},
+                "source_refs": [{"claim_id": step["claim_id"], "status": step["status"], "sequence": step["sequence"], "phase": step["phase"]}],
+                "schedule": capsule_learning_schedule(step["sequence"], len(path), duration),
                 "capsule_learning": {
                     "difficulty": difficulty,
                     "duration": duration,
                     "source_policy": source_policy,
-                    "evidence_strength": row["evidence_strength"],
-                    "confidence": row["confidence"],
+                    "sequence": step["sequence"],
+                    "phase": step["phase"],
+                    "evidence_strength": step["evidence_strength"],
+                    "confidence": step["confidence"],
                 },
             }
         )
     return items + [{"type": "flashcard", "title": card["front"], "body": card, "source_refs": card.get("source_refs", [])} for card in cards]
+
+
+def capsule_learning_path(claims: list[sqlite3.Row], duration: str) -> list[dict[str, Any]]:
+    phases = ("orient", "connect", "apply")
+    path: list[dict[str, Any]] = []
+    for index, row in enumerate(claims, start=1):
+        phase = phases[min(len(phases) - 1, (index - 1) * len(phases) // max(1, len(claims)))]
+        path.append(
+            {
+                "sequence": index,
+                "title": f"{phase.title()} {index}",
+                "claim_id": row["id"],
+                "summary": str(row["normalized_text"]),
+                "status": row["status"],
+                "phase": phase,
+                "review_after": capsule_learning_review_after(index, len(claims), duration),
+                "evidence_strength": row["evidence_strength"],
+                "confidence": row["confidence"],
+            }
+        )
+    return path
+
+
+def capsule_learning_review_after(index: int, total: int, duration: str) -> str:
+    if duration in {"1_day", "single_session"}:
+        return "end of session"
+    if index == total:
+        return "final checkpoint"
+    return "next session" if index % 2 else "same session"
+
+
+def capsule_learning_schedule(index: int, total: int, duration: str) -> dict[str, str]:
+    if duration in {"1_day", "single_session"}:
+        return {"again": "later today", "good": "tomorrow", "easy": "3 days"}
+    if index == total:
+        return {"again": "tomorrow", "good": "2 days", "easy": "5 days"}
+    return {"again": "tomorrow", "good": "3 days", "easy": "7 days"}
 
 
 def capsule_learning_cards(capsule_name: str, claims: list[sqlite3.Row], payload: dict[str, Any]) -> list[dict[str, Any]]:

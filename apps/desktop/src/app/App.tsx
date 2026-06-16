@@ -8961,6 +8961,7 @@ function LearningView() {
                 <div>
                   <Badge tone={item.status === "active" ? "good" : "neutral"}>{item.status}</Badge>
                   <Badge tone="info">{item.type}</Badge>
+                  {learningItemPhaseLabel(item) && <Badge tone="neutral">{learningItemPhaseLabel(item)}</Badge>}
                 </div>
                 <strong>{item.title}</strong>
                 {learningItemPrompt(item) && <p>{learningItemPrompt(item)}</p>}
@@ -9014,7 +9015,11 @@ function LearningView() {
         </div>
         {selectedLearningItem && (
           <div className="learning-practice-card">
-            <Badge tone="info">Selected card</Badge>
+            <div className="learning-path-meta">
+              <Badge tone="info">Selected card</Badge>
+              {learningItemPhaseLabel(selectedLearningItem) && <Badge tone="neutral">{learningItemPhaseLabel(selectedLearningItem)}</Badge>}
+              {learningItemScoreLabel(selectedLearningItem) && <Badge tone="good">{learningItemScoreLabel(selectedLearningItem)}</Badge>}
+            </div>
             <strong>{selectedLearningItem.title}</strong>
             {learningItemPrompt(selectedLearningItem) && <p>{learningItemPrompt(selectedLearningItem)}</p>}
             {learningItemAnswer(selectedLearningItem) && <small>{learningItemAnswer(selectedLearningItem)}</small>}
@@ -9050,6 +9055,22 @@ function learningItemPrompt(item: LearningItem): string {
 
 function learningItemAnswer(item: LearningItem): string {
   return String(item.body?.back ?? item.body?.answer ?? item.body?.questions?.[0]?.answer ?? "").trim();
+}
+
+function learningItemPhaseLabel(item: LearningItem): string {
+  const learning = item.body?.capsule_learning;
+  const sequence = Number(learning?.sequence ?? item.body?.path?.[0]?.sequence ?? item.body?.questions?.[0]?.sequence ?? 0);
+  const phase = String(learning?.phase ?? item.body?.path?.[0]?.phase ?? item.body?.questions?.[0]?.phase ?? "").trim();
+  if (!phase && !sequence) return "";
+  return [phase, sequence ? String(sequence) : ""].filter(Boolean).join(" ");
+}
+
+function learningItemScoreLabel(item: LearningItem): string {
+  const scoring = item.body?.scoring;
+  const passing = Number(scoring?.passing_score ?? 0);
+  const max = Number(scoring?.max_score ?? 0);
+  if (!passing || !max) return "";
+  return `pass ${passing}/${max}`;
 }
 
 function learningItemSpeechText(item: LearningItem): string {
