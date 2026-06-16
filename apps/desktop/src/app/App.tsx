@@ -34,6 +34,7 @@ import {
   MessageSquareText,
   Mic,
   Moon,
+  MoreHorizontal,
   Network,
   NotebookPen,
   Pause,
@@ -7301,10 +7302,11 @@ function CapsuleImportHistory({
         {total > imports.length && <small>{imports.length}/{total}</small>}
       </div>
       {imports.map((item) => {
+        const importId = item.import_id || String((item as any).id || "");
         const capsule = item.manifest?.capsule ?? {};
         const name = String(capsule.name || item.merge_plan?.capsule_name || "Imported capsule");
         return (
-          <button key={item.import_id} type="button" className={selectedImportId === item.import_id ? "active" : ""} onClick={() => onOpen(item.import_id)}>
+          <button key={importId} type="button" className={selectedImportId === importId ? "active" : ""} disabled={!importId} onClick={() => onOpen(importId)}>
             <span>
               <strong title={name}>{name}</strong>
               <Badge tone={item.status === "invalid" ? "bad" : item.status === "review_ready" ? "good" : "warn"}>{capsuleOptionLabel(item.status)}</Badge>
@@ -7456,6 +7458,8 @@ function CapsuleDetail({ capsule, onOpenTarget }: { capsule: Capsule; onOpenTarg
   const [autoIncludeEvidence, setAutoIncludeEvidence] = useState(true);
   const [snapshotVersion, setSnapshotVersion] = useState(nextCapsulePatchVersion(capsule.version));
   const [exportOpen, setExportOpen] = useState(false);
+  const [actionsOpen, setActionsOpen] = useState(false);
+  const actionsMenuRef = useRef<HTMLDivElement>(null);
   const versions = capsule.versions ?? [];
   const targetOptions = capsuleTargetOptions(targetType, {
     notes: notes.data ?? [],
@@ -7472,6 +7476,21 @@ function CapsuleDetail({ capsule, onOpenTarget }: { capsule: Capsule; onOpenTarg
   useEffect(() => {
     setSnapshotVersion(nextCapsulePatchVersion(capsule.version));
   }, [capsule.version]);
+  useEffect(() => {
+    if (!actionsOpen) return;
+    function closeActions(event: MouseEvent) {
+      if (event.target instanceof Node && !actionsMenuRef.current?.contains(event.target)) setActionsOpen(false);
+    }
+    function closeActionsOnEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") setActionsOpen(false);
+    }
+    document.addEventListener("mousedown", closeActions);
+    document.addEventListener("keydown", closeActionsOnEscape);
+    return () => {
+      document.removeEventListener("mousedown", closeActions);
+      document.removeEventListener("keydown", closeActionsOnEscape);
+    };
+  }, [actionsOpen]);
   const addItem = useMutation({
     mutationFn: () =>
       vaultRequest("capsules.addItems", {
@@ -7581,29 +7600,57 @@ function CapsuleDetail({ capsule, onOpenTarget }: { capsule: Capsule; onOpenTarg
         actions={
           <TooltipProvider delayDuration={250}>
             <div className="capsule-header-actions" aria-label="Capsule actions">
-              <CapsuleHeaderAction label="Run health" icon={<RefreshCw size={15} />} disabled={runHealth.isPending} onClick={() => runHealth.mutate()} />
               <CapsuleHeaderAction
                 label="Generate overview"
                 icon={<Sparkles size={15} />}
                 disabled={generateOverview.isPending}
                 onClick={() => generateOverview.mutate()}
               />
-              <CapsuleHeaderAction
-                label="Generate practice"
-                icon={<Brain size={15} />}
-                disabled={generateLearning.isPending}
-                onClick={() => generateLearning.mutate()}
-              />
-              <CapsuleHeaderAction label="Fork capsule" icon={<GitBranch size={15} />} disabled={forkCapsule.isPending} onClick={() => forkCapsule.mutate()} />
-              <TaskCreateButton
-                targetType="capsule"
-                targetId={capsule.id}
-                targetTitle={capsule.name}
-                buttonAriaLabel="Create task"
-                buttonTitle="Create task"
-                buttonSize="icon"
-              />
               <CapsuleHeaderAction label="Export capsule" icon={<Download size={15} />} onClick={() => setExportOpen(true)} />
+              <div className="capsule-more-actions" ref={actionsMenuRef}>
+                <CapsuleHeaderAction label="More capsule actions" icon={<MoreHorizontal size={16} />} onClick={() => setActionsOpen((open) => !open)} />
+                {actionsOpen && (
+                  <div className="capsule-action-menu" role="menu" aria-label="More capsule actions">
+                    <Button
+                      type="button"
+                      variant="quiet"
+                      icon={<RefreshCw size={14} />}
+                      disabled={runHealth.isPending}
+                      onClick={() => {
+                        setActionsOpen(false);
+                        runHealth.mutate();
+                      }}
+                    >
+                      Run health
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="quiet"
+                      icon={<Brain size={14} />}
+                      disabled={generateLearning.isPending}
+                      onClick={() => {
+                        setActionsOpen(false);
+                        generateLearning.mutate();
+                      }}
+                    >
+                      Generate practice
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="quiet"
+                      icon={<GitBranch size={14} />}
+                      disabled={forkCapsule.isPending}
+                      onClick={() => {
+                        setActionsOpen(false);
+                        forkCapsule.mutate();
+                      }}
+                    >
+                      Fork
+                    </Button>
+                    <TaskCreateButton targetType="capsule" targetId={capsule.id} targetTitle={capsule.name} buttonLabel="Create task" buttonVariant="quiet" />
+                  </div>
+                )}
+              </div>
             </div>
           </TooltipProvider>
         }

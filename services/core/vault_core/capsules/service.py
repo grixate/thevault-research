@@ -839,6 +839,7 @@ def get_capsule_import_detail(db: VaultDatabase, import_id: str) -> dict[str, An
         if not row:
             raise HTTPException(404, "Capsule import not found")
         record = dict(row)
+        record["import_id"] = record["id"]
         record["manifest"] = loads(record.pop("manifest_json"), {})
         record["validation_report"] = loads(record.pop("validation_report_json"), {})
         record["merge_plan"] = loads(record.pop("merge_plan_json"), {})
@@ -856,6 +857,7 @@ def list_capsule_imports(db: VaultDatabase, limit: int = 50, offset: int = 0) ->
         items = []
         for row in rows:
             record = dict(row)
+            record["import_id"] = record["id"]
             record["manifest"] = loads(record.pop("manifest_json"), {})
             record["validation_report"] = loads(record.pop("validation_report_json"), {})
             record["merge_plan"] = loads(record.pop("merge_plan_json"), {})

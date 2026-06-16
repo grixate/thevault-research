@@ -908,6 +908,32 @@ textarea:not(.ui-textarea) {
   flex: 0 0 34px;
 }
 
+.capsule-more-actions {
+  position: relative;
+  display: inline-flex;
+}
+
+.capsule-action-menu {
+  position: absolute;
+  z-index: 12;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 188px;
+  display: grid;
+  gap: 4px;
+  padding: 6px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: 0 18px 48px rgba(20, 18, 14, 0.14);
+}
+
+.capsule-action-menu .button {
+  width: 100%;
+  justify-content: flex-start;
+  border-color: transparent;
+}
+
 .capsule-title-meta,
 .capsule-health-row,
 .capsule-versions {

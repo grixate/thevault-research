@@ -898,7 +898,10 @@ describe("App", () => {
         if (route === "jobs.list") return [];
         if (route === "capsules.list") return { items: capsuleRows, total: capsuleRows.length };
         if (route === "capsules.imports") return { items: importRows, total: importRows.length };
-        if (route === "capsules.import.get") return importRows.find((item) => item.import_id === payload?.importId);
+        if (route === "capsules.import.get") {
+          const row = importRows.find((item) => (item.import_id || item.id) === payload?.importId);
+          return row ? { ...row, import_id: row.import_id || row.id } : undefined;
+        }
         if (route === "capsules.create") {
           capsuleRows = [capsule];
           return capsule;
@@ -993,7 +996,7 @@ describe("App", () => {
             warnings: [],
             created_at: "2026-06-14T12:00:00Z"
           };
-          importRows = [imported];
+          importRows = [{ ...imported, id: imported.import_id, import_id: undefined }];
           return imported;
         }
         if (route === "capsules.import.reviewItems") {
@@ -1089,7 +1092,8 @@ describe("App", () => {
     fireEvent.click(await screen.findByRole("button", { name: "Diff" }));
     expect(await screen.findByLabelText("Capsule version diff")).toBeTruthy();
     expect(await screen.findByText("1 added")).toBeTruthy();
-    fireEvent.click(await screen.findByRole("button", { name: "Fork capsule" }));
+    fireEvent.click(await screen.findByRole("button", { name: "More capsule actions" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Fork" }));
     expect(await screen.findByRole("heading", { name: "Acoustic Science Foundations Fork" })).toBeTruthy();
     expect(await screen.findByText("Fork of Acoustic Science Foundations")).toBeTruthy();
     fireEvent.click(await screen.findByRole("button", { name: "Export capsule" }));

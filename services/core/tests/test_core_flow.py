@@ -1093,7 +1093,10 @@ def test_capsules_reference_global_objects_and_snapshot_health(client):
     assert (Path(imported_capsule["quarantine_path"]) / "validation_report.json").exists()
     imports = client.get("/capsules/imports").json()
     assert imports["total"] == 1
+    assert imports["items"][0]["id"] == imported_capsule["import_id"]
+    assert imports["items"][0]["import_id"] == imported_capsule["import_id"]
     import_detail = client.get(f"/capsules/imports/{imported_capsule['import_id']}").json()
+    assert import_detail["import_id"] == imported_capsule["import_id"]
     assert import_detail["status"] == "quarantined"
     assert client.get("/capsules").json()["total"] == 2
 

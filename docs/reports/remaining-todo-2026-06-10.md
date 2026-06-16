@@ -314,9 +314,14 @@ Latest capsule UI polish verification on 2026-06-16:
 - The curation workbench now stays focused on adding canonical notes/sources/claims/concepts/practice/tools. Snapshot, version list, and diff live behind a quiet `Versions` disclosure.
 - Capsule import quarantine internals are quieter: the primary row shows status and package filename, while checksum count, file count, unpacked size, and quarantine path live behind `Import details`.
 - Capsule export no longer has two close affordances; the dialog keeps the standard X close and the primary Export action.
+- Capsule detail now exposes only three header icon actions by default: Generate overview, Export, and More. Run health, Generate practice, Fork, and Create task moved into the compact More menu.
+- Real desktop smoke found an import-history reopen bug: list rows exposed `id` but not `import_id`, causing the UI to call `/capsules/imports/undefined`. Backend list/detail responses now include `import_id`, and the desktop history row tolerates legacy `id`-only rows.
 - Focused desktop capsule test path passed after updating expectations for collapsed `Versions`, icon close, and the quieter export/import surfaces.
+- Focused backend capsule test now asserts import list/detail id consistency.
 - Desktop production build passed after the latest minimalist structure changes.
-- In-app browser desktop smoke was attempted after starting local core and renderer, but the Browser webview timed out while attaching. Next session should rerun the 1440x950 visual smoke before calling Capsules production-polished.
+- In-app browser desktop smoke was attempted after starting local core and renderer, but the Browser webview timed out while attaching. Headless Playwright fallback was used for visual evidence.
+- Desktop smoke at 1440x950 rendered the latest Capsule detail with no horizontal overflow, 3 header icon buttons, no visible count strip, no visible Snapshot, no visible Fork text, and More present. Screenshots: `/tmp/vault-capsules-more-menu-desktop.png` and `/tmp/vault-capsules-more-menu-open.png`.
+- Desktop smoke at 1440x950 reopened a real quarantined import generated through backend export/import routes. `Import details` was collapsed by default, source/quarantine paths were not visible by default, opening it showed checksum/file-size metadata, and there was no horizontal overflow. Screenshots: `/tmp/vault-capsules-import-details-collapsed.png` and `/tmp/vault-capsules-import-details-open.png`.
 - Desktop browser smoke at 1440x950 with local core data rendered the Capsule detail header with 34px icon buttons, no visible action-caption text inside the header action cluster, and no horizontal overflow. Screenshot output at `/tmp/vault-capsules-icon-header-desktop.png`.
 - Desktop Playwright smoke at 1440x950 rendered Capsules with no horizontal overflow and screenshot output at `/tmp/vault-capsules-polish-desktop.png`.
 - Earlier focused desktop capsule test path passed after updating expectations for the new accessible button names.
@@ -2692,11 +2697,11 @@ Current good state:
   - capsule index,
   - create capsule dialog,
   - selected capsule detail,
-  - count strip,
   - health/status,
   - add existing note/source/claim/concept/practice/tool,
   - evidence auto-include toggle for claims,
-  - manual snapshot action.
+  - compact More actions for health, learning generation, fork, and task creation,
+  - snapshot/version/diff controls behind `Versions`.
 - Backend capsule export preview and package creation exist for reference-only, sanitized, private-full, learning, tool, and public modes, including optional export from a saved capsule version and internal private-full source blob files.
 - Capsule export privacy reports include alpha safety scanning for secret-looking strings, PII/client/patient signals, copyright/license source findings, and `private_full` source blob bytes. Findings are redacted in reports.
 - Desktop capsule detail has a compact Export dialog with preview, package creation, saved-version selection, and recent export history.
@@ -2736,7 +2741,6 @@ Remaining tasks:
   - no card-heavy dashboard treatment,
   - clear source/note/claim attachment flow,
   - responsive desktop-first layout,
-  - rerun desktop visual smoke for the latest collapsed `Versions` and `Import details` structure,
   - mobile noted later with the broader mobile repair pass.
 - Polish capsule learning quality:
   - add learning-path controls only if they stay minimal.
