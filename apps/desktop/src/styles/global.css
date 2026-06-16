@@ -894,6 +894,20 @@ textarea:not(.ui-textarea) {
   gap: 14px;
 }
 
+.capsule-header-actions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  min-width: 0;
+}
+
+.capsule-header-actions .button-icon {
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+}
+
 .capsule-title-meta,
 .capsule-stat-strip,
 .capsule-health-row,

@@ -1061,10 +1061,10 @@ describe("App", () => {
     fireEvent.click(await screen.findByRole("button", { name: "Diff" }));
     expect(await screen.findByLabelText("Capsule version diff")).toBeTruthy();
     expect(await screen.findByText("1 added")).toBeTruthy();
-    fireEvent.click(await screen.findByRole("button", { name: "Fork" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Fork capsule" }));
     expect(await screen.findByRole("heading", { name: "Acoustic Science Foundations Fork" })).toBeTruthy();
     expect(await screen.findByText("Fork of Acoustic Science Foundations")).toBeTruthy();
-    fireEvent.click(await screen.findByRole("button", { name: "Export" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Export capsule" }));
     const dialog = await screen.findByRole("dialog", { name: "Export capsule" });
     expect(await within(dialog).findByLabelText("Capsule export preview")).toBeTruthy();
     fireEvent.click(within(dialog).getByRole("button", { name: /^export$/i }));

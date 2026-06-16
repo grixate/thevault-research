@@ -57,7 +57,7 @@ import {
   Wrench,
   X
 } from "lucide-react";
-import { useEffect, useMemo, useRef, useState, type FormEvent as ReactFormEvent, type KeyboardEvent as ReactKeyboardEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent as ReactFormEvent, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from "react";
 import { Badge } from "../components/Badge";
 import { Button } from "../components/Button";
 import { Panel, SectionHeader } from "../components/Panel";
@@ -6706,6 +6706,10 @@ type TaskCreateButtonProps = {
   locator?: string | null;
   metadata?: Record<string, unknown>;
   buttonLabel?: string;
+  buttonAriaLabel?: string;
+  buttonTitle?: string;
+  buttonSize?: "default" | "sm" | "icon";
+  buttonVariant?: "primary" | "secondary" | "quiet" | "danger";
 };
 
 function TaskCreateButton({
@@ -6717,7 +6721,11 @@ function TaskCreateButton({
   exactQuote,
   locator,
   metadata,
-  buttonLabel = "Task"
+  buttonLabel = "Task",
+  buttonAriaLabel,
+  buttonTitle,
+  buttonSize = "default",
+  buttonVariant = "quiet"
 }: TaskCreateButtonProps) {
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
@@ -6753,8 +6761,15 @@ function TaskCreateButton({
   return (
     <Dialog.Root open={open} onOpenChange={setOpen}>
       <Dialog.Trigger asChild>
-        <Button type="button" icon={<List size={15} />} variant="quiet">
-          {buttonLabel}
+        <Button
+          type="button"
+          icon={<List size={15} />}
+          variant={buttonVariant}
+          size={buttonSize}
+          aria-label={buttonAriaLabel ?? buttonLabel}
+          title={buttonTitle ?? buttonAriaLabel ?? buttonLabel}
+        >
+          {buttonSize === "icon" ? undefined : buttonLabel}
         </Button>
       </Dialog.Trigger>
       <Dialog.Portal>
@@ -7546,24 +7561,33 @@ function CapsuleDetail({ capsule, onOpenTarget }: { capsule: Capsule; onOpenTarg
       <SectionHeader
         title={capsule.name}
         actions={
-          <>
-            <Button icon={<RefreshCw size={15} />} variant="quiet" disabled={runHealth.isPending} onClick={() => runHealth.mutate()}>
-              Health
-            </Button>
-            <Button icon={<Sparkles size={15} />} variant="quiet" disabled={generateOverview.isPending} onClick={() => generateOverview.mutate()}>
-              Overview
-            </Button>
-            <Button icon={<Brain size={15} />} variant="quiet" disabled={generateLearning.isPending} onClick={() => generateLearning.mutate()}>
-              Practice
-            </Button>
-            <Button icon={<GitBranch size={15} />} variant="quiet" disabled={forkCapsule.isPending} onClick={() => forkCapsule.mutate()}>
-              Fork
-            </Button>
-            <TaskCreateButton targetType="capsule" targetId={capsule.id} targetTitle={capsule.name} />
-            <Button icon={<Download size={15} />} variant="quiet" onClick={() => setExportOpen(true)}>
-              Export
-            </Button>
-          </>
+          <TooltipProvider delayDuration={250}>
+            <div className="capsule-header-actions" aria-label="Capsule actions">
+              <CapsuleHeaderAction label="Run health" icon={<RefreshCw size={15} />} disabled={runHealth.isPending} onClick={() => runHealth.mutate()} />
+              <CapsuleHeaderAction
+                label="Generate overview"
+                icon={<Sparkles size={15} />}
+                disabled={generateOverview.isPending}
+                onClick={() => generateOverview.mutate()}
+              />
+              <CapsuleHeaderAction
+                label="Generate practice"
+                icon={<Brain size={15} />}
+                disabled={generateLearning.isPending}
+                onClick={() => generateLearning.mutate()}
+              />
+              <CapsuleHeaderAction label="Fork capsule" icon={<GitBranch size={15} />} disabled={forkCapsule.isPending} onClick={() => forkCapsule.mutate()} />
+              <TaskCreateButton
+                targetType="capsule"
+                targetId={capsule.id}
+                targetTitle={capsule.name}
+                buttonAriaLabel="Create task"
+                buttonTitle="Create task"
+                buttonSize="icon"
+              />
+              <CapsuleHeaderAction label="Export capsule" icon={<Download size={15} />} onClick={() => setExportOpen(true)} />
+            </div>
+          </TooltipProvider>
         }
       />
       <div className="capsule-title-meta">
@@ -7689,6 +7713,27 @@ function CapsuleDetail({ capsule, onOpenTarget }: { capsule: Capsule; onOpenTarg
       {versionDiff.data && <CapsuleVersionDiffSummary diff={versionDiff.data} />}
       <CapsuleExportDialog capsule={capsule} open={exportOpen} onOpenChange={setExportOpen} />
     </>
+  );
+}
+
+function CapsuleHeaderAction({
+  label,
+  icon,
+  disabled,
+  onClick
+}: {
+  label: string;
+  icon: ReactNode;
+  disabled?: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button type="button" size="icon" icon={icon} variant="quiet" aria-label={label} title={label} disabled={disabled} onClick={onClick} />
+      </TooltipTrigger>
+      <TooltipContent>{label}</TooltipContent>
+    </Tooltip>
   );
 }
 
