@@ -306,7 +306,8 @@ Latest capsule UI polish verification on 2026-06-16:
 - Capsule detail primary actions now use a fixed-width icon cluster with accessible labels/titles for Run health, Generate overview, Generate practice, Fork capsule, Create task, and Export capsule.
 - The shared context task button supports icon-only usage without losing its accessible name, so compact surfaces do not need visible `Task` text.
 - Capsule purpose/description no longer renders as a separate subtitle block under the detail header; it is folded into the compact metadata row with truncation.
-- The curation workbench now separates `Add item` and `Snapshot` as compact rows instead of presenting them as dashboard cards or explanatory blocks.
+- Capsule curation copy is now target-aware without a redundant row label: the add action says `Add note/source/claim/concept/practice/tool`, empty selectors say `No notes/sources/...`, and the claim toggle says `Include evidence`.
+- The curation workbench now separates target-aware add and `Snapshot` as compact rows instead of presenting them as dashboard cards or explanatory blocks.
 - Snapshot saving uses a compact Save action beside the version field; the rendered desktop smoke measured the Save action at 74px rather than stretching across the row.
 - Desktop browser smoke at 1440x950 with local core data rendered the Capsule detail header with 34px icon buttons, no visible action-caption text inside the header action cluster, and no horizontal overflow. Screenshot output at `/tmp/vault-capsules-icon-header-desktop.png`.
 - Desktop Playwright smoke at 1440x950 rendered Capsules with no horizontal overflow and screenshot output at `/tmp/vault-capsules-polish-desktop.png`.

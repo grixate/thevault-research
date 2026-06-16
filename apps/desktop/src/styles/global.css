@@ -1003,7 +1003,7 @@ textarea:not(.ui-textarea) {
 }
 
 .capsule-add-panel {
-  grid-template-columns: 82px 104px minmax(180px, 1fr) 132px auto auto;
+  grid-template-columns: 104px minmax(180px, 1fr) 132px auto auto;
 }
 
 .capsule-snapshot-panel {
@@ -1029,9 +1029,12 @@ textarea:not(.ui-textarea) {
 }
 
 @media (max-width: 1100px) {
-  .capsule-add-panel,
   .capsule-snapshot-panel {
     grid-template-columns: 82px minmax(0, 1fr);
+  }
+
+  .capsule-add-panel {
+    grid-template-columns: 104px minmax(0, 1fr);
   }
 
   .capsule-add-panel .capsule-check,
@@ -1049,6 +1052,12 @@ textarea:not(.ui-textarea) {
   .capsule-add-panel,
   .capsule-snapshot-panel {
     grid-template-columns: 1fr;
+  }
+
+  .capsule-add-panel .capsule-check,
+  .capsule-add-panel .button,
+  .capsule-snapshot-panel .button {
+    grid-column: auto;
   }
 
   .capsule-action-label {

@@ -1055,6 +1055,8 @@ describe("App", () => {
     expect(await screen.findByText("Acoustic Science Foundations")).toBeTruthy();
     expect(await screen.findByLabelText("Capsule counts")).toBeTruthy();
     expect(await screen.findByLabelText("Capsule target type")).toBeTruthy();
+    expect(await screen.findByRole("button", { name: "Add note" })).toBeTruthy();
+    expect(await screen.findByText("No notes")).toBeTruthy();
     await waitFor(() => expect(window.vault.request).toHaveBeenCalledWith("graph.nodes", { limit: 100 }));
     expect(window.vault.request).toHaveBeenCalledWith("learning.items", undefined);
     expect(window.vault.request).toHaveBeenCalledWith("tools.list", undefined);

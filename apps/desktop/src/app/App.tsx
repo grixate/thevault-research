@@ -7608,7 +7608,6 @@ function CapsuleDetail({ capsule, onOpenTarget }: { capsule: Capsule; onOpenTarg
       </div>
       <div className="capsule-workbench">
         <section className="capsule-add-panel" aria-label="Add to capsule">
-          <span className="capsule-action-label">Add item</span>
           <SelectRoot value={targetType} onValueChange={(value) => setTargetType(value as CapsuleAddTargetType)}>
             <SelectTrigger aria-label="Capsule target type">
               <SelectValue />
@@ -7624,7 +7623,7 @@ function CapsuleDetail({ capsule, onOpenTarget }: { capsule: Capsule; onOpenTarg
           </SelectRoot>
           <SelectRoot value={targetId || undefined} onValueChange={setTargetId}>
             <SelectTrigger aria-label="Capsule target">
-              <SelectValue placeholder={targetOptions.length ? "Choose item" : "No items"} />
+              <SelectValue placeholder={targetOptions.length ? `Choose ${capsuleTargetNoun(targetType)}` : `No ${capsuleTargetPlural(targetType)}`} />
             </SelectTrigger>
             <SelectContent>
               {targetOptions.map((item) => (
@@ -7649,11 +7648,11 @@ function CapsuleDetail({ capsule, onOpenTarget }: { capsule: Capsule; onOpenTarg
           {targetType === "claim" && (
             <label className="capsule-check">
               <Checkbox checked={autoIncludeEvidence} onCheckedChange={(checked) => setAutoIncludeEvidence(checked === true)} />
-              <span>Evidence</span>
+              <span>Include evidence</span>
             </label>
           )}
           <Button size="sm" disabled={!targetId || addItem.isPending} onClick={() => addItem.mutate()}>
-            Add
+            Add {capsuleTargetNoun(targetType)}
           </Button>
         </section>
         <section className="capsule-snapshot-panel" aria-label="Snapshot version">
@@ -8009,6 +8008,21 @@ function capsuleTargetOptions(
   if (targetType === "learning_item") return options.learningItems;
   if (targetType === "tool") return options.tools;
   return [];
+}
+
+function capsuleTargetNoun(targetType: CapsuleAddTargetType): string {
+  if (targetType === "source" || targetType === "source_block") return "source";
+  if (targetType === "claim") return "claim";
+  if (targetType === "kg_node") return "concept";
+  if (targetType === "learning_item") return "practice";
+  if (targetType === "tool") return "tool";
+  return "note";
+}
+
+function capsuleTargetPlural(targetType: CapsuleAddTargetType): string {
+  if (targetType === "kg_node") return "concepts";
+  if (targetType === "learning_item") return "practice items";
+  return `${capsuleTargetNoun(targetType)}s`;
 }
 
 function defaultCapsuleRoleForTarget(targetType: CapsuleAddTargetType): string {
