@@ -244,8 +244,9 @@ Latest capsule import quarantine verification on 2026-06-15:
 - Merge plan currently reports review actions and keeps imported tools disabled by default; selective merge/review-item creation remains future work.
 - Added a compact desktop `Import` action on Capsules and a quarantine inspection view with status, source/quarantine paths, object counts, checksum summary, and merge-plan actions.
 - Capsules now show a compact import history rail and can reopen prior quarantine details through `capsules.import.get`, instead of only showing the latest import result.
+- Invalid capsule imports now show compact validation diagnostics and keep Review item handoff disabled.
 - Focused backend capsule test: passed.
-- Desktop capsule import/export/history test path: passed.
+- Desktop capsule import/export/history/invalid-state test path: passed.
 - Desktop production build: passed.
 
 Latest capsule fork/dependency verification on 2026-06-15:
@@ -2645,6 +2646,7 @@ Current good state:
 - Backend `.vaultcapsule` import quarantine exists with safe zip/path/checksum validation, quarantine file output, `capsule_imports` audit rows, and no canonical graph mutation.
 - Desktop Capsules has a compact Import action and quarantine inspection view.
 - Desktop Capsules shows recent import history and can reopen prior quarantine details from the list rail.
+- Invalid import details show validation errors and block Review handoff.
 - Quarantined imports can now create pending Review items for imported claims, notes, sources, concepts, and tools without mutating canonical graph objects.
 - Import review-item creation is idempotent: repeated runs skip already-created targets and keep the import in `review_ready`.
 - Desktop quarantine inspection now has a compact `Review items` handoff and `Open Review` action.
@@ -2689,8 +2691,7 @@ Remaining tasks:
 - Complete import merge workflow:
   - expand conflict-aware selective merge beyond the current Review-item preview into explicit side-by-side conflict comparison where imported and local content differ,
   - add richer merge decisions for evidence links, source blocks, graph edges, and capsule membership,
-  - add an explicit enable step for reviewed imported tools,
-  - add invalid-package UI states.
+  - add an explicit enable step for reviewed imported tools.
 - Generate/update OpenAPI contract after routes settle.
 
 Acceptance evidence:

@@ -7299,6 +7299,9 @@ function CapsuleImportDetail({ result, onClose }: { result: CapsuleImportResult;
   const actions = Array.isArray(mergePlan.actions) ? mergePlan.actions : [];
   const validation = result.validation_report ?? {};
   const checksumResults = Array.isArray(validation.checksum_results) ? validation.checksum_results : [];
+  const validationErrors = Array.isArray(validation.errors) ? validation.errors.map((item) => String(item)).filter(Boolean) : [];
+  const validationWarnings = Array.isArray(validation.warnings) ? validation.warnings : [];
+  const isInvalid = result.status === "invalid" || validation.status === "invalid";
   const createReviewItems = useMutation({
     mutationFn: () => vaultRequest<CapsuleImportReviewItemsResult>("capsules.import.reviewItems", { importId: result.import_id }),
     onSuccess: () => {
@@ -7315,7 +7318,7 @@ function CapsuleImportDetail({ result, onClose }: { result: CapsuleImportResult;
         eyebrow="quarantine"
         actions={
           <>
-            <Button icon={<Check size={15} />} variant="secondary" disabled={result.status === "invalid" || createReviewItems.isPending} onClick={() => createReviewItems.mutate()}>
+            <Button icon={<Check size={15} />} variant="secondary" disabled={isInvalid || createReviewItems.isPending} onClick={() => createReviewItems.mutate()}>
               {createReviewItems.isPending ? "Creating" : "Review items"}
             </Button>
             {reviewResult && (
@@ -7330,10 +7333,23 @@ function CapsuleImportDetail({ result, onClose }: { result: CapsuleImportResult;
         }
       />
       <div className="capsule-import-summary" aria-label="Capsule import quarantine">
-        <Badge tone={result.status === "quarantined" ? "warn" : "bad"}>{result.status}</Badge>
+        <Badge tone={isInvalid ? "bad" : result.status === "quarantined" ? "warn" : "good"}>{result.status}</Badge>
         <span title={result.source_file_path}>{middleTruncate(result.source_file_path, 64)}</span>
         <small title={result.quarantine_path}>{middleTruncate(result.quarantine_path, 64)}</small>
       </div>
+      {isInvalid && (
+        <section className="capsule-import-diagnostics" aria-label="Capsule import validation errors">
+          <div>
+            <Badge tone="bad">invalid</Badge>
+            <strong>Review blocked</strong>
+          </div>
+          {validationErrors.length === 0 ? (
+            <span>No validation details were reported.</span>
+          ) : (
+            validationErrors.map((error) => <span key={error}>{error}</span>)
+          )}
+        </section>
+      )}
       <div className="capsule-export-grid" aria-label="Imported capsule counts">
         <span><strong>{counts.claims ?? 0}</strong> claims</span>
         <span><strong>{counts.sources ?? 0}</strong> sources</span>
@@ -7354,6 +7370,13 @@ function CapsuleImportDetail({ result, onClose }: { result: CapsuleImportResult;
         <span>{String(validation.file_count ?? 0)} files</span>
         <span>{formatBytes(Number(validation.unpacked_bytes ?? 0))}</span>
       </div>
+      {validationWarnings.length > 0 && (
+        <div className="capsule-export-list" aria-label="Capsule import validation warnings">
+          {validationWarnings.map((warning: any, index: number) => (
+            <span key={warning?.code ?? index}>{typeof warning === "string" ? warning : warning.message}</span>
+          ))}
+        </div>
+      )}
       {reviewResult && (
         <div className="capsule-import-review-result" aria-label="Capsule import review items">
           <Badge tone="good">review</Badge>

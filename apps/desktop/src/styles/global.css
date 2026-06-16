@@ -1251,6 +1251,31 @@ textarea:not(.ui-textarea) {
   border-block: 1px solid var(--line);
 }
 
+.capsule-import-diagnostics {
+  display: grid;
+  gap: 8px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.capsule-import-diagnostics div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.capsule-import-diagnostics strong {
+  color: var(--foreground);
+  font-size: 13px;
+}
+
+.capsule-import-diagnostics span {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
 .capsule-import-review-result {
   display: flex;
   align-items: center;

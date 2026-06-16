@@ -1077,6 +1077,54 @@ describe("App", () => {
     expect(await screen.findByText("Approval creates a weakly supported local claim that still needs evidence review.")).toBeTruthy();
   });
 
+  it("shows invalid capsule import diagnostics without review handoff", async () => {
+    const invalidImport = {
+      import_id: "capimp_invalid",
+      status: "invalid",
+      source_file_path: "/tmp/broken.vaultcapsule",
+      quarantine_path: "/tmp/capsules/imports/capimp_invalid",
+      manifest: {},
+      validation_report: {
+        status: "invalid",
+        file_count: 2,
+        unpacked_bytes: 512,
+        checksum_results: [{ path: "manifest.json", status: "failed" }],
+        errors: ["Package is missing required files: manifest-sha256.txt.", "manifest-sha256.txt does not match manifest.json."],
+        warnings: []
+      },
+      merge_plan: {
+        status: "blocked",
+        capsule_name: null,
+        object_counts: {},
+        actions: []
+      },
+      warnings: [],
+      created_at: "2026-06-14T13:00:00Z"
+    };
+    window.vault = {
+      request: vi.fn(async (route: string) => {
+        if (route === "health.get") return { ok: true, version: "0.1.0", db_ready: true, workspace_id: "wrk_default" };
+        if (route === "jobs.list") return [];
+        if (route === "capsules.list") return { items: [], total: 0 };
+        if (route === "capsules.imports") return { items: [invalidImport], total: 1 };
+        if (route === "capsules.import.get") return invalidImport;
+        return [];
+      }),
+      selectFiles: vi.fn(async () => [])
+    };
+    renderApp();
+
+    fireEvent.click(await screen.findByRole("button", { name: "Capsules" }));
+    const historyButton = await screen.findByRole("button", { name: /Imported capsule/i });
+    fireEvent.click(historyButton);
+
+    const errors = await screen.findByLabelText("Capsule import validation errors");
+    expect(within(errors).getByText("Review blocked")).toBeTruthy();
+    expect(within(errors).getByText("Package is missing required files: manifest-sha256.txt.")).toBeTruthy();
+    expect(screen.getByRole("button", { name: /review items/i }).hasAttribute("disabled")).toBe(true);
+    expect(screen.queryByRole("button", { name: /open review/i })).toBeNull();
+  });
+
   it("adds the current note to a capsule from the note editor", async () => {
     const capsule = {
       id: "cap_fieldwork",
