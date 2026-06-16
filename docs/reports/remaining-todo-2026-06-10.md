@@ -295,6 +295,7 @@ Latest capsule import-merge preview verification on 2026-06-15:
 - Merge preview now includes changed-field comparisons for imported notes, sources, claims, concepts, and tools when a matching local object exists.
 - Review shows the compact conflict comparison only when imported and local fields differ.
 - Imported tools stay disabled after merge until the user explicitly enables the reviewed tool from Local tools.
+- Import Review now creates explicit review decisions for source blocks, evidence links, graph edges, and capsule membership records without mutating canonical rows.
 - The preview keeps quarantine-first behavior intact: imported objects still merge only through Review approval.
 - Focused backend capsule import/merge test: passed.
 - Focused desktop capsule import Review handoff test: passed.
@@ -2655,6 +2656,7 @@ Current good state:
 - Desktop Capsules shows recent import history and can reopen prior quarantine details from the list rail.
 - Invalid import details show validation errors and block Review handoff.
 - Quarantined imports can now create pending Review items for imported claims, notes, sources, concepts, and tools without mutating canonical graph objects.
+- Quarantined imports can also create Review decisions for source blocks, evidence links, graph edges, and capsule membership records.
 - Import review-item creation is idempotent: repeated runs skip already-created targets and keep the import in `review_ready`.
 - Desktop quarantine inspection now has a compact `Review items` handoff and `Open Review` action.
 - Review approval can now selectively merge individual imported notes, sources, claims, concepts, and tools.
@@ -2692,8 +2694,6 @@ Remaining tasks:
   - add learning-path controls only if they stay minimal.
 - Harden/export follow-ups:
   - add richer copyrighted-file and secret scanning.
-- Complete import merge workflow:
-  - add richer merge decisions for evidence links, source blocks, graph edges, and capsule membership.
 - Generate/update OpenAPI contract after routes settle.
 
 Acceptance evidence:

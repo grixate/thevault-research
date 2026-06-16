@@ -804,6 +804,7 @@ def test_capsules_reference_global_objects_and_snapshot_health(client):
     concept_id = "node_capsule_acoustics_concept"
     loose_learning_id = "learn_capsule_loose"
     with client.app.state.db.connect() as conn:
+        claim_node_id = conn.execute("SELECT node_id FROM claims WHERE id=?", (claim_id,)).fetchone()["node_id"]
         conn.execute(
             """
             INSERT INTO kg_nodes
@@ -826,6 +827,14 @@ def test_capsules_reference_global_objects_and_snapshot_health(client):
                 ts,
                 ts,
             ),
+        )
+        conn.execute(
+            """
+            INSERT INTO kg_edges
+              (id, workspace_id, from_node_id, to_node_id, edge_type, strength, provenance_json, status, created_at, updated_at)
+            VALUES ('edge_capsule_claim_concept', ?, ?, ?, 'mentions', 0.8, ?, 'active', ?, ?)
+            """,
+            (client.app.state.db.workspace_id, claim_node_id, concept_id, json.dumps({"source": "capsule_test"}), ts, ts),
         )
     concept_rows = client.get("/graph/nodes").json()
     assert [row["id"] for row in concept_rows] == [concept_id]
@@ -1045,6 +1054,12 @@ def test_capsules_reference_global_objects_and_snapshot_health(client):
     pending_reviews = client.get("/review/items").json()
     imported_reviews = [item for item in pending_reviews if item["item_type"].startswith("capsule_import_")]
     assert {item["item_type"] for item in imported_reviews} >= {"capsule_import_claim", "capsule_import_note", "capsule_import_source"}
+    assert {item["item_type"] for item in imported_reviews} >= {
+        "capsule_import_evidence_link",
+        "capsule_import_source_block",
+        "capsule_import_graph_edge",
+        "capsule_import_membership",
+    }
     assert all(item["payload"]["canonical_mutation"] == "none" for item in imported_reviews)
     counts_before_merge = {
         "notes": len(client.get("/notes").json()),
@@ -1054,6 +1069,8 @@ def test_capsules_reference_global_objects_and_snapshot_health(client):
     imported_note_review = next(item for item in imported_reviews if item["item_type"] == "capsule_import_note" and item["payload"]["import_target_id"] == note["id"])
     imported_source_review = next(item for item in imported_reviews if item["item_type"] == "capsule_import_source" and item["payload"]["import_target_id"] == imported["source"]["id"])
     imported_claim_review = next(item for item in imported_reviews if item["item_type"] == "capsule_import_claim" and item["payload"]["import_target_id"] == claim_id)
+    imported_evidence_review = next(item for item in imported_reviews if item["item_type"] == "capsule_import_evidence_link")
+    imported_membership_review = next(item for item in imported_reviews if item["item_type"] == "capsule_import_membership")
     assert imported_note_review["payload"]["merge_preview"]["action"] == "linked_existing"
     assert imported_note_review["payload"]["merge_preview"]["canonical_target_id"] == note["id"]
     assert "no duplicate" in imported_note_review["payload"]["merge_preview"]["summary"]
@@ -1081,6 +1098,18 @@ def test_capsules_reference_global_objects_and_snapshot_health(client):
     ).json()
     assert approved_import_claim["created"]["merge_action"] == "linked_existing"
     assert approved_import_claim["created"]["claim_id"] == claim_id
+    approved_import_evidence = client.post(
+        f"/review/items/{imported_evidence_review['id']}/approve",
+        json={"decision_note": "Record this imported evidence for later selective merge."},
+    ).json()
+    assert approved_import_evidence["created"]["merge_action"] == "recorded_for_followup"
+    assert approved_import_evidence["created"]["target_type"] == "evidence_link"
+    approved_import_membership = client.post(
+        f"/review/items/{imported_membership_review['id']}/approve",
+        json={"decision_note": "Record this imported capsule membership for later selective merge."},
+    ).json()
+    assert approved_import_membership["created"]["merge_action"] == "recorded_for_followup"
+    assert approved_import_membership["created"]["target_type"] == "capsule_membership"
     assert counts_before_merge == {
         "notes": len(client.get("/notes").json()),
         "sources": len(client.get("/sources").json()),
@@ -1088,7 +1117,7 @@ def test_capsules_reference_global_objects_and_snapshot_health(client):
     }
     import_after_merge = client.get(f"/capsules/imports/{imported_capsule['import_id']}").json()
     assert import_after_merge["status"] == "partially_applied"
-    assert import_after_merge["merge_plan"]["merged_item_count"] == 3
+    assert import_after_merge["merge_plan"]["merged_item_count"] == 5
     duplicate_review_result = client.post(f"/capsules/imports/{imported_capsule['import_id']}/review-items").json()
     assert duplicate_review_result["created_review_items"] == 0
     assert duplicate_review_result["skipped_duplicates"] >= review_result["created_review_items"]

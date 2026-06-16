@@ -1113,6 +1113,8 @@ def approve_capsule_import_review_item(
         created = merge_imported_kg_node(conn, db, import_id, original_id, record, ts)
     elif target_type == "tool":
         created = merge_imported_tool(conn, db, import_id, original_id, record, ts)
+    elif target_type in {"source_block", "evidence_link", "kg_edge", "capsule_membership"}:
+        created = merge_imported_reference_decision(target_type, original_id, record)
     else:
         raise HTTPException(422, f"Unsupported capsule import target type: {target_type}")
 
@@ -1305,6 +1307,15 @@ def merge_imported_tool(conn: sqlite3.Connection, db: VaultDatabase, import_id: 
     return {"target_type": "tool", "target_id": tool_id, "tool_id": tool_id, "status": "disabled", "merge_action": "created_disabled"}
 
 
+def merge_imported_reference_decision(target_type: str, original_id: str, record: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "target_type": target_type,
+        "target_id": original_id,
+        "import_record": record,
+        "merge_action": "recorded_for_followup",
+    }
+
+
 def local_row_by_original_id(conn: sqlite3.Connection, table: str, workspace_id: str, original_id: str) -> sqlite3.Row | None:
     if not original_id:
         return None
@@ -1479,9 +1490,12 @@ def build_capsule_import_merge_plan(manifest: dict[str, Any], validation: dict[s
     for key, label in (
         ("notes", "notes"),
         ("sources", "sources"),
+        ("source_blocks", "source blocks"),
         ("claims", "claims"),
         ("kg_nodes", "concepts"),
         ("evidence_links", "evidence links"),
+        ("graph_edges", "graph edges"),
+        ("items", "capsule memberships"),
         ("learning_items", "learning items"),
         ("tools", "tools"),
     ):
@@ -1511,10 +1525,14 @@ def write_import_quarantine_files(quarantine_dir: Path, manifest: dict[str, Any]
 def capsule_import_records_for_review(package_path: Path) -> dict[str, list[dict[str, Any]]]:
     with zipfile.ZipFile(package_path) as archive:
         return {
+            "items": read_zip_json(archive, "data/items.json", []),
             "claims": read_zip_jsonl(archive, "data/claims.jsonl"),
             "sources": read_zip_json(archive, "data/sources.json", []),
+            "source_blocks": read_zip_jsonl(archive, "data/source_blocks.jsonl"),
             "notes": read_zip_jsonl(archive, "data/notes.jsonl"),
             "kg_nodes": read_zip_jsonl(archive, "data/kg_nodes.jsonl"),
+            "evidence_links": read_zip_jsonl(archive, "data/evidence_links.jsonl"),
+            "graph_edges": read_zip_jsonl(archive, "data/graph_edges.jsonl"),
             "tools": read_zip_jsonl(archive, "data/tools.jsonl"),
         }
 
@@ -1619,6 +1637,68 @@ def capsule_import_review_proposals(import_id: str, manifest: dict[str, Any], re
                 f"{capsule_name}: tool is disabled until reviewed.",
                 body,
                 record,
+            )
+        )
+    for block in records.get("source_blocks", []):
+        block_id = str(block.get("id") or "")
+        body = str(block.get("text") or block.get("heading_path") or block_id)
+        proposals.append(
+            import_review_proposal(
+                import_id,
+                "capsule_import_source_block",
+                "source_block",
+                block_id,
+                f"Imported source block: {compact_text(body, 72)}",
+                f"{capsule_name}: source block requires review before merge.",
+                body,
+                block,
+            )
+        )
+    for evidence in records.get("evidence_links", []):
+        evidence_id = str(evidence.get("id") or "")
+        body = str(evidence.get("exact_quote") or evidence.get("claim_id") or evidence_id)
+        proposals.append(
+            import_review_proposal(
+                import_id,
+                "capsule_import_evidence_link",
+                "evidence_link",
+                evidence_id,
+                f"Imported evidence: {compact_text(body, 72)}",
+                f"{capsule_name}: evidence link requires review before merge.",
+                body,
+                evidence,
+            )
+        )
+    for edge in records.get("graph_edges", []):
+        edge_id = str(edge.get("id") or "")
+        edge_label = f"{edge.get('from_node_id', 'node')} {edge.get('edge_type', 'relates')} {edge.get('to_node_id', 'node')}"
+        proposals.append(
+            import_review_proposal(
+                import_id,
+                "capsule_import_graph_edge",
+                "kg_edge",
+                edge_id,
+                f"Imported graph edge: {compact_text(edge_label, 72)}",
+                f"{capsule_name}: graph edge requires review before merge.",
+                edge_label,
+                edge,
+            )
+        )
+    for item in records.get("items", []):
+        membership_id = str(item.get("id") or "")
+        target_type = str(item.get("target_type") or "item")
+        target_id = str(item.get("target_id") or "")
+        body = f"{target_type} · {target_id} · {item.get('role', 'reference')}"
+        proposals.append(
+            import_review_proposal(
+                import_id,
+                "capsule_import_membership",
+                "capsule_membership",
+                membership_id or f"{target_type}:{target_id}",
+                f"Imported capsule membership: {target_type.replace('_', ' ')}",
+                f"{capsule_name}: capsule membership requires review before merge.",
+                body,
+                item,
             )
         )
     return [proposal for proposal in proposals if proposal["payload"]["import_target_id"]]
@@ -1774,6 +1854,8 @@ def capsule_import_target_table(target_type: str) -> str | None:
 
 
 def capsule_import_create_action(target_type: str) -> str:
+    if target_type in {"source_block", "evidence_link", "kg_edge", "capsule_membership"}:
+        return "recorded_for_followup"
     if target_type == "tool":
         return "created_disabled"
     return "created"
@@ -1785,6 +1867,8 @@ def capsule_import_merge_preview_summary(target_type: str, action: str) -> str:
         return f"Approval links this import to the existing local {label}; no duplicate object is created."
     if action == "created_disabled":
         return "Approval creates a disabled local tool. It cannot run until explicitly enabled after review."
+    if action == "recorded_for_followup":
+        return "Approval records this imported relationship for a later selective merge step."
     if target_type == "claim":
         return "Approval creates a weakly supported local claim that still needs evidence review."
     return f"Approval creates a new local {label} from this quarantined import."
