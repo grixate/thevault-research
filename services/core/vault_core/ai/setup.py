@@ -67,7 +67,8 @@ def ai_setup_status(db: VaultDatabase, settings: Settings) -> AISetupStatusRespo
 
 def _recommended_production_pack(packs: list[AIModelPackInfo], profile: str) -> AIModelPackInfo | None:
     production_packs = [pack for pack in packs if pack.release_channel == "production"]
-    return next((pack for pack in production_packs if pack.profile == profile), None) or next(iter(production_packs), None)
+    starter = next((pack for pack in production_packs if pack.id == "starter-local-pack"), None)
+    return starter or next((pack for pack in production_packs if pack.profile == profile), None) or next(iter(production_packs), None)
 
 
 def _privacy_blockers(capabilities: list[Any]) -> list[str]:

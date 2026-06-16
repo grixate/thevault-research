@@ -4,7 +4,7 @@
   "registries": {
     "model_registry": {
       "path": "model_registry.json",
-      "sha256": "0774cee8305b03fa7fe0fbc6030f627ee532d6ffacc344561991b8c901130aee"
+      "sha256": "d3872249454756e1370b6f119ddf0b59ca5bd98c703bfc4f6c6adf89f09acad2"
     },
     "runtime_registry": {
       "path": "runtime_registry.json",

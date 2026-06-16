@@ -1998,7 +1998,14 @@ function LocalAICommandCenter({
     primaryAction = onEvaluateCandidate;
   } else if (productionPack?.installable || setup?.recommended_pack_id) {
     primaryActionKey = "recommended";
-    primaryActionLabel = productionPack?.installable ? "Use recommended pack" : "Review setup";
+    primaryActionLabel =
+      productionPack?.id === "starter-local-pack"
+        ? productionPack.installable
+          ? "Install Starter"
+          : "Review Starter"
+        : productionPack?.installable
+          ? "Use recommended pack"
+          : "Review setup";
     primaryActionIcon = <Sparkles size={14} />;
     primaryActionDisabled = busy || (!productionPack && !setup?.recommended_pack_id);
     primaryActionVariant = productionPack?.installable ? "primary" : "secondary";
@@ -9868,7 +9875,7 @@ function SettingsView() {
                 <Badge tone="good">Runs on this device</Badge>
                 <h3>Models for notes, search, and voice</h3>
                 <p>
-                  Start with the tiny local starter path while approved production packs and runtimes move through review.
+                  Start with one recommended local pack. Advanced model choices stay available when you need them.
                 </p>
               </div>
               <div className="hardware-card">
@@ -10120,7 +10127,7 @@ function SettingsView() {
                   </div>
                   <div className="model-pack-grid" aria-label="Production local model packs">
                     {productionPacks.map((pack) => {
-                      const recommended = pack.profile === hardware.data?.recommended_profile;
+                      const recommended = pack.id === recommendedProductionPack?.id;
                       const downloadableCount = pack.downloadable_model_ids.length;
                       const optionalDownloadableCount = pack.downloadable_model_ids.filter((modelId) => pack.optional_model_ids.includes(modelId)).length;
                       return (
@@ -10131,7 +10138,7 @@ function SettingsView() {
                               {packStatusLabel(pack.release_status)}
                             </Badge>
                             <Badge tone="good">{pack.privacy_label}</Badge>
-                            {recommended && <Badge tone="info">Suggested</Badge>}
+                            {recommended && <Badge tone="info">Recommended</Badge>}
                           </div>
                           <h4>{pack.display_name}</h4>
                           <p>{pack.description}</p>

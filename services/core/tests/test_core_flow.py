@@ -2335,8 +2335,17 @@ def test_ai_registry_hardware_and_voice_mock_contracts(client):
     assert production_pack["release_status"] == "blocked"
     assert production_pack["installable"] is False
     assert any("Missing release-ready downloads" in reason for reason in production_pack["blocked_reasons"])
+    starter_pack = next(pack for pack in client.get("/ai/model-packs").json() if pack["id"] == "starter-local-pack")
     standard_pack = next(pack for pack in client.get("/ai/model-packs").json() if pack["id"] == "standard-local-pack")
     strong_pack = next(pack for pack in client.get("/ai/model-packs").json() if pack["id"] == "strong-local-pack")
+    assert starter_pack["display_name"] == "Recommended Starter Pack"
+    assert starter_pack["profile"] == "standard"
+    assert starter_pack["release_channel"] == "production"
+    assert starter_pack["release_status"] == "blocked"
+    assert starter_pack["installable"] is False
+    assert "grounded_answer" in starter_pack["capabilities"]
+    assert "standard-gguf-placeholder" in starter_pack["required_model_ids"]
+    assert "balanced-embedding-placeholder" in starter_pack["required_model_ids"]
     assert production_pack["optional_model_ids"] == ["tiny-reranker-placeholder"]
     assert standard_pack["optional_model_ids"] == ["balanced-reranker-placeholder"]
     assert strong_pack["optional_model_ids"] == ["balanced-reranker-placeholder"]
@@ -2390,7 +2399,7 @@ def test_ai_registry_hardware_and_voice_mock_contracts(client):
     assert runtime["llama_cpp"]["cli"]["configured"] is False
     setup = client.get("/ai/setup/status").json()
     assert setup["mode"] == "local_only"
-    assert setup["recommended_pack_id"] in {"tiny-production-pack", "standard-local-pack", "strong-local-pack"}
+    assert setup["recommended_pack_id"] == "starter-local-pack"
     assert setup["demo_pack_id"] == "tiny-local-pack"
     assert setup["overall_status"] == "not_started"
     assert setup["can_use_demo"] is True
@@ -2405,7 +2414,7 @@ def test_ai_registry_hardware_and_voice_mock_contracts(client):
     assert readiness["production_ready"] is False
     assert readiness["demo_available"] is True
     assert readiness["recommended_pack_id"] == setup["recommended_pack_id"]
-    assert readiness["summary"]["production_pack_count"] == 3
+    assert readiness["summary"]["production_pack_count"] == 4
     assert readiness["summary"]["production_runtime_count"] == 3
     assert readiness["summary"]["blocked_count"] > 0
     sections = {section["id"]: section for section in readiness["sections"]}
@@ -2447,7 +2456,7 @@ def test_ai_registry_hardware_and_voice_mock_contracts(client):
     validation = client.get("/ai/registry/validation").json()
     assert validation["status"] == "pass"
     assert validation["summary"]["model_count"] == 17
-    assert validation["summary"]["model_pack_count"] == 4
+    assert validation["summary"]["model_pack_count"] == 5
     assert validation["summary"]["runtime_count"] == 4
     assert validation["summary"]["error_count"] == 0
     assert validation["summary"]["warning_count"] > 0
@@ -2458,7 +2467,7 @@ def test_ai_registry_hardware_and_voice_mock_contracts(client):
     assert release_plan["status"] == "blocked"
     assert release_plan["summary"]["ready_to_pin"] is False
     assert release_plan["summary"]["validation_warning_count"] == validation["summary"]["warning_count"]
-    assert release_plan["summary"]["production_pack_count"] == 3
+    assert release_plan["summary"]["production_pack_count"] == 4
     assert release_plan["summary"]["production_model_count"] == 10
     assert release_plan["summary"]["production_runtime_count"] == 3
     assert any(action.startswith("Resolve registry warnings") for action in release_plan["next_actions"])
@@ -2647,7 +2656,7 @@ def test_ai_readiness_cli_blocks_strict_production_until_real_artifacts(tmp_path
     assert report["status"] == "blocked"
     assert report["production_ready"] is False
     assert report["demo_available"] is True
-    assert report["summary"]["production_pack_count"] == 3
+    assert report["summary"]["production_pack_count"] == 4
     assert report["summary"]["production_runtime_count"] == 3
     assert report["summary"]["blocked_count"] > 0
 
@@ -3155,7 +3164,7 @@ def test_ai_registry_release_plan_cli_blocks_current_placeholders():
     assert plan["summary"]["ready_to_pin"] is False
     assert plan["validation"]["status"] == "pass"
     assert plan["summary"]["validation_warning_count"] > 0
-    assert plan["summary"]["production_pack_count"] == 3
+    assert plan["summary"]["production_pack_count"] == 4
     assert plan["summary"]["production_model_count"] == 10
     assert plan["summary"]["production_runtime_count"] == 3
     assert [stage["id"] for stage in plan["promotion_stages"]] == [
@@ -5428,7 +5437,7 @@ def test_model_pack_download_queues_release_ready_small_models(client):
 
 def test_ai_setup_run_installs_demo_assets_and_safely_activates_routes(client):
     production = client.post("/ai/setup/run", json={"mode": "recommended"}).json()
-    assert production["pack_id"] in {"tiny-production-pack", "standard-local-pack", "strong-local-pack"}
+    assert production["pack_id"] == "starter-local-pack"
     assert production["release_channel"] == "production"
     assert production["status"] == "blocked"
     assert production["selected_capabilities"] == []

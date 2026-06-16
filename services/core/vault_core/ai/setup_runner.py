@@ -123,7 +123,11 @@ def _resolve_pack(req: AISetupRunRequest, packs: list[AIModelPackInfo]) -> AIMod
         return pack
     setup_profile = hardware_profile().recommended_profile
     production = [item for item in packs if item.release_channel == "production"]
-    pack = next((item for item in production if item.profile == setup_profile), None) or next(iter(production), None)
+    pack = (
+        next((item for item in production if item.id == "starter-local-pack"), None)
+        or next((item for item in production if item.profile == setup_profile), None)
+        or next(iter(production), None)
+    )
     if not pack:
         raise ValueError("No production model pack is registered.")
     return pack

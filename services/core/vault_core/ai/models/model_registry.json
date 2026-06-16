@@ -26,6 +26,48 @@
       ]
     },
     {
+      "id": "starter-local-pack",
+      "display_name": "Recommended Starter Pack",
+      "profile": "standard",
+      "release_channel": "production",
+      "description": "Best first install. Runs locally and enables search, extraction, note drafting, and grounded answers after approved model files, runtimes, checksums, and licenses are pinned.",
+      "privacy_label": "Runs on this device",
+      "starter_variants": {
+        "tiny": {
+          "description": "Low-memory starter variant with shorter drafts and optional voice skipped if needed.",
+          "base_pack_id": "tiny-production-pack"
+        },
+        "standard": {
+          "description": "Default starter variant for modern laptops.",
+          "base_pack_id": "standard-local-pack"
+        },
+        "strong": {
+          "description": "Workstation starter variant with longer local synthesis limits.",
+          "base_pack_id": "strong-local-pack"
+        }
+      },
+      "required_model_ids": [
+        "standard-gguf-placeholder",
+        "balanced-embedding-placeholder",
+        "standard-whisper-placeholder",
+        "tiny-piper-placeholder"
+      ],
+      "optional_model_ids": [
+        "balanced-reranker-placeholder"
+      ],
+      "capabilities": [
+        "extract_objects",
+        "extract_claims",
+        "summarize",
+        "generate_note",
+        "grounded_answer",
+        "create_learning_item",
+        "embed_text",
+        "transcribe_audio",
+        "synthesize_speech"
+      ]
+    },
+    {
       "id": "tiny-production-pack",
       "display_name": "Tiny Production Local Pack",
       "profile": "tiny",

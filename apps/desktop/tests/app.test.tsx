@@ -4111,7 +4111,7 @@ describe("App", () => {
     expect(productionPack).toBeTruthy();
     expect(within(productionPack as HTMLElement).getAllByText("Needs approval").length).toBeGreaterThan(0);
     expect(within(productionPack as HTMLElement).getAllByText("Needs action").length).toBeGreaterThan(0);
-    expect(within(productionPack as HTMLElement).getByText("Suggested")).toBeTruthy();
+    expect(within(productionPack as HTMLElement).getByText("Recommended")).toBeTruthy();
     expect(within(productionPack as HTMLElement).getAllByText(/Missing approved downloads/i).length).toBeGreaterThan(0);
     expect(within(productionPack as HTMLElement).getByText("Tiny GGUF Local Model / Checksum")).toBeTruthy();
     expect(within(productionPack as HTMLElement).getByText("0/1 models ready")).toBeTruthy();

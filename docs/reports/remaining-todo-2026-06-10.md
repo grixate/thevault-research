@@ -192,6 +192,18 @@ Latest local-AI production candidate verification on 2026-06-12:
 - Adjacent release/readiness tests: 20 passed.
 - Python lint: passed.
 
+Latest Easy Starter Pack registry verification on 2026-06-16:
+
+- Added proposed source spec `docs/specs/research_lab_easy_starter_pack_spec.md`.
+- Added `starter-local-pack` to the bundled model registry as `Recommended Starter Pack`.
+- Setup status and recommended setup runs now select `starter-local-pack` before hardware-profile packs.
+- The Starter Pack uses the standard production target model set for now, remains blocked, and does not bypass source/checksum/license/runtime approval gates.
+- Settings copy now frames setup as one recommended local pack with advanced model choices still available.
+- Strict production remains blocked until approved model/runtime artifacts and evidence are pinned.
+- Focused backend starter/readiness tests: passed.
+- Focused desktop Settings model-pack test: passed.
+- Registry validation, Python lint, and desktop production build: passed.
+
 Latest capsule alpha verification on 2026-06-14:
 
 - Added capsule schema foundations in the existing SQLite bootstrap style: `capsules`, `capsule_items`, `capsule_versions`, `capsule_dependencies`, `capsule_health_snapshots`, `capsule_exports`, `capsule_imports`, and `capsule_changelog`.
@@ -2189,7 +2201,7 @@ The biggest remaining production gap is release-approved local AI content and ru
 
 Missing:
 
-- Approved Tiny, Standard, and Strong production model packs.
+- Approved Recommended Starter, Tiny, Standard, and Strong production model packs.
 - Approved production llama.cpp, whisper.cpp, and Piper managed runtime manifests.
 - Approved production embedding and reranker model artifacts.
 - Approved production STT/TTS model artifacts.
@@ -2204,6 +2216,8 @@ Goal: users can install real local model packs without understanding GGUF files,
 Current good state:
 
 - A candidate shortlist exists at `services/core/vault_core/ai/models/candidate_shortlist.json`.
+- The proposed Easy Starter Pack spec is now tracked at `docs/specs/research_lab_easy_starter_pack_spec.md`.
+- `starter-local-pack` is registered as the first-class Recommended Starter Pack and is selected by default by setup/readiness. It remains blocked by the same strict production approval gates as the other packs.
 - The shortlist covers all current production model slots:
   - Tiny, Standard, and Strong GGUF LLM placeholders.
   - Tiny and balanced embedding placeholders.
@@ -2260,7 +2274,7 @@ Acceptance evidence:
 - Byte verification passes.
 - Evidence overlay produces patched model/runtime registries.
 - `pin_ai_registries.sh --check` passes for candidate files.
-- Production pack readiness moves from `0/3` toward `3/3`.
+- Production pack readiness moves from `0/4` toward `4/4`.
 
 ## Workstream 2 - Production Managed Runtimes
 
