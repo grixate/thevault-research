@@ -7351,19 +7351,20 @@ function CapsuleImportDetail({ result, onClose }: { result: CapsuleImportResult;
         title={capsule.name ?? "Imported capsule"}
         eyebrow="quarantine"
         actions={
-          <>
-            <Button icon={<Check size={15} />} variant="secondary" disabled={isInvalid || createReviewItems.isPending} onClick={() => createReviewItems.mutate()}>
-              {createReviewItems.isPending ? "Creating" : "Review items"}
-            </Button>
-            {reviewResult && (
-              <Button icon={<Link2 size={15} />} variant="quiet" onClick={() => setSurface("review")}>
-                Open Review
-              </Button>
-            )}
-            <Button icon={<X size={15} />} variant="quiet" onClick={onClose}>
-              Close
-            </Button>
-          </>
+          <TooltipProvider delayDuration={250}>
+            <div className="capsule-header-actions" aria-label="Capsule import actions">
+              {reviewResult ? (
+                <Button icon={<Link2 size={15} />} variant="secondary" onClick={() => setSurface("review")}>
+                  Open Review
+                </Button>
+              ) : (
+                <Button icon={<Check size={15} />} variant="secondary" disabled={isInvalid || createReviewItems.isPending} onClick={() => createReviewItems.mutate()}>
+                  {createReviewItems.isPending ? "Creating" : "Review items"}
+                </Button>
+              )}
+              <CapsuleHeaderAction label="Close import" icon={<X size={15} />} onClick={onClose} />
+            </div>
+          </TooltipProvider>
         }
       />
       <div className="capsule-import-summary" aria-label="Capsule import quarantine">

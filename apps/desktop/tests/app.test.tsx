@@ -1105,13 +1105,14 @@ describe("App", () => {
     expect(await screen.findByText("quarantined")).toBeTruthy();
     expect(await screen.findByText("Claims")).toBeTruthy();
     expect(await screen.findByText("1 · Create Review Items")).toBeTruthy();
-    fireEvent.click(screen.getByRole("button", { name: "Close" }));
+    fireEvent.click(screen.getByRole("button", { name: "Close import" }));
     fireEvent.click(within(history).getByRole("button", { name: /Acoustic Science Foundations/i }));
     await waitFor(() => expect(window.vault.request).toHaveBeenCalledWith("capsules.import.get", { importId: "capimp_test" }));
     expect(await screen.findByLabelText("Capsule import quarantine")).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: /review items/i }));
     expect(await screen.findByLabelText("Capsule import review items")).toBeTruthy();
     expect(await screen.findByText("2 created")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: /review items/i })).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: /open review/i }));
     await waitFor(() => expect(useUIStore.getState().surface).toBe("review"));
     expect(await screen.findByLabelText("Capsule import merge preview")).toBeTruthy();
