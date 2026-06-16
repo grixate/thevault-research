@@ -309,6 +309,15 @@ Latest capsule UI polish verification on 2026-06-16:
 - Focused desktop capsule test path: passed.
 - Desktop production build: passed.
 
+Latest capsule export safety verification on 2026-06-16:
+
+- Capsule export privacy reports now include a redacted alpha safety scan for API-key-like strings, `.env` references, common token prefixes, emails, phone-like strings, client/patient context markers, and copyright/license source findings.
+- Secret-like findings block capsule export preview/export instead of leaking the matched value into the privacy report.
+- Personal-data findings block non-private exports and warn in `private_full`; copyright/license source findings warn except for stricter public export.
+- `private_full` scans packaged source blob bytes as well as exported records, so raw source files are not skipped by the scanner.
+- Focused backend capsule export safety tests: passed.
+- Python syntax check and diff whitespace check: passed.
+
 Latest native Tasks verification on 2026-06-16:
 
 - Added proposed source spec `docs/specs/research_lab_native_todos_spec.md`.
@@ -2659,6 +2668,7 @@ Current good state:
   - evidence auto-include toggle for claims,
   - manual snapshot action.
 - Backend capsule export preview and package creation exist for reference-only, sanitized, private-full, learning, tool, and public modes, including optional export from a saved capsule version and internal private-full source blob files.
+- Capsule export privacy reports include alpha safety scanning for secret-looking strings, PII/client/patient signals, copyright/license source findings, and `private_full` source blob bytes. Findings are redacted in reports.
 - Desktop capsule detail has a compact Export dialog with preview, package creation, saved-version selection, and recent export history.
 - Backend `.vaultcapsule` import quarantine exists with safe zip/path/checksum validation, quarantine file output, `capsule_imports` audit rows, and no canonical graph mutation.
 - Desktop Capsules has a compact Import action and quarantine inspection view.
@@ -2702,7 +2712,7 @@ Remaining tasks:
   - add richer quiz scoring/review UX,
   - add learning-path controls only if they stay minimal.
 - Harden/export follow-ups:
-  - add richer copyrighted-file and secret scanning.
+  - tune scanner false positives and add a deliberate review/override flow only if product testing shows it is needed.
 - Generate/update OpenAPI contract after routes settle.
 
 Acceptance evidence:

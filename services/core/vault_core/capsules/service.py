@@ -39,6 +39,20 @@ TARGET_TABLES = {
     "learning_item": ("learning_items", "id", "title", "workspace_id"),
     "tool": ("tool_registry", "id", "name", "workspace_id"),
 }
+SECRET_SCAN_PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (
+    ("api_key_assignment", re.compile(r"(?i)\b(?:api[_-]?key|secret|token|password|client_secret|access[_-]?key|private[_-]?key)\b\s*[:=]\s*[\"']?[A-Za-z0-9_./+=:-]{8,}")),
+    ("openai_key", re.compile(r"\bsk-[A-Za-z0-9][A-Za-z0-9_-]{18,}\b")),
+    ("github_token", re.compile(r"\b(?:ghp|gho|ghu|ghs|ghr|github_pat)_[A-Za-z0-9_]{20,}\b")),
+    ("huggingface_token", re.compile(r"\bhf_[A-Za-z0-9]{20,}\b")),
+    ("aws_access_key", re.compile(r"\bAKIA[0-9A-Z]{16}\b")),
+)
+EMAIL_SCAN_PATTERN = re.compile(r"(?i)\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b")
+PHONE_SCAN_PATTERN = re.compile(r"(?<![\w-])(?:\+?\d{1,3}[\s.-]?)?(?:\(?\d{3}\)?[\s.-]\d{3}[\s.-]\d{4})(?![\w-])")
+PRIVATE_CONTEXT_PATTERN = re.compile(r"(?i)\b(?:client|patient|case|medical|diagnosis|confidential)\s*(?:id|name|record|data|note)?\s*[:#]")
+COPYRIGHT_CONTEXT_PATTERN = re.compile(r"(?i)\b(?:all rights reserved|copyright|proprietary|licensed content|license restricted|no redistribution|do not redistribute)\b")
+LICENSE_METADATA_KEYS = {"license", "license_label", "license_url", "license_path", "rights", "usage_rights", "copyright_status"}
+MAX_CAPSULE_SCAN_TEXT_CHARS = 20000
+MAX_CAPSULE_SCAN_FINDINGS = 25
 
 
 def list_capsules(
@@ -1918,7 +1932,7 @@ def build_capsule_export_payload(conn: sqlite3.Connection, workspace_id: str, ca
     else:
         items = list_capsule_items_for_conn(conn, workspace_id, capsule_id, limit=10000)
     records, source_blob_files = collect_capsule_export_records(conn, workspace_id, capsule_id, items, export_mode)
-    privacy_report = capsule_export_privacy_report(conn, capsule_id, export_mode, items, records, health)
+    privacy_report = capsule_export_privacy_report(conn, capsule_id, export_mode, items, records, health, source_blob_files)
     object_counts = {key: len(value) for key, value in records.items()}
     manifest = {
         "schema_version": 1,
@@ -2072,6 +2086,7 @@ def capsule_export_privacy_report(
     items: list[dict[str, Any]],
     records: dict[str, list[dict[str, Any]]],
     health: dict[str, Any],
+    source_blob_files: dict[str, bytes] | None = None,
 ) -> dict[str, Any]:
     private_items = [item for item in items if bool(item.get("private_flag"))]
     full_source_items = [item for item in items if item.get("export_policy") == "full_sources_private"]
@@ -2082,6 +2097,10 @@ def capsule_export_privacy_report(
     ]
     unsupported_claims = [claim for claim in records.get("claims", []) if claim.get("evidence_strength", 0) <= 0 or claim.get("status") in {"needs_review", "weakly_supported"}]
     exact_quote_count = sum(1 for link in records.get("evidence_links", []) if link.get("exact_quote")) + sum(1 for block in records.get("source_blocks", []) if block.get("text"))
+    scan_report = capsule_export_safety_scan(records, export_mode, source_blob_files or {})
+    secret_findings = scan_report["possible_secrets"]
+    pii_findings = scan_report["pii_signals"]
+    copyright_findings = scan_report["copyrighted_sources"]
     warnings: list[dict[str, Any]] = []
     blockers: list[dict[str, Any]] = []
     if private_items:
@@ -2093,6 +2112,14 @@ def capsule_export_privacy_report(
         warnings.append({"code": "disabled_tools", "count": len(disabled_tools), "message": f"{len(disabled_tools)} tools are disabled or not installed."})
     if unsupported_claims:
         warnings.append({"code": "unsupported_claims", "count": len(unsupported_claims), "message": f"{len(unsupported_claims)} claims need stronger evidence."})
+    if secret_findings:
+        blockers.append({"code": "possible_secrets", "count": len(secret_findings), "message": f"{len(secret_findings)} secret-looking strings were detected before export."})
+    if pii_findings:
+        target = {"code": "personal_data_signals", "count": len(pii_findings), "message": f"{len(pii_findings)} email, phone, client, or patient signals were detected."}
+        (warnings if export_mode == "private_full" else blockers).append(target)
+    if copyright_findings:
+        target = {"code": "copyrighted_sources", "count": len(copyright_findings), "message": f"{len(copyright_findings)} source copyright/license findings need review."}
+        (blockers if export_mode == "public" else warnings).append(target)
     return {
         "status": "blocked" if blockers else "ready",
         "export_mode": export_mode,
@@ -2100,13 +2127,111 @@ def capsule_export_privacy_report(
         "full_source_private_count": len(full_source_items),
         "disabled_tool_count": len(disabled_tools),
         "unsupported_claim_count": len(unsupported_claims),
+        "possible_secret_count": len(secret_findings),
+        "pii_signal_count": len(pii_findings),
+        "copyrighted_source_count": len(copyright_findings),
         "exact_quote_count": exact_quote_count,
         "estimated_record_count": sum(len(value) for value in records.values()),
         "health_status": health.get("status"),
         "checksum_status": "ready",
+        "scan_report": scan_report,
         "warnings": warnings,
         "blockers": blockers,
     }
+
+
+def capsule_export_safety_scan(records: dict[str, list[dict[str, Any]]], export_mode: str, source_blob_files: dict[str, bytes]) -> dict[str, Any]:
+    secret_findings: list[dict[str, Any]] = []
+    pii_findings: list[dict[str, Any]] = []
+    copyright_findings = capsule_export_copyright_findings(records, export_mode)
+    for target_type, rows in records.items():
+        if target_type == "source_blobs":
+            continue
+        for row in rows:
+            if len(secret_findings) >= MAX_CAPSULE_SCAN_FINDINGS and len(pii_findings) >= MAX_CAPSULE_SCAN_FINDINGS:
+                break
+            target_id = str(row.get("id") or row.get("target_id") or row.get("source_id") or "")
+            for field, text in capsule_scan_text_fields(target_type, row):
+                if len(secret_findings) < MAX_CAPSULE_SCAN_FINDINGS:
+                    secret_findings.extend(capsule_secret_findings(target_type, target_id, field, text, MAX_CAPSULE_SCAN_FINDINGS - len(secret_findings)))
+                if len(pii_findings) < MAX_CAPSULE_SCAN_FINDINGS:
+                    pii_findings.extend(capsule_pii_findings(target_type, target_id, field, text, MAX_CAPSULE_SCAN_FINDINGS - len(pii_findings)))
+    for package_path, content in source_blob_files.items():
+        if len(secret_findings) >= MAX_CAPSULE_SCAN_FINDINGS and len(pii_findings) >= MAX_CAPSULE_SCAN_FINDINGS:
+            break
+        text = content[:MAX_CAPSULE_SCAN_TEXT_CHARS].decode("utf-8", errors="ignore")
+        target_id = package_path.rsplit("/", 1)[-1]
+        if len(secret_findings) < MAX_CAPSULE_SCAN_FINDINGS:
+            secret_findings.extend(capsule_secret_findings("source_blob", target_id, "content", text, MAX_CAPSULE_SCAN_FINDINGS - len(secret_findings)))
+        if len(pii_findings) < MAX_CAPSULE_SCAN_FINDINGS:
+            pii_findings.extend(capsule_pii_findings("source_blob", target_id, "content", text, MAX_CAPSULE_SCAN_FINDINGS - len(pii_findings)))
+    return {
+        "possible_secrets": secret_findings,
+        "pii_signals": pii_findings,
+        "copyrighted_sources": copyright_findings[:MAX_CAPSULE_SCAN_FINDINGS],
+        "limits": {"max_text_chars_per_field": MAX_CAPSULE_SCAN_TEXT_CHARS, "max_findings_per_kind": MAX_CAPSULE_SCAN_FINDINGS},
+    }
+
+
+def capsule_scan_text_fields(target_type: str, row: dict[str, Any]) -> list[tuple[str, str]]:
+    fields: list[tuple[str, str]] = []
+    for key in ("title", "text", "content_markdown", "exact_quote", "normalized_text", "uri", "locator", "filename", "package_path", "type"):
+        value = row.get(key)
+        if isinstance(value, str) and value.strip():
+            fields.append((key, value[:MAX_CAPSULE_SCAN_TEXT_CHARS]))
+    for key in ("content", "metadata", "body", "manifest"):
+        value = row.get(key)
+        if value not in (None, "", {}, []):
+            fields.append((key, json.dumps(value, ensure_ascii=False, sort_keys=True)[:MAX_CAPSULE_SCAN_TEXT_CHARS]))
+    if target_type == "source" and capsule_path_looks_env(row.get("title")):
+        fields.append(("title", str(row.get("title"))))
+    return fields
+
+
+def capsule_secret_findings(target_type: str, target_id: str, field: str, text: str, limit: int) -> list[dict[str, Any]]:
+    findings: list[dict[str, Any]] = []
+    if capsule_path_looks_env(text):
+        findings.append(capsule_scan_finding("env_file_reference", target_type, target_id, field))
+    for code, pattern in SECRET_SCAN_PATTERNS:
+        if len(findings) >= limit:
+            break
+        if pattern.search(text):
+            findings.append(capsule_scan_finding(code, target_type, target_id, field))
+    return findings[:limit]
+
+
+def capsule_pii_findings(target_type: str, target_id: str, field: str, text: str, limit: int) -> list[dict[str, Any]]:
+    findings: list[dict[str, Any]] = []
+    for code, pattern in (("email", EMAIL_SCAN_PATTERN), ("phone", PHONE_SCAN_PATTERN), ("private_context", PRIVATE_CONTEXT_PATTERN)):
+        if len(findings) >= limit:
+            break
+        if pattern.search(text):
+            findings.append(capsule_scan_finding(code, target_type, target_id, field))
+    return findings[:limit]
+
+
+def capsule_scan_finding(code: str, target_type: str, target_id: str, field: str) -> dict[str, str]:
+    return {"code": code, "target_type": target_type, "target_id": target_id, "field": field, "sample": "[redacted]"}
+
+
+def capsule_export_copyright_findings(records: dict[str, list[dict[str, Any]]], export_mode: str) -> list[dict[str, Any]]:
+    findings: list[dict[str, Any]] = []
+    for source in records.get("sources", []):
+        source_id = str(source.get("id") or "")
+        metadata = source.get("metadata") if isinstance(source.get("metadata"), dict) else {}
+        blob_refs = source.get("blob_refs") if isinstance(source.get("blob_refs"), list) else []
+        metadata_text = json.dumps(metadata, ensure_ascii=False, sort_keys=True)
+        title_text = str(source.get("title") or "")
+        if COPYRIGHT_CONTEXT_PATTERN.search(metadata_text) or COPYRIGHT_CONTEXT_PATTERN.search(title_text):
+            findings.append({"code": "copyright_restricted_source", "target_type": "source", "target_id": source_id, "field": "metadata", "sample": "[redacted]"})
+        if export_mode == "private_full" and blob_refs and not any(str(metadata.get(key) or "").strip() for key in LICENSE_METADATA_KEYS):
+            findings.append({"code": "full_source_license_unreviewed", "target_type": "source", "target_id": source_id, "field": "metadata", "sample": "[redacted]"})
+    return findings
+
+
+def capsule_path_looks_env(value: Any) -> bool:
+    text = str(value or "").lower()
+    return bool(re.search(r"(^|[/\\])\.env(?:[.\w-]*)?$", text))
 
 
 def write_capsule_export_zip(output_path: Path, package: dict[str, Any]) -> dict[str, str]:

@@ -737,7 +737,12 @@ def test_capsule_private_full_export_includes_source_blobs(client, tmp_path):
     source_path.write_text("# Private source\n\nFull source payload for capsule export.", encoding="utf-8")
     imported = client.post(
         "/sources/import-file",
-        json={"file_path": str(source_path), "title": "Private Source", "type": "markdown"},
+        json={
+            "file_path": str(source_path),
+            "title": "Private Source",
+            "type": "markdown",
+            "metadata": {"rights": "Copyright all rights reserved"},
+        },
     ).json()
     capsule = client.post(
         "/capsules",
@@ -764,6 +769,8 @@ def test_capsule_private_full_export_includes_source_blobs(client, tmp_path):
     private_preview = client.post(f"/capsules/{capsule['id']}/export/preview", json={"export_mode": "private_full"}).json()
     assert private_preview["status"] == "ready"
     assert private_preview["manifest"]["object_counts"]["source_blobs"] >= 2
+    assert private_preview["privacy_report"]["copyrighted_source_count"] >= 1
+    assert {item["code"] for item in private_preview["privacy_report"]["warnings"]} >= {"copyrighted_sources"}
 
     exported = client.post(f"/capsules/{capsule['id']}/export", json={"export_mode": "private_full"}).json()
     with zipfile.ZipFile(Path(exported["file_path"])) as archive:
@@ -777,6 +784,39 @@ def test_capsule_private_full_export_includes_source_blobs(client, tmp_path):
         assert sources[0]["raw_path"] is None
         assert sources[0]["extracted_text_path"] is None
         assert {ref["kind"] for ref in sources[0]["blob_refs"]} >= {"raw", "extracted_text"}
+
+
+def test_capsule_export_safety_scan_blocks_secret_like_content(client):
+    note = client.post(
+        "/notes",
+        json={
+            "title": "Credential scratchpad",
+            "content_json": {},
+            "content_markdown": "api_key = sk-1234567890abcdefghijklmnopqrst\nclient email: alex@example.test",
+            "origin": "user_written",
+        },
+    ).json()
+    capsule = client.post(
+        "/capsules",
+        json={"name": "Safety Scan Capsule", "capsule_type": "project"},
+    ).json()
+    client.post(
+        f"/capsules/{capsule['id']}/items",
+        json={"items": [{"target_type": "note", "target_id": note["id"], "role": "core"}]},
+    ).json()
+
+    preview = client.post(f"/capsules/{capsule['id']}/export/preview", json={"export_mode": "sanitized"}).json()
+    assert preview["status"] == "blocked"
+    blocker_codes = {item["code"] for item in preview["privacy_report"]["blockers"]}
+    assert {"possible_secrets", "personal_data_signals"} <= blocker_codes
+    assert preview["privacy_report"]["possible_secret_count"] >= 1
+    assert preview["privacy_report"]["pii_signal_count"] >= 1
+    assert preview["privacy_report"]["scan_report"]["possible_secrets"][0]["sample"] == "[redacted]"
+    assert "sk-1234567890" not in json.dumps(preview["privacy_report"])
+
+    blocked_export = client.post(f"/capsules/{capsule['id']}/export", json={"export_mode": "sanitized"})
+    assert blocked_export.status_code == 409
+    assert blocked_export.json()["detail"]["preview"]["status"] == "blocked"
 
 
 def test_capsules_reference_global_objects_and_snapshot_health(client):
