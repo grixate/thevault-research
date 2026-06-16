@@ -7556,6 +7556,7 @@ function CapsuleDetail({ capsule, onOpenTarget }: { capsule: Capsule; onOpenTarg
     if (versions.length < 2) return;
     versionDiff.mutate({ fromVersionId: versions[1].id, toVersionId: versions[0].id });
   }
+  const capsuleSummary = [capsule.purpose, capsule.description].map((value) => value?.trim()).filter(Boolean).join(" · ");
   return (
     <>
       <SectionHeader
@@ -7596,13 +7597,8 @@ function CapsuleDetail({ capsule, onOpenTarget }: { capsule: Capsule; onOpenTarg
         <span>{capsule.version}</span>
         <span>{Math.round((capsule.health?.score ?? 0) * 100)}%</span>
         {capsuleForkParent(capsule) && <span>Fork of {capsuleForkParent(capsule)}</span>}
+        {capsuleSummary && <span className="capsule-title-note" title={capsuleSummary}>{capsuleSummary}</span>}
       </div>
-      {(capsule.purpose || capsule.description) && (
-        <div className="capsule-purpose">
-          {capsule.purpose && <p>{capsule.purpose}</p>}
-          {capsule.description && <small>{capsule.description}</small>}
-        </div>
-      )}
       <div className="capsule-stat-strip" aria-label="Capsule counts">
         <span><strong>{capsule.counts.sources}</strong> sources</span>
         <span><strong>{capsule.counts.notes}</strong> notes</span>
