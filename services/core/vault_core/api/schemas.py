@@ -98,6 +98,7 @@ class SearchRequest(BaseModel):
     query: str
     modes: list[str] = Field(default_factory=lambda: ["fts"])
     limit: int = 20
+    capsule_id: str | None = None
     filters: dict[str, Any] = Field(default_factory=dict)
 
 

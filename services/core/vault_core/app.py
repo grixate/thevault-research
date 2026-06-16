@@ -2001,11 +2001,13 @@ def register_routes(app: FastAPI) -> None:
         query = req.query.strip()
         if not query:
             return {"results": []}
+        capsule_id = str(req.capsule_id or req.filters.get("capsule_id") or "").strip()
         requested_modes = {mode.lower() for mode in req.modes}
         use_hybrid = "hybrid" in requested_modes
         use_fts = not requested_modes or "fts" in requested_modes or use_hybrid
         use_vector = "vector" in requested_modes or use_hybrid
         with db.connect() as conn:
+            capsule_scope = capsule_search_scope(conn, db.workspace_id, capsule_id) if capsule_id else None
             merged: dict[tuple[str, str], dict[str, Any]] = {}
 
             def merge_result(result: dict[str, Any], mode: str, score: float) -> None:
@@ -2028,8 +2030,12 @@ def register_routes(app: FastAPI) -> None:
 
             if use_fts:
                 fts_query = make_fts_query(query)
+                block_scope_clause = ""
+                block_scope_args: list[Any] = []
+                if capsule_scope is not None:
+                    block_scope_clause, block_scope_args = capsule_source_block_filter_clause(capsule_scope)
                 rows = conn.execute(
-                    """
+                    f"""
                     SELECT source_blocks_fts.source_block_id, source_blocks_fts.source_id,
                            source_blocks_fts.text, source_blocks_fts.title, bm25(source_blocks_fts) AS rank,
                            source_blocks.locator, sources.type AS source_type, sources.title AS source_title,
@@ -2039,9 +2045,10 @@ def register_routes(app: FastAPI) -> None:
                     JOIN sources ON sources.id = source_blocks_fts.source_id
                     LEFT JOIN notes ON notes.source_id = sources.id
                     WHERE source_blocks_fts MATCH ?
+                    {block_scope_clause}
                     ORDER BY rank LIMIT ?
                     """,
-                    (fts_query, req.limit),
+                    (fts_query, *block_scope_args, req.limit),
                 ).fetchall()
                 for row in rows:
                     score = max(0.01, 1.0 / (1.0 + abs(float(row["rank"]))))
@@ -2061,15 +2068,23 @@ def register_routes(app: FastAPI) -> None:
                         "fts",
                         score,
                     )
-                claim_rows = conn.execute(
-                    """
-                    SELECT c.id, c.normalized_text, c.status, k.title
-                    FROM claims c JOIN kg_nodes k ON k.id=c.node_id
-                    WHERE c.normalized_text LIKE ?
-                    LIMIT ?
-                    """,
-                    (f"%{query}%", req.limit),
-                ).fetchall()
+                claim_rows = []
+                if capsule_scope is None or capsule_scope["claim_ids"]:
+                    claim_scope_clause = ""
+                    claim_scope_args: list[Any] = []
+                    if capsule_scope is not None:
+                        claim_scope_clause = f"AND c.id IN ({','.join('?' for _ in capsule_scope['claim_ids'])})"
+                        claim_scope_args = sorted(capsule_scope["claim_ids"])
+                    claim_rows = conn.execute(
+                        f"""
+                        SELECT c.id, c.normalized_text, c.status, k.title
+                        FROM claims c JOIN kg_nodes k ON k.id=c.node_id
+                        WHERE c.normalized_text LIKE ?
+                        {claim_scope_clause}
+                        LIMIT ?
+                        """,
+                        (f"%{query}%", *claim_scope_args, req.limit),
+                    ).fetchall()
                 for row in claim_rows:
                     merge_result(
                         {
@@ -2092,6 +2107,8 @@ def register_routes(app: FastAPI) -> None:
                     req.limit,
                     llama_server=request.app.state.llama_server,
                     db=db,
+                    allowed_source_ids=capsule_scope["source_ids"] if capsule_scope is not None else None,
+                    allowed_source_block_ids=capsule_scope["source_block_ids"] if capsule_scope is not None else None,
                 ):
                     vector_score = float(result["score"])
                     source_id = str((result.get("source_refs") or [""])[0])
@@ -4749,6 +4766,53 @@ def snippet(text: str, query: str, length: int = 220) -> str:
     first = min((lower.find(term.lower()) for term in query.split() if lower.find(term.lower()) >= 0), default=0)
     start = max(0, first - 60)
     return text[start : start + length].strip()
+
+
+def capsule_search_scope(conn: sqlite3.Connection, workspace_id: str, capsule_id: str) -> dict[str, set[str]]:
+    capsule = conn.execute("SELECT id FROM capsules WHERE id=? AND workspace_id=?", (capsule_id, workspace_id)).fetchone()
+    if not capsule:
+        raise HTTPException(404, "Capsule not found")
+    rows = conn.execute(
+        """
+        SELECT target_type, target_id
+        FROM capsule_items
+        WHERE workspace_id=? AND capsule_id=? AND status='active'
+        """,
+        (workspace_id, capsule_id),
+    ).fetchall()
+    source_ids = {row["target_id"] for row in rows if row["target_type"] == "source"}
+    source_block_ids = {row["target_id"] for row in rows if row["target_type"] == "source_block"}
+    claim_ids = {row["target_id"] for row in rows if row["target_type"] == "claim"}
+    note_ids = [row["target_id"] for row in rows if row["target_type"] == "note"]
+    if note_ids:
+        placeholders = ",".join("?" for _ in note_ids)
+        note_sources = conn.execute(
+            f"SELECT source_id FROM notes WHERE workspace_id=? AND id IN ({placeholders}) AND source_id IS NOT NULL",
+            (workspace_id, *note_ids),
+        ).fetchall()
+        source_ids.update(row["source_id"] for row in note_sources)
+    if source_block_ids:
+        placeholders = ",".join("?" for _ in source_block_ids)
+        block_sources = conn.execute(
+            f"SELECT source_id FROM source_blocks WHERE id IN ({placeholders})",
+            tuple(source_block_ids),
+        ).fetchall()
+        source_ids.update(row["source_id"] for row in block_sources)
+    return {"source_ids": source_ids, "source_block_ids": source_block_ids, "claim_ids": claim_ids}
+
+
+def capsule_source_block_filter_clause(scope: dict[str, set[str]]) -> tuple[str, list[Any]]:
+    clauses: list[str] = []
+    args: list[Any] = []
+    if scope["source_block_ids"]:
+        clauses.append(f"source_blocks.id IN ({','.join('?' for _ in scope['source_block_ids'])})")
+        args.extend(sorted(scope["source_block_ids"]))
+    if scope["source_ids"]:
+        clauses.append(f"source_blocks.source_id IN ({','.join('?' for _ in scope['source_ids'])})")
+        args.extend(sorted(scope["source_ids"]))
+    if not clauses:
+        return "AND 0", []
+    return f"AND ({' OR '.join(clauses)})", args
 
 
 def combined_search_score(scores: dict[str, float]) -> float:

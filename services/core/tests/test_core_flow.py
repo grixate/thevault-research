@@ -837,6 +837,14 @@ def test_capsules_reference_global_objects_and_snapshot_health(client):
             "text": "Resonance in acoustics occurs when a system vibrates strongly at a natural frequency.",
         },
     ).json()
+    decoy = client.post(
+        "/sources/import-text",
+        json={
+            "title": "Outside capsule acoustics",
+            "type": "text",
+            "text": "Resonance outside this capsule should stay out of capsule scoped search results.",
+        },
+    ).json()
     client.post("/extraction/run", json={"target_type": "source", "target_id": imported["source"]["id"], "extract": ["claims"]})
     review_item = client.get("/review/items").json()[0]
     claim_id = client.post(f"/review/items/{review_item['id']}/approve", json={"decision_note": "Capsule evidence checked."}).json()["created"]["claim_id"]
@@ -875,6 +883,23 @@ def test_capsules_reference_global_objects_and_snapshot_health(client):
             VALUES ('edge_capsule_claim_concept', ?, ?, ?, 'mentions', 0.8, ?, 'active', ?, ?)
             """,
             (client.app.state.db.workspace_id, claim_node_id, concept_id, json.dumps({"source": "capsule_test"}), ts, ts),
+        )
+        conn.execute(
+            """
+            INSERT INTO kg_nodes
+              (id, workspace_id, node_type, title, canonical_text, status, confidence, payload_json, created_at, updated_at)
+            VALUES ('node_capsule_search_decoy', ?, 'claim', 'Outside resonance claim', 'Outside resonance claim', 'active', 0.7, '{}', ?, ?)
+            """,
+            (client.app.state.db.workspace_id, ts, ts),
+        )
+        conn.execute(
+            """
+            INSERT INTO claims
+              (id, node_id, workspace_id, normalized_text, language, domain, time_scope, status,
+               confidence, evidence_strength, source_trust_score, last_checked_at, created_at, updated_at)
+            VALUES ('clm_capsule_search_decoy', 'node_capsule_search_decoy', ?, 'Resonance outside this capsule should not appear in scoped search.', 'en', 'acoustics', NULL, 'approved', 0.7, 0.5, 0.5, ?, ?, ?)
+            """,
+            (client.app.state.db.workspace_id, ts, ts, ts),
         )
     concept_rows = client.get("/graph/nodes").json()
     assert [row["id"] for row in concept_rows] == [concept_id]
@@ -925,6 +950,20 @@ def test_capsules_reference_global_objects_and_snapshot_health(client):
     assert any(item["target_type"] == "kg_node" and item["target_id"] == concept_id for item in detail["items"])
     assert any(item["target_type"] == "learning_item" and item["target_id"] == loose_learning_id for item in detail["items"])
     assert any(item["target_type"] == "tool" and item["target_id"] == tool_id for item in detail["items"])
+
+    global_search = client.post("/search", json={"query": "resonance", "modes": ["hybrid"], "limit": 10}).json()
+    assert any(result.get("source_refs") == [decoy["source"]["id"]] for result in global_search["results"])
+    assert any(result.get("target_id") == "clm_capsule_search_decoy" for result in global_search["results"])
+    scoped_search = client.post("/search", json={"query": "resonance", "modes": ["hybrid"], "limit": 10, "capsule_id": capsule["id"]}).json()
+    assert scoped_search["results"]
+    assert all(decoy["source"]["id"] not in result.get("source_refs", []) for result in scoped_search["results"])
+    assert all(result.get("target_id") != "clm_capsule_search_decoy" for result in scoped_search["results"])
+    assert any(result.get("source_refs") == [imported["source"]["id"]] for result in scoped_search["results"])
+    assert any(result.get("target_id") == claim_id for result in scoped_search["results"])
+    scoped_filter_search = client.post("/search", json={"query": "resonance", "modes": ["fts"], "limit": 10, "filters": {"capsule_id": capsule["id"]}}).json()
+    assert scoped_filter_search["results"]
+    assert all(decoy["source"]["id"] not in result.get("source_refs", []) for result in scoped_filter_search["results"])
+    assert all(result.get("target_id") != "clm_capsule_search_decoy" for result in scoped_filter_search["results"])
 
     health = client.post(f"/capsules/{capsule['id']}/health/run").json()
     assert health["counts"]["approved_claims"] == 1

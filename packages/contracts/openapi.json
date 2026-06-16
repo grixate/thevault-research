@@ -13661,6 +13661,17 @@
             "title": "Limit",
             "default": 20
           },
+          "capsule_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Capsule Id"
+          },
           "filters": {
             "additionalProperties": true,
             "type": "object",

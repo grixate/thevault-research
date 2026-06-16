@@ -350,6 +350,8 @@ def vector_search_source_blocks(
     *,
     llama_server: Any | None = None,
     db: Any | None = None,
+    allowed_source_ids: set[str] | None = None,
+    allowed_source_block_ids: set[str] | None = None,
 ) -> list[dict[str, Any]]:
     space, settings = current_embedding_config(conn, workspace_id)
     query_vector = embed_texts_for_space([query], space, settings, llama_server=llama_server, db=db)[0]
@@ -366,8 +368,13 @@ def vector_search_source_blocks(
         """,
         (workspace_id, space.provider, space.model, space.dimensions),
     ).fetchall()
+    restrict_targets = allowed_source_ids is not None or allowed_source_block_ids is not None
+    allowed_source_ids = allowed_source_ids or set()
+    allowed_source_block_ids = allowed_source_block_ids or set()
     results: list[dict[str, Any]] = []
     for row in rows:
+        if restrict_targets and row["source_id"] not in allowed_source_ids and row["target_id"] not in allowed_source_block_ids:
+            continue
         score = max(0.0, cosine_similarity(query_vector, deserialize_vector(row["vector_blob"])))
         if score < min_score:
             continue

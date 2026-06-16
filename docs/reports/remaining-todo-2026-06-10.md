@@ -327,6 +327,15 @@ Latest capsule UI polish verification on 2026-06-16:
 - Earlier focused desktop capsule test path passed after updating expectations for the new accessible button names.
 - Earlier desktop production build passed.
 
+Latest capsule-scoped search verification on 2026-06-16:
+
+- `/search` now accepts `capsule_id` directly and through the existing `filters.capsule_id` object.
+- Capsule-scoped FTS and hybrid search now restrict source-block results to active capsule sources, explicit source blocks, and note-backed sources, and restrict claim hits to active capsule claim references.
+- Vector source-block search now accepts source/source-block allowlists so scoped hybrid search does not get clipped by unrelated global vector hits before filtering.
+- Focused backend capsule test proves global search can see outside matching source/claim material while capsule-scoped search excludes the outside source and claim and still finds capsule evidence.
+- Regenerated `packages/contracts/openapi.json`; the SearchRequest contract now exposes `capsule_id`.
+- Focused backend capsule/search tests and backend lint passed.
+
 Latest capsule export safety verification on 2026-06-16:
 
 - Capsule export privacy reports now include a redacted alpha safety scan for API-key-like strings, `.env` references, common token prefixes, emails, phone-like strings, client/patient context markers, and copyright/license source findings.
@@ -350,6 +359,7 @@ Latest contract verification on 2026-06-16:
 
 - Regenerated `packages/contracts/openapi.json` with the repo contract script after capsule, task, and local-AI routes settled.
 - OpenAPI contract now reports 137 paths and includes the capsule route set: create/list/detail/update/archive, items, health, snapshots, diff, export preview/export/history, import quarantine/review handoff, fork, overview note, and learning generation.
+- OpenAPI SearchRequest now includes optional `capsule_id` for capsule-scoped retrieval.
 - Contract JSON sanity check passed for required capsule paths, `/todos`, and `/ai/models/downloads`.
 - Contract generation was rerun idempotently and diff whitespace check passed.
 
@@ -2724,6 +2734,7 @@ Current good state:
 - Capsules can diff the latest two snapshots and show added, removed, and changed capsule references.
 - Capsules can be forked into a new draft/project/course capsule while preserving global references and recording a `forked_from` dependency.
 - Assistant can answer inside a selected capsule context, using capsule canonical items first and citing canonical evidence without global fallback.
+- Search can run inside a capsule context through `/search` `capsule_id`, keeping FTS/vector/hybrid results limited to active capsule source, source-block, note-source, and claim references.
 - Workspace backup includes capsule tables as readable JSONL records plus the full SQLite backup.
 - Desktop Capsules can curate richer global references from the compact add panel: concepts from the graph, practice items from Learning, and installed local tools.
 - Compact capsule attach entry points exist in the real workflows:
@@ -2755,9 +2766,10 @@ Acceptance evidence:
 - Generated capsule notes and learning items stay reviewable and evidence-linked.
 - Forked capsules preserve canonical references and expose their parent dependency without creating a separate mini-vault.
 - Capsule-scoped Assistant answers cite canonical capsule evidence and do not silently pull matching evidence from outside the selected capsule.
+- Capsule-scoped search returns only capsule member evidence/claims and does not silently pull matching global material from outside the selected capsule.
 - Workspace backup preserves capsule definitions, membership, versions, dependencies, health snapshots, exports, imports, and changelog in readable backup files.
 - Browser screenshots show Capsules as a calm knowledge curation surface, not an overloaded management console.
-- Backend tests cover note/source/claim/concept/practice/tool item references, evidence auto-inclusion, health, generated overview notes, reviewed capsule outline/lesson/quiz/explain-back/flashcard generation, snapshots, version diff, fork/dependency creation, capsule-scoped Assistant evidence, capsule workspace-backup coverage, export preview, export manifest/checksum files, export privacy blocking, import quarantine, import review-item creation, and selective merge approval for existing local objects.
+- Backend tests cover note/source/claim/concept/practice/tool item references, evidence auto-inclusion, health, generated overview notes, reviewed capsule outline/lesson/quiz/explain-back/flashcard generation, snapshots, version diff, fork/dependency creation, capsule-scoped Assistant evidence, capsule-scoped search, capsule workspace-backup coverage, export preview, export manifest/checksum files, export privacy blocking, import quarantine, import review-item creation, and selective merge approval for existing local objects.
 - Desktop tests cover create, concept/practice/tool selector data hydration, attach note/source/claim, snapshot, version diff, fork, capsule Assistant context, workspace backup capsule contents, health, export preview/package creation, export blocking, import quarantine inspection, and the Review handoff.
 
 ## Workstream 12 - Native Tasks
