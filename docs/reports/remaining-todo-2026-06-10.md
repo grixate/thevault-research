@@ -155,7 +155,7 @@ Design north star: use Notion, Obsidian, and Apple Notes as the practical refere
 
 Current accepted UI bar after user review on 2026-06-12: the desktop Quick note redesign should be used as the minimalist reference direction. Prefer native-feeling Spotlight/Apple Notes patterns: content first, no decorative sublines, no route-card explanations, no duplicate actions, minimal labels, subtle segmented controls, quiet glass/paper surfaces, and visible controls only where they directly support the current action.
 
-Capsules addendum: `/Users/grixate/Downloads/the_vault_research_lab_knowledge_capsules_codex_spec.md` is now part of the product plan. Capsules are first-class, transferable, versioned, evidence-backed projections of the global Vault graph. They must reference canonical Notes, Storage, claims, concepts, evidence links, learning items, and tools; they must not become isolated mini-vaults or folders.
+Capsules addendum: `docs/specs/the_vault_research_lab_knowledge_capsules_codex_spec.md` is now part of the product plan. Capsules are first-class, transferable, versioned, evidence-backed projections of the global Vault graph. They must reference canonical Notes, Storage, claims, concepts, evidence links, learning items, and tools; they must not become isolated mini-vaults or folders.
 
 Latest full demo gate on 2026-06-10:
 
@@ -290,6 +290,22 @@ Latest capsule import-merge preview verification on 2026-06-15:
 - The preview keeps quarantine-first behavior intact: imported objects still merge only through Review approval.
 - Focused backend capsule import/merge test: passed.
 - Focused desktop capsule import Review handoff test: passed.
+
+Latest native Tasks verification on 2026-06-16:
+
+- Added proposed source spec `docs/specs/research_lab_native_todos_spec.md`.
+- Added native todo schema/API foundations for task lists, tasks, labels, label links, and context links.
+- Quick-add parsing supports conservative tokens: `today`, `tomorrow`, `next week`, weekday names, `@label`, `#list`, `p1`-`p4`, and `every ...`.
+- Tasks can attach context links to notes, sources, source blocks, claims, graph nodes, review items, capsules, learning items, tools, lab jobs, and Assistant answers.
+- Added desktop/Electron route wiring for `todos.list`, `todos.create`, `todos.update`, `todos.complete`, and `todoLists.list`.
+- Added `Tasks` to the Workspace navigation with a minimalist v1 surface: Inbox, Today, Upcoming, Done, one-line quick add, dense task rows, list side rail, and short empty states.
+- Fixed quick-add parsed priority so schema defaults do not override `p1`-`p4`.
+- Preserved typed list/label casing while keeping backend matching case-insensitive.
+- Focused backend todo route/parser test: passed.
+- Desktop task quick-add/complete test path: passed.
+- Desktop production build: passed.
+- Playwright desktop Tasks smoke: Tasks rendered at 1440x950 with `scrollWidth` equal to viewport width and no detected overflowing elements. Screenshot captured at `/tmp/vault-tasks-desktop.png`.
+- Python lint: passed.
 
 Latest focused verification on 2026-06-11 before the current claim-grammar slice:
 
@@ -2583,7 +2599,7 @@ Goal: capsules become transferable, versioned, evidence-backed projections of th
 
 Source spec:
 
-- `/Users/grixate/Downloads/the_vault_research_lab_knowledge_capsules_codex_spec.md`
+- `docs/specs/the_vault_research_lab_knowledge_capsules_codex_spec.md`
 
 Current good state:
 
@@ -2671,13 +2687,63 @@ Acceptance evidence:
 - Backend tests cover note/source/claim/concept/practice/tool item references, evidence auto-inclusion, health, generated overview notes, reviewed capsule outline/lesson/quiz/explain-back/flashcard generation, snapshots, version diff, fork/dependency creation, capsule-scoped Assistant evidence, capsule workspace-backup coverage, export preview, export manifest/checksum files, export privacy blocking, import quarantine, import review-item creation, and selective merge approval for existing local objects.
 - Desktop tests cover create, concept/practice/tool selector data hydration, attach note/source/claim, snapshot, version diff, fork, capsule Assistant context, workspace backup capsule contents, health, export preview/package creation, export blocking, import quarantine inspection, and the Review handoff.
 
+## Workstream 12 - Native Tasks
+
+Goal: make simple action follow-through native to the research workspace without turning The Vault into a project-management suite.
+
+Source spec:
+
+- `docs/specs/research_lab_native_todos_spec.md`
+
+Current good state:
+
+- Backend schema exists for task lists, tasks, labels, label links, and context links.
+- Backend routes exist for listing views, listing task lists, creating tasks, updating tasks, and completing tasks.
+- Built-in views are live for Inbox, Today, Upcoming, Completed, and All.
+- Quick add parses date, list, label, priority, and recurrence tokens conservatively.
+- Context links can attach tasks to notes, sources, source blocks, claims, graph nodes, review items, capsules, learning items, tools, lab jobs, and Assistant answers.
+- Desktop has a first `Tasks` surface in Workspace navigation.
+- Tasks UI is intentionally sparse: one input, compact view tabs, dense rows, list side rail, and no explanatory subtitles.
+- Focused backend and desktop tests cover quick add, parsed list/label/priority/due date, context links, task list counts, completion, stats, and the desktop create/complete flow.
+
+Remaining tasks:
+
+- Add contextual task creation from the real work surfaces:
+  - selected Note text,
+  - selected Storage source/source block,
+  - selected Graph claim,
+  - Review item,
+  - Capsule detail,
+  - Assistant answer,
+  - Night Lab brief.
+- Add global quick-task capture, ideally alongside Quick note with a Spotlight-style command, without adding clutter to the top bar.
+- Add a minimal task detail drawer for editing title, due date, list, labels, context, description, recurrence, and source link.
+- Add list management: create/rename/archive lists and filter by list without overbuilding projects.
+- Add recurrence UI and generated next occurrences after completion.
+- Add subtasks only after detail drawer and list management are stable.
+- Integrate AI-suggested todos as reviewable suggestions, not silent canonical tasks.
+- Integrate Markdown checkbox extraction/linking from Notes after the editor UX is stable.
+- Add import/export and workspace backup coverage for task tables.
+- Add mobile layout repair later with the broader mobile pass; current mobile remains explicitly not clean.
+
+Acceptance evidence:
+
+- A user can create, triage, complete, and edit tasks from a quiet native Tasks surface.
+- Quick add keeps working with natural tokens and does not leak token syntax into the saved title.
+- Contextual task creation preserves links back to the originating Vault object instead of duplicating source text.
+- AI-generated tasks remain reviewable/provisional until accepted.
+- Task backup/export preserves todo lists, tasks, labels, and context links.
+- Browser screenshots show Tasks as a minimal Apple Notes/Todoist-like utility, not a card-heavy project dashboard.
+- Backend and desktop tests cover quick add, views, list filtering, context links, completion, detail editing, generated suggestions, backup/export, and contextual creation from Notes/Storage/Review/Capsules/Assistant.
+
 ## Recommended Next Session Steps
 
 1. If continuing UX, keep the Notion/Obsidian/Apple Notes reset active: inspect Notes, Storage, Quick Note, Review, Assistant, Capsules, and Settings screenshots, then simplify the most overloaded flow first.
 2. If continuing Capsules, polish the alpha surface and attach dialog first, then continue from import review items into conflict-aware merge decisions or package contract docs.
-3. If continuing local AI production, pick the first real approved runtime/model candidate set and run the release-packet tooling.
-4. If stabilizing before bigger registry edits, stage or commit the current v1 state.
-5. After any slice:
+3. If continuing Tasks, add contextual creation from Notes/Storage/Review/Capsules/Assistant before adding bigger task-management concepts.
+4. If continuing local AI production, pick the first real approved runtime/model candidate set and run the release-packet tooling.
+5. If stabilizing before bigger registry edits, stage or commit the current v1 state.
+6. After any slice:
    - run focused tests,
    - run `pnpm --filter @vault/desktop build`,
    - run `pnpm e2e`,

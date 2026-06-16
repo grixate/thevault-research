@@ -91,7 +91,7 @@ def create_todo(db: VaultDatabase, payload: dict[str, Any]) -> dict[str, Any]:
     if not title:
         raise HTTPException(422, "Todo title is required")
     ts = now_iso()
-    priority = normalize_priority(payload.get("priority", parsed.get("priority")))
+    priority = normalize_priority(payload["priority"] if payload.get("priority") is not None else parsed.get("priority"))
     labels = normalize_string_list([*parsed.get("labels", []), *payload.get("labels", [])])
     list_name = str(payload.get("list_name") or parsed.get("list_name") or "").strip()
     due_date = payload.get("due_date") or parsed.get("due_date")
@@ -242,10 +242,11 @@ def parse_todo_text(text: str, *, today: date | None = None) -> dict[str, Any]:
     while index < len(tokens):
         token = tokens[index]
         lower = token.lower().strip(",.")
+        cleaned = token.strip(",.")
         if lower.startswith("@") and len(lower) > 1:
-            labels.append(clean_token(lower[1:]))
+            labels.append(clean_token(cleaned[1:]))
         elif lower.startswith("#") and len(lower) > 1:
-            list_parts = [clean_token(lower[1:])]
+            list_parts = [clean_token(cleaned[1:])]
             lookahead = index + 1
             while lookahead < len(tokens) and not token_is_control(tokens[lookahead]):
                 list_parts.append(tokens[lookahead].strip(",."))

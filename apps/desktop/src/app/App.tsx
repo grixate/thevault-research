@@ -57,7 +57,7 @@ import {
   Wrench,
   X
 } from "lucide-react";
-import { useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent as ReactFormEvent, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import { Badge } from "../components/Badge";
 import { Button } from "../components/Button";
 import { Panel, SectionHeader } from "../components/Panel";
@@ -130,6 +130,10 @@ import type {
   SourcePipeline,
   SourcePipelineStage,
   Stats,
+  TodoContextLink,
+  TodoItem,
+  TodoList,
+  TodoListResponse,
   Tool
 } from "../lib/types";
 
@@ -140,6 +144,7 @@ const navSections: Array<{ label: string; items: Array<{ id: Surface; label: str
       { id: "dashboard", label: "Home", icon: Beaker },
       { id: "notes", label: "Notes", icon: BookOpen },
       { id: "sources", label: "Storage", icon: HardDrive },
+      { id: "tasks", label: "Tasks", icon: List },
       { id: "review", label: "Review", icon: Check }
     ]
   },
@@ -177,6 +182,10 @@ const surfaceCopy: Record<Surface, { title: string; description: string }> = {
   review: {
     title: "Review",
     description: "Approve or reject proposed claims before they become trusted knowledge."
+  },
+  tasks: {
+    title: "Tasks",
+    description: "Track next actions without turning the workspace into project management."
   },
   graph: {
     title: "Graph",
@@ -405,6 +414,7 @@ export function App() {
         {surface === "dashboard" && <Dashboard />}
         {surface === "notes" && <NotesView />}
         {surface === "sources" && <SourcesView />}
+        {surface === "tasks" && <TasksView />}
         {surface === "review" && <ReviewView />}
         {surface === "graph" && <GraphView />}
         {surface === "capsules" && <CapsulesView />}
@@ -4081,6 +4091,186 @@ function Dashboard() {
       </Panel>
     </div>
   );
+}
+
+type TodoView = "inbox" | "today" | "upcoming" | "completed";
+
+const todoViews: Array<{ id: TodoView; label: string }> = [
+  { id: "inbox", label: "Inbox" },
+  { id: "today", label: "Today" },
+  { id: "upcoming", label: "Upcoming" },
+  { id: "completed", label: "Done" }
+];
+
+function TasksView() {
+  const queryClient = useQueryClient();
+  const [view, setView] = useState<TodoView>("inbox");
+  const [quickAdd, setQuickAdd] = useState("");
+  const todos = useQuery({
+    queryKey: ["todos", view],
+    queryFn: () => vaultRequest<TodoListResponse>("todos.list", { view, limit: 100, offset: 0 })
+  });
+  const lists = useQuery({ queryKey: ["todo-lists"], queryFn: () => vaultRequest<TodoList[]>("todoLists.list") });
+  const createTodo = useMutation({
+    mutationFn: (text: string) => vaultRequest<TodoItem>("todos.create", { text }),
+    onSuccess: () => {
+      setQuickAdd("");
+      queryClient.invalidateQueries({ queryKey: ["todos"] });
+      queryClient.invalidateQueries({ queryKey: ["todo-lists"] });
+      queryClient.invalidateQueries({ queryKey: ["stats"] });
+      queryClient.invalidateQueries({ queryKey: ["events"] });
+    }
+  });
+  const completeTodo = useMutation({
+    mutationFn: (todo: TodoItem) => vaultRequest<TodoItem>("todos.complete", { todoId: todo.id }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["todos"] });
+      queryClient.invalidateQueries({ queryKey: ["todo-lists"] });
+      queryClient.invalidateQueries({ queryKey: ["stats"] });
+      queryClient.invalidateQueries({ queryKey: ["events"] });
+    }
+  });
+  const rows = todos.data?.items ?? [];
+  const openRows = view === "completed" ? rows : rows.filter((todo) => todo.status !== "completed");
+
+  function submitQuickAdd(event: ReactFormEvent) {
+    event.preventDefault();
+    const text = quickAdd.trim();
+    if (!text || createTodo.isPending) return;
+    createTodo.mutate(text);
+  }
+
+  return (
+    <div className="surface tasks-view">
+      <Panel className="tasks-pane">
+        <div className="tasks-header">
+          <div className="task-view-tabs" role="tablist" aria-label="Task views">
+            {todoViews.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                role="tab"
+                aria-selected={view === item.id}
+                className={view === item.id ? "active" : ""}
+                onClick={() => setView(item.id)}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
+          <span>{todos.data?.total ?? 0}</span>
+        </div>
+        <form className="task-quick-add" onSubmit={submitQuickAdd}>
+          <Input
+            value={quickAdd}
+            aria-label="Add task"
+            placeholder="Add task"
+            onChange={(event) => setQuickAdd(event.target.value)}
+          />
+          <Button type="submit" size="icon" variant="primary" icon={<Plus size={16} />} aria-label="Add task" disabled={!quickAdd.trim() || createTodo.isPending} />
+        </form>
+        {createTodo.error && <small className="model-test-error">{createTodo.error.message}</small>}
+        {completeTodo.error && <small className="model-test-error">{completeTodo.error.message}</small>}
+        <div className="task-list" aria-label={`${todoViewLabel(view)} tasks`}>
+          {todos.isLoading && <p className="empty-copy">Loading tasks...</p>}
+          {!todos.isLoading && openRows.length === 0 && <p className="empty-copy">{todoEmptyCopy(view)}</p>}
+          {openRows.map((todo) => (
+            <TaskRow key={todo.id} todo={todo} completing={completeTodo.isPending} onComplete={() => completeTodo.mutate(todo)} />
+          ))}
+        </div>
+      </Panel>
+      <aside className="tasks-side" aria-label="Task lists">
+        <div className="tasks-side-section">
+          <strong>Lists</strong>
+          {lists.isLoading && <span>Loading...</span>}
+          {!lists.isLoading && (lists.data ?? []).length === 0 && <span>No lists</span>}
+          {(lists.data ?? []).map((list) => (
+            <button key={list.id} type="button" title={list.name}>
+              <span>{list.name}</span>
+              <small>{list.open_count}</small>
+            </button>
+          ))}
+        </div>
+        <div className="tasks-side-section">
+          <strong>Quick syntax</strong>
+          <span>today, tomorrow, monday</span>
+          <span>@label, #list, p1-p4</span>
+        </div>
+      </aside>
+    </div>
+  );
+}
+
+function TaskRow({ todo, completing, onComplete }: { todo: TodoItem; completing: boolean; onComplete: () => void }) {
+  const meta = todoMetaLine(todo);
+  return (
+    <article className={`task-row ${todo.status === "completed" ? "completed" : ""}`}>
+      <button
+        type="button"
+        className="task-check"
+        aria-label={todo.status === "completed" ? `${todo.title} completed` : `Complete ${todo.title}`}
+        disabled={todo.status === "completed" || completing}
+        onClick={onComplete}
+      >
+        {todo.status === "completed" && <Check size={13} />}
+      </button>
+      <div className="task-row-main">
+        <strong>{todo.title}</strong>
+        {meta && <span>{meta}</span>}
+        {(todo.labels.length > 0 || todo.context_links.length > 0) && (
+          <div className="task-row-tags">
+            {todo.labels.map((label) => (
+              <Badge key={label} tone="neutral">@{label}</Badge>
+            ))}
+            {todo.context_links.slice(0, 2).map((link) => (
+              <Badge key={link.id} tone="info">{todoContextLabel(link)}</Badge>
+            ))}
+          </div>
+        )}
+      </div>
+      {todo.priority < 4 && <Badge tone={todo.priority === 1 ? "bad" : todo.priority === 2 ? "warn" : "neutral"}>p{todo.priority}</Badge>}
+    </article>
+  );
+}
+
+function todoViewLabel(view: TodoView): string {
+  if (view === "today") return "Today";
+  if (view === "upcoming") return "Upcoming";
+  if (view === "completed") return "Completed";
+  return "Inbox";
+}
+
+function todoEmptyCopy(view: TodoView): string {
+  if (view === "today") return "Nothing due today.";
+  if (view === "upcoming") return "No upcoming tasks.";
+  if (view === "completed") return "No completed tasks.";
+  return "Inbox clear.";
+}
+
+function todoMetaLine(todo: TodoItem): string {
+  const parts = [
+    todo.due_date ? todoDueLabel(todo.due_date) : "",
+    todo.list_name ? `#${todo.list_name}` : "",
+    todo.recurrence_rule ? todo.recurrence_rule : ""
+  ].filter(Boolean);
+  return parts.join(" · ");
+}
+
+function todoDueLabel(value: string): string {
+  const today = new Date();
+  const date = new Date(`${value}T00:00:00`);
+  const todayKey = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
+  const dayKey = new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
+  const offset = Math.round((dayKey - todayKey) / 86400000);
+  if (offset === 0) return "today";
+  if (offset === 1) return "tomorrow";
+  if (offset === -1) return "yesterday";
+  return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+}
+
+function todoContextLabel(link: TodoContextLink): string {
+  const type = searchModeLabel(link.target_type);
+  return link.target_title ? `${type}: ${link.target_title}` : type;
 }
 
 function NotesView() {

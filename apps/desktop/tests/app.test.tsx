@@ -668,6 +668,61 @@ describe("App", () => {
     expect(await screen.findByText("The Vault")).toBeTruthy();
   });
 
+  it("creates and completes tasks from the Tasks surface", async () => {
+    let todoRows: any[] = [];
+    const createdTodo = {
+      id: "todo_follow_up",
+      title: "Email Anna about citation mismatch",
+      description: "",
+      status: "open",
+      priority: 2,
+      due_date: "2026-06-17",
+      due_time: null,
+      recurrence_rule: null,
+      list_id: "tdl_paper",
+      list_name: "Paper review",
+      labels: ["waiting"],
+      context_links: [],
+      source_kind: "user",
+      source_ref: {},
+      provenance: {},
+      created_at: "2026-06-16T10:00:00Z",
+      updated_at: "2026-06-16T10:00:00Z",
+      completed_at: null
+    };
+    const request = vi.fn(async (route: string, payload?: any) => {
+      if (route === "health.get") return { ok: true, version: "0.1.0", db_ready: true, workspace_id: "wrk_default" };
+      if (route === "jobs.list") return [];
+      if (route === "todos.list") return { items: todoRows, total: todoRows.length, view: payload?.view ?? "inbox" };
+      if (route === "todoLists.list") return [{ id: "tdl_paper", name: "Paper review", status: "active", open_count: todoRows.filter((todo) => todo.status === "open").length }];
+      if (route === "todos.create") {
+        todoRows = [createdTodo];
+        return createdTodo;
+      }
+      if (route === "todos.complete") {
+        todoRows = todoRows.map((todo) => (todo.id === payload?.todoId ? { ...todo, status: "completed", completed_at: "2026-06-16T10:05:00Z" } : todo));
+        return todoRows[0];
+      }
+      return [];
+    });
+    window.vault = { request, selectFiles: vi.fn(async () => []) };
+
+    renderApp();
+    fireEvent.click(await screen.findByRole("button", { name: "Tasks" }));
+    expect(await screen.findByText("Inbox clear.")).toBeTruthy();
+
+    fireEvent.change(screen.getByPlaceholderText("Add task"), { target: { value: "Email Anna about citation mismatch tomorrow @waiting #Paper review p2" } });
+    fireEvent.click(screen.getByRole("button", { name: "Add task" }));
+
+    await waitFor(() => expect(request).toHaveBeenCalledWith("todos.create", { text: "Email Anna about citation mismatch tomorrow @waiting #Paper review p2" }));
+    expect(await screen.findByText("Email Anna about citation mismatch")).toBeTruthy();
+    expect(screen.getByText(/#Paper review/)).toBeTruthy();
+    expect(screen.getByText("@waiting")).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: "Complete Email Anna about citation mismatch" }));
+    await waitFor(() => expect(request).toHaveBeenCalledWith("todos.complete", { todoId: "todo_follow_up" }));
+  });
+
   it("creates a capsule from the Capsules surface", async () => {
     const capsule = {
       id: "cap_acoustics",

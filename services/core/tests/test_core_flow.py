@@ -11,6 +11,7 @@ import tarfile
 import threading
 import time
 import zipfile
+from datetime import UTC, datetime, timedelta
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
@@ -536,6 +537,57 @@ def test_note_is_source_searchable_and_versioned(client):
     assert note_hit["source_type"] == "note"
     assert note_hit["source_title"] == "Typed claim graphs"
     assert note_hit["note_id"] == created["id"]
+
+
+def test_todos_quick_add_views_and_completion(client):
+    note = client.post(
+        "/notes",
+        json={
+            "title": "Citation follow-up",
+            "content_json": {},
+            "content_markdown": "Check the citation mismatch against the imported source.",
+            "origin": "user_written",
+        },
+    ).json()
+    tomorrow = (datetime.now(UTC).date() + timedelta(days=1)).isoformat()
+    created = client.post(
+        "/todos",
+        json={
+            "text": "Email Anna about citation mismatch tomorrow @waiting #Paper review p2",
+            "context_links": [
+                {
+                    "target_type": "note",
+                    "target_id": note["id"],
+                    "target_title": note["title"],
+                    "relation": "follow_up",
+                }
+            ],
+        },
+    ).json()
+    assert created["title"] == "Email Anna about citation mismatch"
+    assert created["due_date"] == tomorrow
+    assert created["priority"] == 2
+    assert created["labels"] == ["waiting"]
+    assert created["list_name"] == "Paper review"
+    assert created["context_links"][0]["target_id"] == note["id"]
+
+    inbox = client.post("/todos", json={"text": "Clean inbox today"}).json()
+    inbox_rows = client.get("/todos?view=inbox").json()
+    assert [todo["id"] for todo in inbox_rows["items"]] == [inbox["id"]]
+    upcoming_rows = client.get("/todos?view=upcoming").json()
+    assert created["id"] in {todo["id"] for todo in upcoming_rows["items"]}
+    lists = client.get("/todo-lists").json()
+    assert lists[0]["name"] == "Paper review"
+    assert lists[0]["open_count"] == 1
+
+    completed = client.post(f"/todos/{created['id']}/complete").json()
+    assert completed["status"] == "completed"
+    assert completed["completed_at"]
+    completed_rows = client.get("/todos?view=completed").json()
+    assert created["id"] in {todo["id"] for todo in completed_rows["items"]}
+    stats = client.get("/stats").json()
+    assert stats["open_todos"] == 1
+    assert stats["due_todos"] >= 1
 
 
 def test_note_version_restore_creates_new_version_and_rechunks_note_source(client):
