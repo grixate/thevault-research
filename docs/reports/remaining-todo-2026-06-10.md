@@ -284,6 +284,18 @@ Latest command palette minimalist verification on 2026-06-21:
 - Renderer e2e smoke: passed.
 - `git diff --check`: passed.
 
+Latest default-entry minimalist verification on 2026-06-21:
+
+- New app sessions now open directly to Notes instead of the Home status surface.
+- Home remains available in the sidebar for local automation, activity, and workspace counts, but it is no longer the first visual object for a clean session.
+- The renderer e2e smoke was tightened from a generic shell check to assert that Notes is the first active surface.
+- Stable Playwright helper now covers `app-entry`; screenshot captured at `/tmp/vault-app-entry-notes.png`.
+- Focused shell/Home/Night Lab tests: 3 passed.
+- Desktop tests: 77 passed.
+- Desktop production build: passed.
+- Renderer e2e smoke: passed.
+- `git diff --check`: passed.
+
 Latest secondary-surface header cleanup on 2026-06-21:
 
 - Evidence graph first glance now uses a plain `Evidence graph` header and keeps context in the compact claim-count strip; the old `claims and source blocks` eyebrow and working-map explanatory sentence are gone.
@@ -2735,6 +2747,7 @@ Current good state:
 - Generated-note provenance and Storage import follow-ups now preserve long source/evidence labels without adding visible clutter.
 - Storage source status is now a disclosure that opens when review work needs attention.
 - Command palette fast actions now show only icon, action name, and shortcut; explanatory action sublines are gone.
+- Clean sessions now open on Notes instead of Home, making the writing workspace the default product center.
 
 Remaining tasks:
 

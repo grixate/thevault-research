@@ -624,7 +624,7 @@ describe("App", () => {
   afterEach(() => {
     cleanup();
     useUIStore.setState({
-      surface: "dashboard",
+      surface: "notes",
       selectedNoteId: undefined,
       selectedSourceId: undefined,
       selectedSourceBlockId: undefined,
@@ -667,6 +667,8 @@ describe("App", () => {
     };
     renderApp();
     expect(await screen.findByText("The Vault")).toBeTruthy();
+    expect(await screen.findByRole("heading", { name: "Notes", level: 1 })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Notes" }).className).toContain("active");
   });
 
   it("creates and completes tasks from the Tasks surface", async () => {
@@ -1826,6 +1828,7 @@ describe("App", () => {
       }),
       selectFiles: vi.fn(async () => [])
     };
+    useUIStore.setState({ surface: "dashboard" });
     renderApp();
 
     const path = await screen.findByLabelText("Workspace start");
@@ -2241,6 +2244,7 @@ describe("App", () => {
     });
     window.vault = { request, selectFiles: vi.fn(async () => []) };
 
+    useUIStore.setState({ surface: "dashboard" });
     renderApp();
     fireEvent.click(await screen.findByLabelText(/Helper ideas/i));
     fireEvent.click(await screen.findByRole("button", { name: /run night lab/i }));

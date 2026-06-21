@@ -38,7 +38,7 @@ type UIState = {
 };
 
 export const useUIStore = create<UIState>((set) => ({
-  surface: "dashboard",
+  surface: "notes",
   quickNoteRequestId: 0,
   quickTaskRequestId: 0,
   sourceDialogRequestId: 0,

@@ -5,6 +5,10 @@ const outputPath = process.argv[3] ?? `/tmp/vault-${scenario}.png`;
 const baseUrl = process.env.VAULT_RENDERER_URL ?? "http://127.0.0.1:5173/";
 
 const scenarios = {
+  "app-entry": async (page) => {
+    await installEmptyVaultBridge(page);
+    await page.goto(baseUrl, { waitUntil: "networkidle" });
+  },
   "notes-loading": async (page) => {
     await openNotes(page);
   },
