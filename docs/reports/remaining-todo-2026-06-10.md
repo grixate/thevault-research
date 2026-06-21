@@ -296,6 +296,19 @@ Latest default-entry minimalist verification on 2026-06-21:
 - Renderer e2e smoke: passed.
 - `git diff --check`: passed.
 
+Latest topbar search minimalist verification on 2026-06-21:
+
+- Removed the always-visible `Exact` / `Smart` segmented control from the resting top bar.
+- Search still defaults to `Smart`; the `Exact` / `Smart` mode tabs now appear only inside the active search-results popover.
+- Fast actions stay Spotlight-like: no search-mode chrome, no descriptions, just action names and shortcuts.
+- Fixed command-palette layering by giving the topbar an explicit stacking context, so popovers render above the document surface.
+- Visual checks: `app-entry` no longer shows `Exact` / `Smart`, and `command-actions` renders the full action list above the Notes surface. Screenshots captured at `/tmp/vault-app-entry-search-minimal.png` and `/tmp/vault-command-actions-search-minimal-fixed.png`.
+- Focused shell/command/search tests: 5 passed.
+- Desktop tests: 77 passed.
+- Desktop production build: passed.
+- Renderer e2e smoke: passed.
+- `git diff --check`: passed.
+
 Latest secondary-surface header cleanup on 2026-06-21:
 
 - Evidence graph first glance now uses a plain `Evidence graph` header and keeps context in the compact claim-count strip; the old `claims and source blocks` eyebrow and working-map explanatory sentence are gone.
@@ -2748,6 +2761,7 @@ Current good state:
 - Storage source status is now a disclosure that opens when review work needs attention.
 - Command palette fast actions now show only icon, action name, and shortcut; explanatory action sublines are gone.
 - Clean sessions now open on Notes instead of Home, making the writing workspace the default product center.
+- The resting topbar search no longer exposes `Exact` / `Smart`; mode choice is available only while reviewing active search results.
 
 Remaining tasks:
 
@@ -2804,6 +2818,7 @@ Current good state:
 - Learning and Local tools now share the same quieter language style as the rest of the app.
 - Global visual tokens and major Settings panels are calmer and closer to notes-app references.
 - Command palette fast actions now follow the same minimal Spotlight-like row pattern as Quick capture.
+- Search mode selection now uses existing Radix tabs only inside the active search popover instead of permanently occupying the topbar.
 
 Remaining tasks:
 

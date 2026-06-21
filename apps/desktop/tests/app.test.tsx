@@ -669,6 +669,7 @@ describe("App", () => {
     expect(await screen.findByText("The Vault")).toBeTruthy();
     expect(await screen.findByRole("heading", { name: "Notes", level: 1 })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Notes" }).className).toContain("active");
+    expect(screen.queryByRole("tablist", { name: "Search style" })).toBeNull();
   });
 
   it("creates and completes tasks from the Tasks surface", async () => {
@@ -2965,6 +2966,7 @@ describe("App", () => {
     await waitFor(() => expect(document.activeElement).toBe(search));
     const commands = await screen.findByLabelText("Search and actions");
     expect(within(commands).getByText("Fast actions")).toBeTruthy();
+    expect(within(commands).queryByRole("tablist", { name: "Search style" })).toBeNull();
     expect(within(commands).getByRole("option", { name: /Quick note/i })).toBeTruthy();
     expect(within(commands).getByRole("option", { name: /Quick task/i })).toBeTruthy();
     expect(within(commands).getByRole("option", { name: /New note/i })).toBeTruthy();

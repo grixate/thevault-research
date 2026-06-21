@@ -818,17 +818,22 @@ function TopBar() {
           <kbd className="search-shortcut" aria-hidden="true">
             ⌘K
           </kbd>
-          <Tabs value={searchMode} onValueChange={(value) => changeSearchMode(value as "fts" | "hybrid")} className="search-mode">
-            <TabsList aria-label="Search style">
-              {(["fts", "hybrid"] as const).map((mode) => (
-                <TabsTrigger key={mode} value={mode} onClick={() => changeSearchMode(mode)}>
-                  {searchModeLabel(mode)}
-                </TabsTrigger>
-              ))}
-            </TabsList>
-          </Tabs>
           {showSearchPopover && (
             <div className="search-popover" id="global-search-results" role="listbox" aria-label="Search and actions">
+              {showSearchResults && (
+                <div className="search-popover-header">
+                  <div className="search-section-label">Search</div>
+                  <Tabs value={searchMode} onValueChange={(value) => changeSearchMode(value as "fts" | "hybrid")} className="search-mode">
+                    <TabsList aria-label="Search style">
+                      {(["fts", "hybrid"] as const).map((mode) => (
+                        <TabsTrigger key={mode} value={mode} onClick={() => changeSearchMode(mode)}>
+                          {searchModeLabel(mode)}
+                        </TabsTrigger>
+                      ))}
+                    </TabsList>
+                  </Tabs>
+                </div>
+              )}
               {showCommandActions && (
                 <div className="command-action-group" aria-label="Fast actions">
                   <div className="search-section-label">Fast actions</div>

@@ -342,6 +342,8 @@ small {
 }
 
 .topbar {
+  position: relative;
+  z-index: 40;
   display: grid;
   grid-template-columns: minmax(220px, 0.85fr) minmax(360px, 1fr) auto;
   align-items: center;
@@ -447,6 +449,18 @@ textarea:not(.ui-textarea) {
   border: 1px solid var(--line);
   border-radius: var(--radius);
   box-shadow: 0 22px 60px rgba(20, 18, 14, 0.16);
+}
+
+.search-popover-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 0 8px;
+}
+
+.search-popover-header .search-section-label {
+  padding-bottom: 0;
 }
 
 .command-action-group {
