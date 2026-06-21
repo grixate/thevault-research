@@ -2112,7 +2112,6 @@ function LocalAICommandCenter({
   releasePlan,
   productionPack,
   demoPack,
-  runtimes,
   busy,
   candidateBusy,
   onOpenWizard,
@@ -2126,7 +2125,6 @@ function LocalAICommandCenter({
   releasePlan?: AIRegistryReleasePlanReport;
   productionPack?: AIModelPackInfo;
   demoPack?: AIModelPackInfo;
-  runtimes: AIRuntimeInfo[];
   busy: boolean;
   candidateBusy: boolean;
   onOpenWizard: () => void;
@@ -2147,18 +2145,21 @@ function LocalAICommandCenter({
     (reportSummary?.ready_production_pack_count ?? 0) +
     (reportSummary?.ready_production_runtime_count ?? 0) +
     (routeSection && routeSection.blocked_count === 0 ? 1 : 0);
-  const progressPercent = productionGateTotal ? Math.round((productionGateReady / productionGateTotal) * 100) : 0;
   const topApproval = [...(report?.approval_items ?? [])].sort((a, b) => b.blocker_count - a.blocker_count)[0];
   const blockedSetup = setupSteps.find((step) => step.status === "blocked");
-  const installableRuntimeCount = runtimes.filter((runtimeItem) => runtimeItem.installable && !runtimeItem.installed).length;
   const demoAvailable = Boolean(setup?.can_use_demo || demoPack?.installable || demoPack?.installed);
   const nextTitle = topApproval?.title ?? blockedSetup?.title ?? setup?.next_action ?? "Check private model setup";
   const nextDetail = topApproval?.next_action ?? blockedSetup?.detail ?? report?.next_actions?.[0] ?? setup?.next_action;
   const nextDetailCopy =
     topApproval?.category === "capability_route" ? "Choose an approved local model for this task before using it." : localAIUserText(nextDetail);
   const productionGateLabel = productionGateTotal ? `${productionGateReady}/${productionGateTotal} essentials ready` : "setup checks loading";
-  const routeLabel = routeSection ? (routeSection.blocked_count ? `${routeSection.blocked_count} tasks need models` : "Tasks connected") : "Task checks loading";
-  const releaseBlockerCount = releaseSummary?.blocked_count ?? 0;
+  const modelFilesLabel = releasePlan
+    ? `${releaseSummary?.ready_production_model_count ?? 0}/${releaseSummary?.production_model_count ?? 0} files`
+    : "files loading";
+  const runtimesLabel = releasePlan
+    ? `${releaseSummary?.ready_production_runtime_count ?? 0}/${releaseSummary?.production_runtime_count ?? 0} runtimes`
+    : "runtimes loading";
+  const routeLabel = routeSection ? (routeSection.blocked_count ? `${routeSection.blocked_count} unassigned` : "connected") : "checking";
   let primaryActionKey = "wizard";
   let primaryActionLabel = "Setup";
   let primaryActionIcon = <Wrench size={14} />;
@@ -2194,91 +2195,45 @@ function LocalAICommandCenter({
   }
 
   return (
-    <section className="local-ai-command" aria-label="Local AI setup summary">
-      <div className="local-ai-command-header">
-        <div>
-          <Badge tone={report?.production_ready ? "good" : setup?.can_use_demo ? "warn" : "bad"}>
-            {report?.production_ready ? "approved" : setup?.can_use_demo ? "starter ready" : "needs setup"}
-          </Badge>
-          <h3>Local models</h3>
-          <p>{localAIUserText(setup?.next_action ?? report?.next_actions?.[0] ?? "Finish setup before using approved local models.")}</p>
-        </div>
-        <div className="local-ai-command-score">
-          <strong>{progressPercent}%</strong>
-          <span>{productionGateLabel}</span>
-          <div className="local-ai-command-progress" aria-hidden="true">
-            <i style={{ width: `${progressPercent}%` }} />
-          </div>
-        </div>
+    <section className="local-ai-command" aria-label="Local AI setup summary" title={nextDetailCopy || undefined}>
+      <div className="local-ai-command-status">
+        <Badge tone={report?.production_ready ? "good" : setup?.can_use_demo ? "warn" : "bad"}>
+          {report?.production_ready ? "ready" : setup?.can_use_demo ? "starter" : "setup"}
+        </Badge>
+        <strong>{localAIUserText(nextTitle)}</strong>
       </div>
-      <div className="local-ai-command-grid">
-        <article className={report?.production_ready ? "ready" : "blocked"}>
-          <div>
-            <Badge tone={report?.production_ready ? "good" : "bad"}>{report?.production_ready ? "Ready" : `${reportSummary?.blocked_count ?? 0} items`}</Badge>
-            <Shield size={18} />
-          </div>
-          <strong>Trusted models</strong>
-          <span>
-            {report
-              ? `${reportSummary?.ready_production_pack_count ?? 0}/${reportSummary?.production_pack_count ?? 0} packs, ${reportSummary?.ready_production_runtime_count ?? 0}/${reportSummary?.production_runtime_count ?? 0} runtimes`
-              : "approval status loading"}
-          </span>
-          <small>{routeLabel}</small>
-        </article>
-        <article className={demoAvailable ? "ready" : "blocked"}>
-          <div>
-            <Badge tone={demoAvailable ? "info" : "bad"}>{demoAvailable ? "Available" : "Needs files"}</Badge>
-            <Beaker size={18} />
-          </div>
-          <strong>Starter models</strong>
-          <span>{demoPack?.display_name ?? setup?.demo_pack_id ?? "No demo pack selected"}</span>
-          <small>{demoPack?.installed ? "Starter models are installed." : demoPack?.installable ? "Starter models can be prepared." : "Starter setup needs files."}</small>
-        </article>
-        <article className={releaseSummary?.ready_to_pin ? "ready" : "blocked"}>
-          <div>
-            <Badge tone={releaseSummary?.ready_to_pin ? "good" : "warn"}>
-              {releaseSummary?.ready_to_pin ? "Ready to use" : `${releaseBlockerCount} items`}
-            </Badge>
-            <HardDrive size={18} />
-          </div>
-          <strong>Items to finish</strong>
-          <span>
-            {releasePlan
-              ? `${releaseSummary?.ready_production_model_count ?? 0}/${releaseSummary?.production_model_count ?? 0} model files, ${releaseSummary?.ready_production_runtime_count ?? 0}/${releaseSummary?.production_runtime_count ?? 0} runtimes`
-              : "Setup checklist loading"}
-          </span>
-          <small>{installableRuntimeCount ? `${installableRuntimeCount} runtimes can be installed now.` : "No runtime install is waiting."}</small>
-        </article>
-        <aside className="local-ai-next-move">
-          <div>
-            <Badge tone={topApproval ? approvalCategoryTone(topApproval.category) : "info"}>next</Badge>
-            <strong>{localAIUserText(nextTitle)}</strong>
-            {nextDetailCopy && <span>{nextDetailCopy}</span>}
-          </div>
-          <div>
-            <Button icon={primaryActionIcon} variant={primaryActionVariant} disabled={primaryActionDisabled} onClick={primaryAction}>
-              {primaryActionLabel}
-            </Button>
-            <Button icon={<Beaker size={14} />} variant="secondary" disabled={!demoAvailable || busy} onClick={onRunDemo}>
-              Use starter setup
-            </Button>
-            {primaryActionKey !== "routes" && (
-              <Button icon={<SlidersHorizontal size={14} />} variant="quiet" onClick={onOpenRouting}>
-                Open Search
-              </Button>
-            )}
-            {primaryActionKey !== "wizard" && (
-              <Button icon={<Wrench size={14} />} variant="quiet" onClick={onOpenWizard}>
-                Setup
-              </Button>
-            )}
-            {primaryActionKey !== "candidate" && topApproval?.category !== "capability_route" && (
-              <Button icon={<FolderOpen size={14} />} variant="quiet" disabled={candidateBusy} onClick={onEvaluateCandidate}>
-                {candidateBusy ? "Loading files" : "Add evidence"}
-              </Button>
-            )}
-          </div>
-        </aside>
+      <dl className="local-ai-command-facts" aria-label="Local model readiness">
+        <div>
+          <dt>Essentials</dt>
+          <dd>{productionGateLabel}</dd>
+        </div>
+        <div>
+          <dt>Files</dt>
+          <dd>{modelFilesLabel}</dd>
+        </div>
+        <div>
+          <dt>Runtimes</dt>
+          <dd>{runtimesLabel}</dd>
+        </div>
+        <div>
+          <dt>Search</dt>
+          <dd>{routeLabel}</dd>
+        </div>
+      </dl>
+      <div className="local-ai-command-actions">
+        <Button icon={primaryActionIcon} variant={primaryActionVariant} disabled={primaryActionDisabled} onClick={primaryAction}>
+          {primaryActionLabel}
+        </Button>
+        {demoAvailable && primaryActionKey !== "recommended" && (
+          <Button icon={<Beaker size={14} />} variant="quiet" disabled={busy} onClick={onRunDemo}>
+            Starter
+          </Button>
+        )}
+        {primaryActionKey !== "routes" && (
+          <Button icon={<SlidersHorizontal size={14} />} variant="quiet" onClick={onOpenRouting}>
+            Search
+          </Button>
+        )}
       </div>
     </section>
   );
@@ -11396,34 +11351,26 @@ function SettingsView() {
 
         {tab === "ai" && (
           <div className="settings-section">
-            <div className="settings-hero">
-              <div>
-                <Badge tone="good">Runs on this device</Badge>
-                <h3>Models for notes, search, and voice</h3>
-                <p>
-                  Start with one recommended local pack. Advanced model choices stay available when you need them.
-                </p>
-              </div>
-              <div className="hardware-card">
-                <Cpu size={22} />
+            <div className="settings-model-strip" aria-label="Local model environment">
+              <Badge tone="good">Runs on this device</Badge>
+              <span>
+                <Cpu size={14} />
                 <strong>{hardware.data?.recommended_profile ?? "tiny"} profile</strong>
-                <span>
+                <small>
                   {hardware.data?.os} / {hardware.data?.arch} / {hardware.data?.physical_ram_gb ?? "?"} GB RAM
-                </span>
-              </div>
-              <div className="runtime-card">
+                </small>
+              </span>
+              <span>
                 <Badge tone={runtimeTone} title={llamaRuntime?.state ?? "checking"}>
                   {runtimeHealthLabel(llamaRuntime?.state)}
                 </Badge>
                 <strong>llama.cpp</strong>
-                <span title={runtimeBinaryTitle(llamaRuntime?.cli)}>{runtimeCliLabel(llamaRuntime?.cli.configured)}</span>
+                <small title={runtimeBinaryTitle(llamaRuntime?.cli)}>{runtimeCliLabel(llamaRuntime?.cli.configured)}</small>
                 <small>{runtimeInstalledModelsLabel(llamaRuntime?.installed_models.length ?? 0)}</small>
-                <Button icon={<Play size={15} />} variant="quiet" onClick={() => testRuntime.mutate()}>
-                  Test runtime
-                </Button>
-                <Button icon={<Import size={15} />} variant="quiet" onClick={() => importModel.mutate()}>
-                  Import model
-                </Button>
+              </span>
+              <div>
+                <Button icon={<Play size={15} />} size="icon" variant="quiet" aria-label="Test runtime" title="Test runtime" onClick={() => testRuntime.mutate()} />
+                <Button icon={<Import size={15} />} size="icon" variant="quiet" aria-label="Import model" title="Import model" onClick={() => importModel.mutate()} />
               </div>
             </div>
             {importModel.data && <small className="import-result">Imported {importModel.data.display_name} into Vault model storage.</small>}
@@ -11436,7 +11383,6 @@ function SettingsView() {
               releasePlan={registryReleasePlan.data}
               productionPack={recommendedProductionPack}
               demoPack={demoSetupPack}
-              runtimes={managedRuntimes}
               busy={setupWizardBusy}
               candidateBusy={evaluateCandidateReleasePlan.isPending}
               onOpenWizard={() => setSetupWizardOpen(true)}

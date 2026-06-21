@@ -237,6 +237,19 @@ Latest capsule minimalist UX verification on 2026-06-21:
 - Renderer e2e smoke: passed.
 - Playwright desktop Capsules smoke: rendered at 1440x950 with no horizontal overflow, full capsule list title visible, no stray `clean` text, and screenshot captured at `/tmp/vault-capsules-minimal-desktop.png`.
 
+Latest Settings Models minimalist verification on 2026-06-21:
+
+- Settings -> Models no longer opens with a hero/card cluster. The first glance is now a compact local environment strip plus a single setup-readiness row.
+- Removed the old visible copy `Models for notes, search, and voice` and `Start with one recommended local pack...`.
+- Removed the three-card local-AI command center (`Local models`, `Trusted models`, `Starter models`, `Items to finish`) and replaced it with status, essentials, files, runtimes, search, and the current useful actions.
+- Runtime test/import remain accessible as icon-only controls in the local environment strip.
+- Focused Settings/model/runtime/voice/search/privacy/backup tests: 12 passed.
+- Desktop tests: 77 passed.
+- Desktop production build: passed.
+- Renderer e2e smoke: passed.
+- In-app browser desktop Settings smoke rendered at 1440x950 with no horizontal overflow, `.settings-model-strip` present, `.settings-hero` absent, old hero copy absent, and old command-center card classes absent.
+- Standalone shell-launched Chromium still hits the managed macOS sandbox Mach-port denial; use the in-app browser path for visual QA in this workspace unless running a fully escalated shell check.
+
 Latest capsule export verification on 2026-06-15:
 
 - Added backend capsule export preview, `.vaultcapsule` package creation, export history listing, version-specific export, and private-full source blob packaging.
@@ -815,6 +828,27 @@ Production runtimes: 0/3 ready
 Important: strict production is still not done. `pnpm verify:strict` and `./scripts/check_ai_readiness.sh` should continue to fail until real production model/runtime manifests, checksums, licenses, approval evidence, and local capability routes are pinned.
 
 ## Completed In The Latest Verified Slice
+
+Settings -> Models is closer to the accepted minimalist direction:
+
+- Replaced the top Settings hero/card cluster with a compact local environment strip.
+- Removed the redundant local-AI setup dashboard cards and replaced them with one readiness row: current status, essentials, files, runtimes, search, and the relevant actions.
+- Kept runtime test/import available as icon-only controls.
+- Updated tests so the old `Local models`, `Trusted models`, `Starter models`, and `Items to finish` command-center cards do not come back as first-glance UI.
+- Used the in-app browser path for visual QA because shell-launched Chromium still hits the managed macOS Mach-port sandbox denial.
+- Focused Settings/model/runtime/voice/search/privacy/backup tests: 12 passed.
+- Desktop tests: 77 passed.
+- Desktop production build: passed.
+- Renderer e2e smoke: passed.
+
+Files touched:
+
+- `apps/desktop/src/app/App.tsx`
+- `apps/desktop/src/styles/global.css`
+- `apps/desktop/tests/app.test.tsx`
+- `docs/reports/remaining-todo-2026-06-10.md`
+
+## Completed In An Earlier Verified Slice
 
 Production local-AI byte evidence and whisper.cpp runtime package state are now explicit for all model candidates; the remaining source/byte gap is the unpublished whisper runtime URL:
 
@@ -1506,7 +1540,7 @@ Models is now framed as part of the notes workspace, not as a primary admin subs
 - The sidebar and workspace header now say `Models`.
 - Home's start path now points to `Models`.
 - Settings uses `Models` / `local preferences` at the page top.
-- The setup summary now says `Local models`, `Trusted models`, and `Items to finish`.
+- The setup summary now favors compact local-model readiness facts over admin-dashboard card labels.
 - Setup buttons are shorter: `Setup`, `Open Search`, and `Add evidence`.
 - The note editor disclosure now says `Model routes`.
 - Focused Settings tests, the desktop app test file, desktop build, and renderer e2e smoke passed.
@@ -2113,8 +2147,8 @@ Files touched:
 
 Settings -> Models is calmer at first glance:
 
-- The setup summary now frames local AI as `Local models`, not release operations.
-- The first-glance cards are `Trusted models`, `Starter models`, and `Items to finish`.
+- The first glance now frames local AI as readiness facts and current actions, not release operations.
+- The old first-glance cards were removed; library and approval details stay behind disclosures.
 - The setup guide and modal use a short `Setup` / `Model setup` flow name.
 - Starter/demo actions are user-facing while still running the same demo setup routes internally.
 - Readiness checklist details keep blockers honest but render them in app-language, e.g. `approved downloads` and `before use`.
@@ -2181,7 +2215,7 @@ Files touched:
 Models settings is less release-engineering shaped at first glance:
 
 - The top of Settings now says `Models`.
-- The setup summary now says `Local models`.
+- The setup summary now uses compact readiness facts instead of a section headline.
 - Production blockers remain honest, but the visible labels are user-centered.
 - The approval checklist keeps export/review tooling available without making the page read like a deployment dashboard.
 - The Settings tab now says `Models` rather than `AI Models`.
@@ -2592,7 +2626,7 @@ Current good state:
 - Settings Privacy and Export now use local-first privacy and backup language.
 - Advanced Search test results now use `stayed on this device`/`left this device` privacy wording.
 - Settings Advanced now gives the settings JSON a clear snapshot heading instead of a raw dump.
-- Local-model setup now uses `Items to finish`, `Local model preparation`, `Setup path`, and `setup draft` instead of release-queue language.
+- Local-model setup now opens with compact readiness facts and keeps library/approval detail behind disclosures instead of route-card/dashboard language.
 - Quick Note, Storage intake, and generated-draft action rows wrap or stack cleanly at narrow widths.
 - Assistant no longer overflows at 390px; the mobile top bar removes desktop search width and keeps the question flow in view.
 - Assistant citation rows clamp long titles and exact quotes while preserving full evidence text.
@@ -2630,7 +2664,7 @@ Current good state:
 
 - Settings local-AI command center now reduces competing actions and follows the current blocker.
 - Private setup steps now show one current step plus compact progress.
-- Settings -> Models uses calmer first-glance labels: `Local models`, `Trusted models`, `Starter models`, and `Items to finish`.
+- Settings -> Models uses a compact local environment strip and setup-readiness row instead of a hero/card cluster.
 - The main app entry point now says `Models` instead of foregrounding `Local AI`.
 - Advanced local-model setup now uses a quiet checklist treatment instead of a promotion-pipeline card grid.
 - Advanced local-model setup now says `ready to trust`, `Top item`, and `Needs action` instead of `pin-ready`, `Top blocker`, and raw stage states.
