@@ -40,6 +40,18 @@ const scenarios = {
     await openSettings(page);
     await page.getByRole("tab", { name: "Advanced" }).click();
   },
+  "graph-empty": async (page) => {
+    await installEmptyVaultBridge(page);
+    await openGraph(page);
+  },
+  "practice-empty": async (page) => {
+    await installEmptyVaultBridge(page);
+    await openPractice(page);
+  },
+  "local-tools-empty": async (page) => {
+    await installEmptyVaultBridge(page);
+    await openLocalTools(page);
+  },
   "quick-note": async (page) => {
     await installEmptyVaultBridge(page);
     await openQuickNote(page);
@@ -101,6 +113,24 @@ async function openSettings(page) {
   if (await settings.count()) await settings.first().click();
 }
 
+async function openGraph(page) {
+  await page.goto(baseUrl, { waitUntil: "networkidle" });
+  const graph = page.locator('.main-nav button[aria-label="Graph"]');
+  if (await graph.count()) await graph.first().click();
+}
+
+async function openPractice(page) {
+  await page.goto(baseUrl, { waitUntil: "networkidle" });
+  const learning = page.locator('.main-nav button[aria-label="Learning"]');
+  if (await learning.count()) await learning.first().click();
+}
+
+async function openLocalTools(page) {
+  await page.goto(baseUrl, { waitUntil: "networkidle" });
+  const tools = page.locator('.main-nav button[aria-label="Local tools"]');
+  if (await tools.count()) await tools.first().click();
+}
+
 async function openQuickNote(page) {
   await page.goto(baseUrl, { waitUntil: "networkidle" });
   await page.locator('.topbar button[aria-label="Quick note"]').click();
@@ -130,6 +160,9 @@ async function installEmptyVaultBridge(page) {
         if (route === "events.list") return [];
         if (route === "notes.list") return [];
         if (route === "sources.list") return [];
+        if (route === "claims.list") return [];
+        if (route === "learning.items") return [];
+        if (route === "tools.list") return [];
         if (route === "ai.capabilities") return [];
         return [];
       },

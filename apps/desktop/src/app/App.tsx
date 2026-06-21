@@ -8644,11 +8644,7 @@ function GraphView() {
   return (
     <div className="surface graph-layout">
       <Panel className="graph-canvas">
-        <SectionHeader
-          title="Evidence graph"
-          eyebrow="claims and source blocks"
-          description="A working map of approved claims, their strength, and the exact source blocks behind them."
-        />
+        <SectionHeader title="Evidence graph" />
         <div className="graph-context-strip" aria-label="Evidence graph context">
           <span>{claims.data?.length ?? 0} claims</span>
           <span>{supportedCount} supported</span>
@@ -9570,7 +9566,6 @@ function LearningView() {
       <Panel>
         <SectionHeader
           title="Practice"
-          description="Cards created from approved knowledge. New cards wait in Review before practice."
           actions={
             <Button icon={<Sparkles size={16} />} disabled={generate.isPending} onClick={() => generate.mutate()}>
               {generate.isPending ? "Creating" : "Create deck"}
@@ -9626,7 +9621,6 @@ function LearningView() {
       <Panel className="wide-panel">
         <SectionHeader
           title="Current card"
-          description="Practice one card at a time. Voice answers stay local."
           actions={
             selectedLearningItem ? (
               <>
@@ -9805,11 +9799,7 @@ function ToolsView() {
   return (
     <div className="surface split-view tool-studio-view">
       <Panel className="list-pane">
-        <SectionHeader
-          title="Local tools"
-          eyebrow="Sandboxed helpers"
-          description="Run approved local helpers against notes and Storage. Their output can create Review work, but cannot change trusted knowledge directly."
-        />
+        <SectionHeader title="Local tools" />
         <div className="entity-list">
           {(tools.data ?? []).map((tool) => (
             <button key={tool.id} className={selected?.id === tool.id ? "active" : ""} onClick={() => setSelectedToolId(tool.id)}>

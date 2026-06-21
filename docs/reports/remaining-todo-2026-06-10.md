@@ -272,6 +272,14 @@ Latest Assistant minimalist chat verification on 2026-06-21:
 - Renderer e2e smoke: passed.
 - In-app browser desktop Assistant smoke rendered with no horizontal overflow, `.assistant-composer-footer` present, `.assistant-scope-summary` absent, no visible `mock local`, and screenshot saved at `/tmp/vault-assistant-minimal-chat-desktop.png`.
 
+Latest secondary-surface header cleanup on 2026-06-21:
+
+- Evidence graph first glance now uses a plain `Evidence graph` header and keeps context in the compact claim-count strip; the old `claims and source blocks` eyebrow and working-map explanatory sentence are gone.
+- Practice first glance keeps `Practice` / `Current card` as direct titles; the old approved-knowledge and voice-answer header descriptions are gone.
+- Local tools first glance keeps a plain `Local tools` title; the old `Sandboxed helpers` eyebrow and long helper-safety explanation are gone.
+- Stable Playwright helper smokes now cover `graph-empty`, `practice-empty`, and `local-tools-empty`; screenshots captured at `/tmp/vault-graph-minimal-header.png`, `/tmp/vault-practice-minimal-header.png`, and `/tmp/vault-local-tools-minimal-header.png`.
+- Focused Graph/Practice/Local tools tests: 3 passed.
+
 Latest Notes minimalist first-glance verification on 2026-06-21:
 
 - Removed the explanatory `Selected note lane` banner from the editor; note purpose now lives in the compact title metadata line.
@@ -2759,6 +2767,7 @@ Current good state:
 - Assistant prompt starters and composer controls now read as one modern chat prompt instead of a card-like control panel.
 - The mobile top bar no longer forces desktop search width below 760px.
 - Evidence graph uses a compact context line and inline detail metadata instead of card-heavy metrics.
+- Evidence graph, Practice, and Local tools no longer use explanatory SectionHeader sublines on first glance.
 - Settings Search keeps raw capability bindings in a `Model task routing` disclosure with user-facing task names.
 - Settings tabs now show tab-specific panel titles and avoid redundant eyebrow descriptions.
 - Settings disclosure rows now prefer one-line labels over explanatory sublines.

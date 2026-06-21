@@ -2436,7 +2436,8 @@ describe("App", () => {
     useUIStore.setState({ surface: "tools" });
     renderApp();
     expect(await screen.findByRole("heading", { name: "Local tools", level: 2 })).toBeTruthy();
-    expect(await screen.findByText("Sandboxed helpers")).toBeTruthy();
+    expect(screen.queryByText("Sandboxed helpers")).toBeNull();
+    expect(screen.queryByText("Run approved local helpers against notes and Storage. Their output can create Review work, but cannot change trusted knowledge directly.")).toBeNull();
     expect(screen.queryByText(/Home Lab/i)).toBeNull();
     fireEvent.click(await screen.findByRole("button", { name: /Imported Capsule Tool/i }));
     expect(await screen.findByRole("button", { name: "Enable" })).toBeTruthy();
@@ -4395,6 +4396,9 @@ describe("App", () => {
     useUIStore.setState({ surface: "graph", selectedClaimId: "clm_supported" });
     renderApp();
 
+    expect(await screen.findByRole("heading", { name: "Evidence graph", level: 2 })).toBeTruthy();
+    expect(screen.queryByText("claims and source blocks")).toBeNull();
+    expect(screen.queryByText("A working map of approved claims, their strength, and the exact source blocks behind them.")).toBeNull();
     expect((await screen.findAllByText("Typed claims keep evidence exact")).length).toBeGreaterThan(0);
     const graphStatusTabs = await screen.findByRole("tablist", { name: "Claim status filter" });
     expect(within(graphStatusTabs).getByRole("tab", { name: "all" }).getAttribute("data-state")).toBe("active");
@@ -4513,6 +4517,8 @@ describe("App", () => {
     const { container } = renderApp();
 
     expect((await screen.findAllByText("Practice")).length).toBeGreaterThan(0);
+    expect(screen.queryByText("Cards created from approved knowledge. New cards wait in Review before practice.")).toBeNull();
+    expect(screen.queryByText("Practice one card at a time. Voice answers stay local.")).toBeNull();
     expect(await screen.findByText("New deck topic")).toBeTruthy();
     expect(await screen.findByText("Current card")).toBeTruthy();
     expect(await screen.findByLabelText("Practice voice privacy")).toBeTruthy();
