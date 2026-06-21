@@ -248,7 +248,7 @@ Latest Settings Models minimalist verification on 2026-06-21:
 - Desktop production build: passed.
 - Renderer e2e smoke: passed.
 - In-app browser desktop Settings smoke rendered at 1440x950 with no horizontal overflow, `.settings-model-strip` present, `.settings-hero` absent, old hero copy absent, and old command-center card classes absent.
-- Standalone shell-launched Chromium still hits the managed macOS sandbox Mach-port denial; use the in-app browser path for visual QA in this workspace unless running a fully escalated shell check.
+- Standalone shell-launched Chromium still hits the managed macOS sandbox Mach-port denial. Use the stable helper `node scripts/visual_check.mjs <scenario> <output>` for headless visual QA; the `node scripts/visual_check.mjs` prefix has been approved so repeated screenshot checks do not interrupt autonomous work.
 
 Latest Assistant minimalist chat verification on 2026-06-21:
 
@@ -262,6 +262,16 @@ Latest Assistant minimalist chat verification on 2026-06-21:
 - Desktop production build: passed.
 - Renderer e2e smoke: passed.
 - In-app browser desktop Assistant smoke rendered with no horizontal overflow, `.assistant-composer-footer` present, `.assistant-scope-summary` absent, no visible `mock local`, and screenshot saved at `/tmp/vault-assistant-minimal-chat-desktop.png`.
+
+Latest Notes minimalist first-glance verification on 2026-06-21:
+
+- Removed the explanatory `Selected note lane` banner from the editor; note purpose now lives in the compact title metadata line.
+- Removed the left-pane empty-state card/actions. The list is quiet when empty; the writing pane owns the resolved-empty `No notes` state with `New note` and `Quick note`.
+- During core startup or unresolved note loading, the editor pane stays blank instead of prematurely showing an empty-state action.
+- The Notes header `New note` action now appears only when there are existing notes, avoiding duplicate first-run actions.
+- Added `scripts/visual_check.mjs` with stable `notes-loading` and `notes-empty` scenarios so Chromium visual QA can run through one approved command prefix instead of repeated inline-script approvals.
+- Focused Notes/Storage/quick-note tests: 34 passed.
+- Visual checks: `node scripts/visual_check.mjs notes-loading /tmp/vault-notes-loading.png` and `node scripts/visual_check.mjs notes-empty /tmp/vault-notes-empty-resolved.png` passed; screenshots saved at those paths.
 
 Latest capsule export verification on 2026-06-15:
 
@@ -848,7 +858,7 @@ Settings -> Models is closer to the accepted minimalist direction:
 - Removed the redundant local-AI setup dashboard cards and replaced them with one readiness row: current status, essentials, files, runtimes, search, and the relevant actions.
 - Kept runtime test/import available as icon-only controls.
 - Updated tests so the old `Local models`, `Trusted models`, `Starter models`, and `Items to finish` command-center cards do not come back as first-glance UI.
-- Used the in-app browser path for visual QA because shell-launched Chromium still hits the managed macOS Mach-port sandbox denial.
+- Use the stable `node scripts/visual_check.mjs` helper for future headless visual QA because shell-launched Chromium still needs the approved unsandboxed path in this workspace.
 - Focused Settings/model/runtime/voice/search/privacy/backup tests: 12 passed.
 - Desktop tests: 77 passed.
 - Desktop production build: passed.

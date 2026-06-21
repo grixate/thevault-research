@@ -1381,46 +1381,6 @@ function noteKind(note: Note): { label: string; tone: "neutral" | "good" | "warn
   return { label: "Note", tone: "neutral" };
 }
 
-function noteLaneIntent(note: Note):
-  | {
-      title: string;
-      description: string;
-      badge: string;
-      tone: "neutral" | "good" | "warn" | "bad" | "info";
-      icon: typeof CircleDot;
-    }
-  | null {
-  const captureMode = String(note.content?.capture_mode ?? "");
-  if (captureMode === "quick_note") {
-    return {
-      title: "Notes inbox",
-      description: "Refine this capture into a written note when the thought is ready.",
-      badge: "quick capture",
-      tone: "info",
-      icon: TextCursorInput
-    };
-  }
-  if (captureMode === "source_block_note") {
-    return {
-      title: "Storage-linked note",
-      description: "Edit the synthesis here; the original source block stays immutable in Storage.",
-      badge: "source backed",
-      tone: "good",
-      icon: HardDrive
-    };
-  }
-  if (note.origin === "ai_generated" || note.status === "generated_pending_review") {
-    return {
-      title: "Review before trust",
-      description: "Generated writing stays provisional until claim review is prepared and approved.",
-      badge: "AI draft",
-      tone: "warn",
-      icon: Sparkles
-    };
-  }
-  return null;
-}
-
 function notePreview(note: Note): string {
   const text = note.content_markdown.replace(/[#>*_`-]/g, " ").replace(/\s+/g, " ").trim();
   if (!text) return "Empty note";
@@ -4768,7 +4728,6 @@ function todoContextLabel(link: TodoContextLink): string {
 
 function NotesView() {
   const queryClient = useQueryClient();
-  const setSurface = useUIStore((state) => state.setSurface);
   const selectedNoteId = useUIStore((state) => state.selectedNoteId);
   const setSelectedNoteId = useUIStore((state) => state.setSelectedNoteId);
   const requestQuickNote = useUIStore((state) => state.requestQuickNote);
@@ -4794,20 +4753,15 @@ function NotesView() {
         <SectionHeader
           title="Notes"
           actions={
-            <Button icon={<FilePlus2 size={16} />} onClick={() => createNote.mutate()}>
-              New note
-            </Button>
+            noteRows.length > 0 ? (
+              <Button icon={<FilePlus2 size={16} />} onClick={() => createNote.mutate()}>
+                New note
+              </Button>
+            ) : undefined
           }
         />
         <div className="entity-list notes-list">
           {notes.isLoading && <div className="entity-list-empty">Loading notes...</div>}
-          {!notes.isLoading && noteRows.length === 0 && (
-            <NotesEmptyState
-              onNewNote={() => createNote.mutate()}
-              onQuickNote={() => requestQuickNote()}
-              onOpenStorage={() => setSurface("sources")}
-            />
-          )}
           {noteRows.map((note) => {
             const kind = noteKind(note);
             return (
@@ -4829,36 +4783,7 @@ function NotesView() {
           })}
         </div>
       </Panel>
-      <NoteEditor note={selected} />
-    </div>
-  );
-}
-
-function NotesEmptyState({
-  onNewNote,
-  onQuickNote,
-  onOpenStorage
-}: {
-  onNewNote: () => void;
-  onQuickNote: () => void;
-  onOpenStorage: () => void;
-}) {
-  return (
-    <div className="entity-list-empty notes-empty-state">
-      <NotebookPen size={18} />
-      <strong>Start with a note</strong>
-      <span>Use Quick note for a thought, or New note for longer writing.</span>
-      <div className="entity-list-empty-actions">
-        <Button type="button" size="sm" variant="primary" icon={<NotebookPen size={14} />} onClick={onQuickNote}>
-          Quick note
-        </Button>
-        <Button type="button" size="sm" variant="secondary" icon={<FilePlus2 size={14} />} onClick={onNewNote}>
-          New note
-        </Button>
-        <Button type="button" size="sm" variant="quiet" icon={<HardDrive size={14} />} onClick={onOpenStorage}>
-          Storage
-        </Button>
-      </div>
+      <NoteEditor note={selected} isLoading={notes.isLoading} onNewNote={() => createNote.mutate()} onQuickNote={() => requestQuickNote()} />
     </div>
   );
 }
@@ -5003,7 +4928,7 @@ function EditorFormatToolbar({ editor, onSave, saveState }: { editor: Editor | n
   );
 }
 
-function NoteEditor({ note }: { note?: Note }) {
+function NoteEditor({ note, isLoading, onNewNote, onQuickNote }: { note?: Note; isLoading?: boolean; onNewNote: () => void; onQuickNote: () => void }) {
   const queryClient = useQueryClient();
   const setSurface = useUIStore((state) => state.setSurface);
   const setSelectedNoteId = useUIStore((state) => state.setSelectedNoteId);
@@ -5479,11 +5404,28 @@ function NoteEditor({ note }: { note?: Note }) {
     };
   }, [note?.id]);
 
+  if (!note && isLoading) {
+    return (
+      <Panel className="editor-pane editor-pane-empty" aria-busy="true">
+        <span className="visually-hidden">Loading notes</span>
+      </Panel>
+    );
+  }
+
   if (!note) {
     return (
-      <Panel className="editor-pane empty-state">
-        <h3>No note selected.</h3>
-        <p>Create a note to start writing, or open Storage when you want to add immutable evidence.</p>
+      <Panel className="editor-pane editor-pane-empty">
+        <div className="note-editor-empty">
+          <strong>No notes</strong>
+          <div>
+            <Button icon={<FilePlus2 size={15} />} onClick={onNewNote}>
+              New note
+            </Button>
+            <Button icon={<NotebookPen size={15} />} variant="quiet" onClick={onQuickNote}>
+              Quick note
+            </Button>
+          </div>
+        </div>
       </Panel>
     );
   }
@@ -5520,8 +5462,10 @@ function NoteEditor({ note }: { note?: Note }) {
                 setSaveState((state) => (state === "saving" ? "saving" : "unsaved"));
               }}
             />
-            <small>
-              {noteKind(note).label} · v{note.version} · {compactDate(note.updated_at)}
+            <small className="editor-note-meta" aria-label="Note metadata">
+              <span>{noteKind(note).label}</span>
+              <span>v{note.version}</span>
+              <span>{compactDate(note.updated_at)}</span>
             </small>
           </div>
           <div className="editor-status-row">
@@ -5625,7 +5569,6 @@ function NoteEditor({ note }: { note?: Note }) {
         </details>
       </div>
       <NoteProvenance note={note} />
-      <NoteLaneIntent note={note} />
       {isGeneratedDraft && (
         <div className="generated-review-bar">
           <div>
@@ -5764,22 +5707,6 @@ function NoteEditor({ note }: { note?: Note }) {
         </div>
       )}
     </Panel>
-  );
-}
-
-function NoteLaneIntent({ note }: { note: Note }) {
-  const intent = noteLaneIntent(note);
-  if (!intent) return null;
-  const Icon = intent.icon;
-  return (
-    <div className="note-lane-intent" aria-label="Selected note lane">
-      <Icon size={16} />
-      <div>
-        <Badge tone={intent.tone}>{intent.badge}</Badge>
-        <strong>{intent.title}</strong>
-        <span>{intent.description}</span>
-      </div>
-    </div>
   );
 }
 

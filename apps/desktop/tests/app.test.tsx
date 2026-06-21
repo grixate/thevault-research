@@ -2114,16 +2114,16 @@ describe("App", () => {
     fireEvent.click(screen.getByRole("button", { name: /Shortcut thought/i }));
     expect(await screen.findByDisplayValue("Shortcut thought")).toBeTruthy();
     expect(within(screen.getByRole("button", { name: /Shortcut thought.*Quick capture/i })).getByText("Quick capture")).toBeTruthy();
-    expect(within(await screen.findByLabelText("Selected note lane")).getByText("Notes inbox")).toBeTruthy();
+    expect(within(await screen.findByLabelText("Note metadata")).getByText("Quick capture")).toBeTruthy();
 
     fireEvent.click(screen.getByRole("button", { name: /Evidence note/i }));
     expect(await screen.findByDisplayValue("Evidence note")).toBeTruthy();
     expect(screen.getAllByText("From Storage").length).toBeGreaterThanOrEqual(1);
-    expect(within(await screen.findByLabelText("Selected note lane")).getByText("Storage-linked note")).toBeTruthy();
+    expect(within(await screen.findByLabelText("Note metadata")).getByText("From Storage")).toBeTruthy();
 
     fireEvent.click(screen.getByRole("button", { name: /Generated memo/i }));
     expect(await screen.findByDisplayValue("Generated memo")).toBeTruthy();
-    expect(within(await screen.findByLabelText("Selected note lane")).getByText("Review before trust")).toBeTruthy();
+    expect(within(await screen.findByLabelText("Note metadata")).getByText("AI draft")).toBeTruthy();
     expect(screen.getByText("Generated draft awaiting review")).toBeTruthy();
 
     fireEvent.click(screen.getByRole("button", { name: /Written synthesis/i }));
@@ -2916,10 +2916,12 @@ describe("App", () => {
     };
     renderApp();
 
-    const notesPanel = (await screen.findByRole("button", { name: /new note/i })).closest(".list-pane");
+    const notesPanel = document.querySelector(".list-pane");
     expect(notesPanel).toBeTruthy();
     expect(within(notesPanel as HTMLElement).queryByLabelText("Notes and Storage paths")).toBeNull();
-    fireEvent.click(await within(notesPanel as HTMLElement).findByRole("button", { name: /quick note/i }));
+    const editorPane = (await screen.findAllByText("No notes")).find((node) => node.closest(".editor-pane"))?.closest(".editor-pane");
+    expect(editorPane).toBeTruthy();
+    fireEvent.click(await within(editorPane as HTMLElement).findByRole("button", { name: /quick note/i }));
 
     expect(await screen.findByLabelText("Quick note text")).toBeTruthy();
     expect(screen.getByTitle("Command or Control Enter")).toBeTruthy();

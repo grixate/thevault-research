@@ -2870,15 +2870,6 @@ textarea:not(.ui-textarea) {
   color: var(--foreground);
 }
 
-.notes-empty-state {
-  border-style: solid;
-  background: hsl(0 0% 100% / 0.64);
-}
-
-.notes-empty-state > svg {
-  color: var(--muted);
-}
-
 .entity-list-empty-actions {
   display: flex;
   flex-wrap: wrap;
@@ -2982,48 +2973,38 @@ textarea:not(.ui-textarea) {
   color: var(--muted);
 }
 
-.note-lane-intent {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  align-items: start;
-  gap: 10px;
-  margin: 0 0 12px;
-  padding: 0 0 12px;
-  color: var(--muted);
-  background: transparent;
-  border: 0;
-  border-bottom: 1px solid var(--line);
-  border-radius: 0;
-}
-
-.note-lane-intent > svg {
-  margin-top: 2px;
-  color: var(--muted);
-}
-
-.note-lane-intent > div {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 7px;
-  min-width: 0;
-}
-
-.note-lane-intent strong {
-  color: var(--foreground);
-  font-size: 12px;
-}
-
-.note-lane-intent span {
-  font-size: 12px;
-}
-
 .editor-pane {
   position: relative;
   display: flex;
   flex-direction: column;
   min-height: 0;
   background: var(--card);
+}
+
+.editor-pane-empty {
+  justify-content: center;
+}
+
+.note-editor-empty {
+  display: grid;
+  justify-items: center;
+  gap: 14px;
+  width: min(100%, 360px);
+  margin: 0 auto;
+  color: var(--muted);
+}
+
+.note-editor-empty strong {
+  color: var(--foreground);
+  font-size: 17px;
+}
+
+.note-editor-empty > div {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .editor-toolbar {
@@ -3052,6 +3033,23 @@ textarea:not(.ui-textarea) {
   color: var(--muted);
   font-size: 12px;
   line-height: 1.35;
+}
+
+.editor-note-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.editor-note-meta span {
+  min-width: 0;
+}
+
+.editor-note-meta span + span::before {
+  content: "/";
+  margin-right: 7px;
+  color: hsl(220 8% 70%);
 }
 
 .editor-status-row,
