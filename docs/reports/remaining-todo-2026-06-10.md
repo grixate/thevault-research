@@ -309,6 +309,18 @@ Latest topbar search minimalist verification on 2026-06-21:
 - Renderer e2e smoke: passed.
 - `git diff --check`: passed.
 
+Latest sidebar status minimalist verification on 2026-06-21:
+
+- Sidebar local-core diagnostics no longer render as a visible footer stack.
+- First glance now shows one compact `Local` / `Starting` status with a state dot; version and background-task count remain available through the status title/accessible label.
+- The app-entry screenshot now has no visible `Version 0.1.0` or `0 background tasks` footer copy.
+- Visual check: `node scripts/visual_check.mjs app-entry /tmp/vault-app-entry-sidebar-minimal.png` passed.
+- Focused shell test: passed.
+- Desktop tests: 77 passed.
+- Desktop production build: passed.
+- Renderer e2e smoke: passed.
+- `git diff --check`: passed.
+
 Latest secondary-surface header cleanup on 2026-06-21:
 
 - Evidence graph first glance now uses a plain `Evidence graph` header and keeps context in the compact claim-count strip; the old `claims and source blocks` eyebrow and working-map explanatory sentence are gone.
@@ -2762,6 +2774,7 @@ Current good state:
 - Command palette fast actions now show only icon, action name, and shortcut; explanatory action sublines are gone.
 - Clean sessions now open on Notes instead of Home, making the writing workspace the default product center.
 - The resting topbar search no longer exposes `Exact` / `Smart`; mode choice is available only while reviewing active search results.
+- Sidebar local status is reduced to one compact state chip; version and background-task details are no longer visible first-glance footer copy.
 
 Remaining tasks:
 
@@ -2819,6 +2832,7 @@ Current good state:
 - Global visual tokens and major Settings panels are calmer and closer to notes-app references.
 - Command palette fast actions now follow the same minimal Spotlight-like row pattern as Quick capture.
 - Search mode selection now uses existing Radix tabs only inside the active search popover instead of permanently occupying the topbar.
+- Sidebar diagnostics are compressed into one quiet local-state indicator instead of a visible operational footer.
 
 Remaining tasks:
 

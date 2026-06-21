@@ -378,6 +378,9 @@ export function App() {
   const setSurface = useUIStore((state) => state.setSurface);
   const health = useQuery({ queryKey: ["health"], queryFn: () => vaultRequest<Health>("health.get"), retry: 1 });
   const jobs = useQuery({ queryKey: ["jobs"], queryFn: () => vaultRequest<LabJob[]>("jobs.list"), refetchInterval: 4000 });
+  const runningJobCount = jobs.data?.filter((job) => job.status === "running").length ?? 0;
+  const localCoreReady = Boolean(health.data?.ok);
+  const localStatusDetails = `${localCoreReady ? "Local core ready" : "Starting local core"} · Version ${health.data?.version ?? "0.1.0"} · ${runningJobCount} background tasks`;
 
   return (
     <div className="app-shell">
@@ -407,10 +410,11 @@ export function App() {
             </div>
           ))}
         </nav>
-        <div className="side-status">
-          <Badge tone={health.data?.ok ? "good" : "warn"}>{health.data?.ok ? "Local core ready" : "Starting core"}</Badge>
-          <span>Version {health.data?.version ?? "0.1.0"}</span>
-          <span>{jobs.data?.filter((job) => job.status === "running").length ?? 0} background tasks</span>
+        <div className="side-status" title={localStatusDetails} aria-label={localStatusDetails}>
+          <span className={localCoreReady ? "side-status-chip ready" : "side-status-chip starting"}>
+            <span className="side-status-dot" aria-hidden="true" />
+            {localCoreReady ? "Local" : "Starting"}
+          </span>
         </div>
       </aside>
       <main className="workspace">

@@ -330,8 +330,36 @@ small {
 
 .side-status {
   margin-top: auto;
-  display: grid;
-  gap: 8px;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.side-status-chip {
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 1;
+}
+
+.side-status-dot {
+  width: 7px;
+  height: 7px;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: var(--muted);
+}
+
+.side-status-chip.ready .side-status-dot {
+  background: var(--green);
+}
+
+.side-status-chip.starting .side-status-dot {
+  background: var(--amber);
 }
 
 .workspace {

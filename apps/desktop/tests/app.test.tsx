@@ -670,6 +670,10 @@ describe("App", () => {
     expect(await screen.findByRole("heading", { name: "Notes", level: 1 })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Notes" }).className).toContain("active");
     expect(screen.queryByRole("tablist", { name: "Search style" })).toBeNull();
+    expect(screen.getByTitle("Local core ready · Version 0.1.0 · 0 background tasks")).toBeTruthy();
+    expect(screen.queryByText("Local core ready")).toBeNull();
+    expect(screen.queryByText("Version 0.1.0")).toBeNull();
+    expect(screen.queryByText("0 background tasks")).toBeNull();
   });
 
   it("creates and completes tasks from the Tasks surface", async () => {
