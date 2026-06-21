@@ -2115,6 +2115,75 @@ def test_tool_review_items_are_linked_to_run_and_do_not_mutate_claim_until_appro
         assert conn.execute("SELECT status FROM claims WHERE id=?", (claim_id,)).fetchone()["status"] == "weakly_supported"
 
 
+def test_suggested_todo_review_creates_task_only_after_approval(client):
+    source = client.post(
+        "/sources/import-text",
+        json={"title": "Task Suggestion Source", "type": "text", "text": "Follow up on the local model suggestion after review."},
+    ).json()["source"]
+    ts = now_iso()
+    review_id = new_id("rev")
+    with client.app.state.db.connect() as conn:
+        conn.execute(
+            """
+            INSERT INTO review_items
+              (id, workspace_id, item_type, title, summary, payload_json, status, created_by_job_id, created_at, updated_at)
+            VALUES (?, ?, 'suggested_todo', ?, ?, ?, 'pending', ?, ?, ?)
+            """,
+            (
+                review_id,
+                client.app.state.db.workspace_id,
+                "Follow up on model suggestion",
+                "A local model proposed a follow-up task.",
+                dumps(
+                    {
+                        "title": "Verify model-suggested follow-up tomorrow @review #AI p2",
+                        "description": "Check the suggestion before trusting it.",
+                        "labels": ["local-ai"],
+                        "context_links": [
+                            {
+                                "target_type": "source",
+                                "target_id": source["id"],
+                                "target_title": source["title"],
+                                "relation": "suggested_from",
+                                "metadata": {"created_from": "local_model_suggestion"},
+                            }
+                        ],
+                        "provenance": {"model_id": "mock-local-llm"},
+                    }
+                ),
+                "run_ai_task_suggestion",
+                ts,
+                ts,
+            ),
+        )
+
+    assert client.get("/todos?view=all").json()["total"] == 0
+    approved = client.post(f"/review/items/{review_id}/approve", json={"decision_note": "Useful follow-up."}).json()
+    assert approved["status"] == "approved"
+    assert approved["created"]["todo_id"]
+
+    todos = client.get("/todos?view=all").json()["items"]
+    assert len(todos) == 1
+    todo = todos[0]
+    assert todo["title"] == "Verify model-suggested follow-up"
+    assert todo["due_date"]
+    assert todo["priority"] == 2
+    assert set(todo["labels"]) == {"review", "local-ai"}
+    assert todo["list_name"] == "AI"
+    assert todo["source_kind"] == "review_approved_ai_suggestion"
+    assert todo["source_ref"]["review_item_id"] == review_id
+    assert todo["source_ref"]["created_by_job_id"] == "run_ai_task_suggestion"
+    assert todo["provenance"]["created_from"] == "suggested_todo_review"
+    assert todo["provenance"]["model_id"] == "mock-local-llm"
+    assert todo["context_links"][0]["target_type"] == "source"
+    assert todo["context_links"][0]["target_id"] == source["id"]
+    assert todo["context_links"][0]["relation"] == "suggested_from"
+
+    review = client.get("/review/items?status=approved").json()[0]
+    assert review["id"] == review_id
+    assert review["decision_note"] == "Useful follow-up."
+
+
 def test_night_lab_creates_reviewable_brief_and_proposals_without_mutating_claims(client):
     imported = client.post(
         "/sources/import-text",

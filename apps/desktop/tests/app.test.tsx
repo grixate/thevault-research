@@ -3621,6 +3621,79 @@ describe("App", () => {
     );
   });
 
+  it("shows AI task suggestions as review-gated task proposals", async () => {
+    let approved = false;
+    const reviewItem = {
+      id: "rev_task_suggestion",
+      item_type: "suggested_todo",
+      title: "Suggested task: Verify model follow-up",
+      summary: "A local model suggested a task. It should stay in Review until accepted.",
+      status: "pending",
+      created_by_job_id: "run_ai_task",
+      created_at: "2026-06-21T00:00:00Z",
+      payload: {
+        title: "Verify model-suggested follow-up tomorrow @review",
+        description: "Check the suggestion before trusting it.",
+        model_id: "mock-local-llm",
+        provider_id: "mock_llm"
+      }
+    };
+    const request = vi.fn(async (route: string, payload?: any) => {
+      if (route === "health.get") return { ok: true, version: "0.1.0", db_ready: true, workspace_id: "wrk_default" };
+      if (route === "jobs.list" || route === "events.list") return [];
+      if (route === "stats.get") {
+        return {
+          sources: 0,
+          source_blocks: 0,
+          notes: 0,
+          claims: 0,
+          claims_without_evidence: 0,
+          contradicted_claims: 0,
+          pending_review_items: approved ? 0 : 1,
+          generated_notes_pending_review: 0,
+          installed_tools: 0,
+          failed_jobs: 0,
+          learning_items: 0
+        };
+      }
+      if (route === "review.list") return approved ? [] : [reviewItem];
+      if (route === "review.approve") {
+        approved = true;
+        expect(payload).toEqual({
+          itemId: "rev_task_suggestion",
+          data: { decision_note: "This should become a task." }
+        });
+        return { item_id: payload.itemId, status: "approved", created: { todo_id: "todo_from_suggestion" } };
+      }
+      if (route === "capsules.list") return { items: [], total: 0 };
+      return [];
+    });
+    window.vault = { request, selectFiles: vi.fn(async () => []) };
+    useUIStore.setState({ surface: "review", selectedReviewItemId: "rev_task_suggestion" });
+    renderApp();
+
+    expect((await screen.findAllByText("Task suggestion")).length).toBeGreaterThan(0);
+    expect(screen.queryByText("suggested_todo")).toBeNull();
+    const taskText = await screen.findByText("Verify model-suggested follow-up tomorrow @review");
+    const proposal = taskText.closest(".review-proposal");
+    expect(proposal).toBeTruthy();
+    expect(within(proposal as HTMLElement).getByText("Task")).toBeTruthy();
+    expect(await screen.findByText("Approve only if this should become a real task.")).toBeTruthy();
+    expect(within(proposal as HTMLElement).getByText("Local model")).toBeTruthy();
+    expect(within(proposal as HTMLElement).queryByText("mock-local-llm")).toBeNull();
+
+    fireEvent.change(await screen.findByLabelText("Decision reason"), { target: { value: "This should become a task." } });
+    fireEvent.click(await screen.findByRole("button", { name: /^approve$/i }));
+
+    await waitFor(() =>
+      expect(request).toHaveBeenCalledWith("review.approve", {
+        itemId: "rev_task_suggestion",
+        data: { decision_note: "This should become a task." }
+      })
+    );
+    expect((await screen.findAllByText("Review is clear.")).length).toBeGreaterThan(0);
+  });
+
   it("filters graph claims and opens claim evidence in Storage", async () => {
     const claims = [
       {

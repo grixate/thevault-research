@@ -6345,11 +6345,13 @@ function reviewItemTone(itemType: string): "good" | "warn" | "bad" | "info" | "n
   if (itemType.startsWith("capsule_import_")) return "info";
   if (itemType === "assistant_missing_evidence") return "bad";
   if (itemType === "learning_deck") return "good";
+  if (itemType === "suggested_todo") return "info";
   return "neutral";
 }
 
 function reviewItemLabel(itemType: string): string {
   if (itemType.startsWith("capsule_import_")) return "Import";
+  if (itemType === "suggested_todo") return "Task suggestion";
   return itemType.replace(/_/g, " ");
 }
 
@@ -6359,6 +6361,7 @@ function reviewDecisionPrompt(item: ReviewItem): string {
   if (item.item_type.startsWith("capsule_import_")) return "Approve to merge this imported item into the workspace. Imported claims stay weak until evidence is reviewed.";
   if (item.item_type === "assistant_missing_evidence") return "Reject after you have handled the missing-evidence follow-up, or leave pending.";
   if (item.item_type === "learning_deck") return "Approve to add these learning items.";
+  if (item.item_type === "suggested_todo") return "Approve only if this should become a real task.";
   return item.status === "pending" ? "Record why this proposal is accepted or rejected." : "Decision already recorded.";
 }
 
@@ -6546,6 +6549,12 @@ function ReviewPayloadSummary({ item }: { item: ReviewItem }) {
           <p>
             {String(payload.current_status ?? "current").replace(/_/g, " ")} to {String(payload.suggested_status).replace(/_/g, " ")}
           </p>
+        </section>
+      )}
+      {item.item_type === "suggested_todo" && (
+        <section>
+          <span>Task</span>
+          <p>{String(payload.title || payload.text || item.title)}</p>
         </section>
       )}
       {Array.isArray(payload.node_ids) && payload.node_ids.length > 0 && (

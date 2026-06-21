@@ -194,7 +194,7 @@ from vault_core.db.session import VaultDatabase, dumps, loads, new_id, now_iso, 
 from vault_core.deps import get_db, require_auth
 from vault_core.domain.chunking import chunk_markdown, content_hash, estimate_tokens
 from vault_core.domain.extraction import deterministic_extract, validate_extracted_object
-from vault_core.todos import complete_todo, create_todo, create_todo_list, delete_todo_context_link, list_todo_lists, list_todos, update_todo, update_todo_context_link, update_todo_list
+from vault_core.todos import complete_todo, create_todo, create_todo_list, create_todo_with_conn, delete_todo_context_link, list_todo_lists, list_todos, update_todo, update_todo_context_link, update_todo_list
 from vault_core.scripts.prepare_ai_registry_release_candidate import build_release_candidate_packet_from_overlay
 
 BUILTIN_TOOL_ID = "tool_claim_citation_checker"
@@ -2350,6 +2350,10 @@ def register_routes(app: FastAPI) -> None:
                     raise HTTPException(404, "Claim not found")
                 conn.execute("UPDATE claims SET status=?, updated_at=? WHERE id=?", (suggested, ts, claim_id))
                 created = {"claim_id": claim_id, "status": suggested}
+            elif item["item_type"] == "suggested_todo":
+                todo_payload = suggested_todo_payload(payload, item_id, item["created_by_job_id"])
+                todo = create_todo_with_conn(conn, db, todo_payload, ts)
+                created = {"todo_id": todo["id"], "title": todo["title"]}
             elif str(item["item_type"]).startswith("capsule_import_"):
                 created = approve_capsule_import_review_item(conn, db, payload, req.decision_note, ts)
             else:
@@ -5633,6 +5637,38 @@ def validate_tool_output(data: Any) -> tuple[bool, str | None]:
         if not isinstance(review.get("title"), str) or not review.get("title"):
             return False, f"Tool review_items[{index}] is missing title."
     return True, None
+
+
+def suggested_todo_payload(payload: dict[str, Any], review_item_id: str, created_by_job_id: str | None) -> dict[str, Any]:
+    title = str(payload.get("title") or payload.get("text") or "").strip()
+    if not title:
+        raise HTTPException(422, "Suggested task title is required")
+    context_links = payload.get("context_links") if isinstance(payload.get("context_links"), list) else []
+    labels = payload.get("labels") if isinstance(payload.get("labels"), list) else []
+    source_ref = payload.get("source_ref") if isinstance(payload.get("source_ref"), dict) else {}
+    provenance = payload.get("provenance") if isinstance(payload.get("provenance"), dict) else {}
+    return {
+        "text": title,
+        "description": str(payload.get("description") or payload.get("summary") or ""),
+        "due_date": payload.get("due_date"),
+        "priority": payload.get("priority"),
+        "labels": labels,
+        "list_name": payload.get("list_name"),
+        "recurrence_rule": payload.get("recurrence_rule"),
+        "source_kind": "review_approved_ai_suggestion",
+        "source_ref": {
+            **source_ref,
+            "review_item_id": review_item_id,
+            "created_by_job_id": created_by_job_id,
+        },
+        "provenance": {
+            **provenance,
+            "created_from": "suggested_todo_review",
+            "review_item_id": review_item_id,
+            "created_by_job_id": created_by_job_id,
+        },
+        "context_links": context_links,
+    }
 
 
 def run_tool(tool_id: str, req: ToolRunRequest, db: VaultDatabase) -> dict[str, Any]:

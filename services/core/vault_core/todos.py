@@ -179,11 +179,17 @@ def update_todo_list(db: VaultDatabase, list_id: str, payload: dict[str, Any]) -
 
 
 def create_todo(db: VaultDatabase, payload: dict[str, Any]) -> dict[str, Any]:
+    ts = now_iso()
+    with db.connect() as conn:
+        return create_todo_with_conn(conn, db, payload, ts)
+
+
+def create_todo_with_conn(conn: sqlite3.Connection, db: VaultDatabase, payload: dict[str, Any], ts: str | None = None) -> dict[str, Any]:
+    ts = ts or now_iso()
     parsed = parse_todo_text(str(payload.get("text") or payload.get("title") or ""))
     title = str(payload.get("title") or parsed["title"]).strip()
     if not title:
         raise HTTPException(422, "Todo title is required")
-    ts = now_iso()
     priority = normalize_priority(payload["priority"] if payload.get("priority") is not None else parsed.get("priority"))
     labels = normalize_string_list([*parsed.get("labels", []), *payload.get("labels", [])])
     list_name = str(payload.get("list_name") or parsed.get("list_name") or "").strip()
@@ -191,41 +197,40 @@ def create_todo(db: VaultDatabase, payload: dict[str, Any]) -> dict[str, Any]:
     recurrence_rule = payload.get("recurrence_rule") or parsed.get("recurrence_rule")
     context_links = payload.get("context_links") if isinstance(payload.get("context_links"), list) else []
     todo_id = new_id("todo")
-    with db.connect() as conn:
-        list_id = ensure_todo_list(conn, db.workspace_id, list_name, ts) if list_name else None
+    list_id = ensure_todo_list(conn, db.workspace_id, list_name, ts) if list_name else None
+    conn.execute(
+        """
+        INSERT INTO todos
+          (id, workspace_id, list_id, title, description, status, priority, due_date,
+           recurrence_rule, source_kind, source_ref_json, provenance_json, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, 'open', ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        (
+            todo_id,
+            db.workspace_id,
+            list_id,
+            title,
+            str(payload.get("description") or ""),
+            priority,
+            due_date,
+            recurrence_rule,
+            str(payload.get("source_kind") or "user"),
+            dumps(payload.get("source_ref") or {}),
+            dumps(payload.get("provenance") or {}),
+            ts,
+            ts,
+        ),
+    )
+    for label_name in labels:
+        label_id = ensure_todo_label(conn, db.workspace_id, label_name, ts)
         conn.execute(
-            """
-            INSERT INTO todos
-              (id, workspace_id, list_id, title, description, status, priority, due_date,
-               recurrence_rule, source_kind, source_ref_json, provenance_json, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, 'open', ?, ?, ?, ?, ?, ?, ?, ?)
-            """,
-            (
-                todo_id,
-                db.workspace_id,
-                list_id,
-                title,
-                str(payload.get("description") or ""),
-                priority,
-                due_date,
-                recurrence_rule,
-                str(payload.get("source_kind") or "user"),
-                dumps(payload.get("source_ref") or {}),
-                dumps(payload.get("provenance") or {}),
-                ts,
-                ts,
-            ),
+            "INSERT OR IGNORE INTO todo_label_links (todo_id, label_id, created_at) VALUES (?, ?, ?)",
+            (todo_id, label_id, ts),
         )
-        for label_name in labels:
-            label_id = ensure_todo_label(conn, db.workspace_id, label_name, ts)
-            conn.execute(
-                "INSERT OR IGNORE INTO todo_label_links (todo_id, label_id, created_at) VALUES (?, ?, ?)",
-                (todo_id, label_id, ts),
-            )
-        for link in context_links:
-            create_context_link(conn, db.workspace_id, todo_id, link, ts)
-        db.event(conn, "todo.created", "todo", todo_id, {"title": title, "due_date": due_date}, "user")
-        return get_todo_by_id(conn, db.workspace_id, todo_id)
+    for link in context_links:
+        create_context_link(conn, db.workspace_id, todo_id, link, ts)
+    db.event(conn, "todo.created", "todo", todo_id, {"title": title, "due_date": due_date}, "user")
+    return get_todo_by_id(conn, db.workspace_id, todo_id)
 
 
 def update_todo(db: VaultDatabase, todo_id: str, payload: dict[str, Any]) -> dict[str, Any]:

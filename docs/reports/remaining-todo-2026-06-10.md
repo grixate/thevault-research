@@ -454,6 +454,14 @@ Latest contextual task-origin verification on 2026-06-21:
 - Focused desktop tests cover Night Lab brief, Practice card, and helper result task payloads.
 - Full desktop test suite, desktop production build, and diff whitespace check passed.
 
+Latest AI-suggested task verification on 2026-06-21:
+
+- AI/tool/model outputs can now propose `suggested_todo` Review items without creating canonical tasks.
+- Approving a task suggestion creates a native task through the same parser as quick add, preserving parsed date/list/label/priority tokens plus explicit payload labels.
+- Approved suggestions preserve review id, creating job id, model provenance, source refs, and context links so the task remains auditable.
+- Review presents these as `Task suggestion` with the plain prompt `Approve only if this should become a real task.`, avoiding raw schema labels or explanatory clutter.
+- Focused backend review/todo tests, full backend core-flow tests, full desktop tests, Python lint, desktop production build, and diff whitespace check passed.
+
 Latest focused verification on 2026-06-11 before the current claim-grammar slice:
 
 - Python core tests: 125 passed.
@@ -2856,15 +2864,15 @@ Current good state:
 - Selecting text in a Note before using the Task action preserves the selected quote, locator, and hash metadata.
 - Individual Assistant citation tasks now preserve the cited quote, locator, marker, evidence kind, and source/block/claim metadata while keeping the citation row visually quiet.
 - Night Lab brief, selected Practice card, and selected Local helper result task origins now preserve source-specific metadata without adding explanatory panels.
+- AI-suggested tasks are review-gated through `suggested_todo` items and only become native tasks after explicit approval.
 - Existing task context links can be edited or removed from the quiet task detail rail.
 - Workspace backup preserves todo lists, tasks, labels, label links, and task context links as readable JSONL records plus the full SQLite backup.
-- Focused backend and desktop tests cover quick add, parsed list/label/priority/due date, list filtering, context links, task list counts, list management, detail metadata editing, context-link editing/removal, recurrence completion, global quick-task capture, completion, stats, the desktop create/complete flow, note-origin contextual task creation, Assistant citation task payloads, Night Lab brief tasks, Practice card tasks, and helper-result tasks.
+- Focused backend and desktop tests cover quick add, parsed list/label/priority/due date, list filtering, context links, task list counts, list management, detail metadata editing, context-link editing/removal, recurrence completion, global quick-task capture, completion, stats, the desktop create/complete flow, note-origin contextual task creation, Assistant citation task payloads, Night Lab brief tasks, Practice card tasks, helper-result tasks, and review-gated AI task suggestions.
 
 Remaining tasks:
 
 - Harden contextual task creation with richer payload tests for Storage, Review, Capsule, and Assistant answer entry points.
 - Add subtasks only after detail drawer and list management are stable.
-- Integrate AI-suggested todos as reviewable suggestions, not silent canonical tasks.
 - Integrate Markdown checkbox extraction/linking from Notes after the editor UX is stable.
 - Add standalone task import/export only if it proves useful beyond full workspace backup.
 - Add mobile layout repair later with the broader mobile pass; current mobile remains explicitly not clean.
@@ -2883,7 +2891,7 @@ Acceptance evidence:
 
 1. If continuing UX, keep the Notion/Obsidian/Apple Notes reset active: inspect Notes, Storage, Quick Note, Review, Assistant, Capsules, and Settings screenshots, then simplify the most overloaded flow first.
 2. If continuing Capsules, polish the alpha surface and attach dialog first, then continue from import review items into conflict-aware merge decisions or package contract docs.
-3. If continuing Tasks, continue contextual creation gaps, then AI-suggested todo review items before considering subtasks or standalone task import/export.
+3. If continuing Tasks, continue contextual creation payload hardening, then Markdown checkbox extraction/linking before considering subtasks or standalone task import/export.
 4. If continuing local AI production, pick the first real approved runtime/model candidate set and run the release-packet tooling.
 5. If stabilizing before bigger registry edits, stage or commit the current v1 state.
 6. After any slice:
