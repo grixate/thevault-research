@@ -250,6 +250,19 @@ Latest Settings Models minimalist verification on 2026-06-21:
 - In-app browser desktop Settings smoke rendered at 1440x950 with no horizontal overflow, `.settings-model-strip` present, `.settings-hero` absent, old hero copy absent, and old command-center card classes absent.
 - Standalone shell-launched Chromium still hits the managed macOS sandbox Mach-port denial; use the in-app browser path for visual QA in this workspace unless running a fully escalated shell check.
 
+Latest Assistant minimalist chat verification on 2026-06-21:
+
+- Assistant empty state now uses one modern prompt surface instead of a separate toolbar-heavy composer.
+- The composer leads with the question field; evidence scope and capsule context live in the footer.
+- The visible `mock local` dictation status chip and duplicated evidence summary strip were removed from first glance.
+- Mic and send actions are icon-only with accessible labels.
+- The empty title now says `Ask the Vault`; old `Ask the local assistant` copy is gone.
+- Focused Assistant tests: 9 passed.
+- Desktop tests: 77 passed.
+- Desktop production build: passed.
+- Renderer e2e smoke: passed.
+- In-app browser desktop Assistant smoke rendered with no horizontal overflow, `.assistant-composer-footer` present, `.assistant-scope-summary` absent, no visible `mock local`, and screenshot saved at `/tmp/vault-assistant-minimal-chat-desktop.png`.
+
 Latest capsule export verification on 2026-06-15:
 
 - Added backend capsule export preview, `.vaultcapsule` package creation, export history listing, version-specific export, and private-full source blob packaging.
@@ -827,7 +840,7 @@ Production runtimes: 0/3 ready
 
 Important: strict production is still not done. `pnpm verify:strict` and `./scripts/check_ai_readiness.sh` should continue to fail until real production model/runtime manifests, checksums, licenses, approval evidence, and local capability routes are pinned.
 
-## Completed In The Latest Verified Slice
+## Completed In An Earlier Verified Slice
 
 Settings -> Models is closer to the accepted minimalist direction:
 
@@ -840,6 +853,28 @@ Settings -> Models is closer to the accepted minimalist direction:
 - Desktop tests: 77 passed.
 - Desktop production build: passed.
 - Renderer e2e smoke: passed.
+
+Files touched:
+
+- `apps/desktop/src/app/App.tsx`
+- `apps/desktop/src/styles/global.css`
+- `apps/desktop/tests/app.test.tsx`
+- `docs/reports/remaining-todo-2026-06-10.md`
+
+## Completed In The Latest Verified Slice
+
+Assistant is closer to the modern chat-tool expectation:
+
+- Reworked the empty Assistant state around a single prompt box rather than a separate control panel.
+- Moved evidence scope and capsule context into the composer footer.
+- Removed the visible dictation provider chip and duplicated evidence summary from the first glance.
+- Changed mic/send to icon-only accessible actions.
+- Preserved grounded answers, citations, review follow-up, save-as-note, citation tasks, and local voice question behavior.
+- Focused Assistant tests: 9 passed.
+- Desktop tests: 77 passed.
+- Desktop production build: passed.
+- Renderer e2e smoke: passed.
+- In-app browser desktop smoke: no horizontal overflow, no old empty-state title, no first-glance `mock local` chip.
 
 Files touched:
 
@@ -2616,7 +2651,7 @@ Current good state:
 - Long Storage paths, hashes, source rows, and section titles truncate safely while keeping full values inspectable.
 - Review list rows clamp long local-model titles and summaries while preserving the full text.
 - Review now opens with a calmer evidence-first decision summary.
-- Assistant compose now leads with the question field, with starter prompts as compact `Try` shortcuts instead of cards.
+- Assistant compose now leads with one modern prompt box, footer-scoped evidence controls, icon-only mic/send actions, and compact starter prompts instead of cards.
 - Assistant answers now use one quiet `Answer context` line instead of a diagnostic facts grid.
 - Learning is now framed as `Practice`, with `Current card` and one quiet local-voice privacy line.
 - Local tools now use helper/result language instead of studio/debug labels.
@@ -2674,7 +2709,7 @@ Current good state:
 - Local model preparation actions now use source/file/evidence/bundle language instead of hydrate/probe/byte/packet terminology.
 - Approval and setup-path language now favors file/trust wording, including `File evidence`, `approval template`, `evidence file`, `Candidate model file check`, `model file`, and `runtime file`.
 - Assistant answer grounding uses a compact context line instead of a metric block.
-- Assistant prompt starters now use a compact shortcut row instead of card-like buttons.
+- Assistant prompt starters and composer controls now read as one modern chat prompt instead of a card-like control panel.
 - The mobile top bar no longer forces desktop search width below 760px.
 - Evidence graph uses a compact context line and inline detail metadata instead of card-heavy metrics.
 - Settings Search keeps raw capability bindings in a `Model task routing` disclosure with user-facing task names.

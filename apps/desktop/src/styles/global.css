@@ -4698,9 +4698,18 @@ blockquote span {
   min-height: calc(100vh - 112px);
   display: grid;
   grid-template-rows: minmax(0, 1fr) auto;
-  gap: 18px;
+  gap: 10px;
   padding: 0;
   overflow: hidden;
+}
+
+.assistant-chat-panel-empty .assistant-thread {
+  align-content: end;
+  padding-bottom: 22px;
+}
+
+.assistant-chat-panel-empty .assistant-composer {
+  margin-bottom: min(18vh, 150px);
 }
 
 .assistant-thread {
@@ -4713,11 +4722,11 @@ blockquote span {
 }
 
 .assistant-welcome {
-  min-height: 360px;
+  min-height: 0;
   display: grid;
   place-items: center;
   align-content: center;
-  gap: 18px;
+  gap: 14px;
   color: var(--muted);
   text-align: center;
 }
@@ -4781,33 +4790,35 @@ blockquote span {
   width: min(880px, calc(100% - 48px));
   justify-self: center;
   display: grid;
-  gap: 10px;
+  gap: 8px;
   margin: 0 0 18px;
-  padding: 12px;
+  padding: 10px;
   background: var(--card);
   border: 1px solid var(--line);
-  border-radius: calc(var(--radius) + 4px);
-  box-shadow: 0 16px 42px hsl(220 18% 12% / 0.08);
+  border-radius: 18px;
+  box-shadow: 0 18px 46px hsl(220 18% 12% / 0.08);
 }
 
-.assistant-composer-top {
+.assistant-composer-footer {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
+  gap: 8px;
+}
+
+.assistant-compose-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
 }
 
 .assistant-compose-actions {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
-
-.assistant-compose-actions > div {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+  justify-content: flex-end;
+  gap: 6px;
+  margin-left: auto;
 }
 
 .assistant-scope-tabs {
@@ -4819,10 +4830,10 @@ blockquote span {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 3px;
-  padding: 3px;
+  padding: 2px;
   background: var(--muted-bg);
   border: 1px solid var(--line);
-  border-radius: var(--radius);
+  border-radius: 999px;
 }
 
 .assistant-scope-tabs .ui-tabs-trigger {
@@ -4831,14 +4842,14 @@ blockquote span {
   align-items: center;
   justify-content: center;
   gap: 7px;
-  min-height: 32px;
-  padding: 0 9px;
+  min-height: 30px;
+  padding: 0 10px;
   color: var(--muted);
   font-weight: 700;
-  font-size: 13px;
+  font-size: 12px;
   background: transparent;
   border: 1px solid transparent;
-  border-radius: calc(var(--radius) - 2px);
+  border-radius: 999px;
   cursor: pointer;
 }
 
@@ -4849,34 +4860,14 @@ blockquote span {
   border-color: var(--line);
 }
 
-.assistant-scope-summary {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px 10px;
-  color: var(--muted);
-  font-size: 13px;
-  line-height: 1.4;
-}
-
-.assistant-scope-summary .badge,
 .assistant-answer-header .badge {
   width: fit-content;
 }
 
-.assistant-scope-summary strong,
-.assistant-scope-summary span {
-  min-width: 0;
-  overflow-wrap: anywhere;
-}
-
-.assistant-scope-summary strong {
-  color: var(--foreground);
-}
-
 .assistant-context-select {
-  width: min(210px, 100%);
-  min-height: 34px;
+  width: min(170px, 100%);
+  min-height: 32px;
+  border-radius: 999px;
 }
 
 .assistant-starter-row {
@@ -4930,11 +4921,11 @@ blockquote span {
 }
 
 .assistant-composer textarea {
-  min-height: 82px;
+  min-height: 76px;
   max-height: 180px;
   resize: vertical;
   border: 0;
-  padding: 4px 2px;
+  padding: 8px 8px 4px;
   background: transparent;
   box-shadow: none;
 }
@@ -7865,13 +7856,13 @@ blockquote span {
     margin-bottom: 8px;
   }
 
-  .assistant-composer-top,
-  .assistant-compose-actions {
+  .assistant-composer-footer,
+  .assistant-compose-left {
     align-items: stretch;
     flex-direction: column;
   }
 
-  .assistant-compose-actions > div {
+  .assistant-compose-actions {
     justify-content: flex-end;
   }
 

@@ -7131,7 +7131,7 @@ describe("App", () => {
       )
     );
     expect(await screen.findByDisplayValue("What evidence supports typed claims?")).toBeTruthy();
-    expect((await screen.findAllByText("Voice question")).length).toBeGreaterThanOrEqual(2);
+    expect(await screen.findByRole("button", { name: /^voice question$/i })).toBeTruthy();
     const voiceQuestionResult = (await screen.findAllByText("Voice question"))
       .map((element) => element.closest(".workflow-result"))
       .find(Boolean);

@@ -8840,11 +8840,8 @@ function AssistantView() {
   const citations = answer?.citations ?? [];
   const uncertainties = answer?.uncertainties ?? [];
   const assistantCapsules = capsules.data?.items ?? [];
-  const activeCapsule = assistantCapsules.find((capsule) => capsule.id === assistantContextId);
   const submittedCapsule = answer?.capsule ?? assistantCapsules.find((capsule) => capsule.id === submittedContextId);
-  const activeEvidencePolicy = assistantEvidencePolicies[evidenceMode];
   const answerEvidencePolicy = assistantEvidencePolicies[answer ? submittedEvidenceMode : evidenceMode];
-  const ActiveEvidencePolicyIcon = activeEvidencePolicy.icon;
   const AnswerEvidencePolicyIcon = answerEvidencePolicy.icon;
   const validationStatus = answer?.citation_validation?.status ? citationValidationLabel(String(answer.citation_validation.status)) : undefined;
   const groundingTitle = assistantGroundingTitle(answer, answerEvidencePolicy, ask.isPending);
@@ -8852,6 +8849,7 @@ function AssistantView() {
   const localityLabel = assistantLocalityLabel(answer);
   const modelLabel = assistantModelLabel(answer, ask.isPending);
   const contextLabel = assistantContextLabel(answer, submittedContextId, submittedCapsule);
+  const assistantEmpty = !answer && !ask.isPending;
 
   useEffect(() => {
     if (selectedCapsuleId && assistantContextId === "vault") {
@@ -8990,12 +8988,11 @@ function AssistantView() {
 
   return (
     <div className="surface assistant-layout">
-      <Panel className="assistant-chat-panel">
+      <Panel className={`assistant-chat-panel ${assistantEmpty ? "assistant-chat-panel-empty" : ""}`}>
         <div className="assistant-thread" aria-label="Assistant conversation">
-          {!answer && !ask.isPending ? (
+          {assistantEmpty ? (
             <div className="assistant-welcome">
-              <MessageSquareText size={22} />
-              <h2>Ask the local assistant</h2>
+              <h2>Ask the Vault</h2>
               <div className="assistant-starter-row" aria-label="Assistant question starters">
                 {assistantPromptStarters.map((starter) => {
                   const StarterIcon = starter.icon;
@@ -9113,7 +9110,14 @@ function AssistantView() {
           )}
         </div>
         <div className="assistant-composer">
-          <div className="assistant-composer-top">
+          <Textarea
+            aria-label="Assistant question"
+            value={question}
+            placeholder="Ask about notes, Storage, or a capsule..."
+            onChange={(event) => setQuestion(event.target.value)}
+          />
+          <div className="assistant-composer-footer">
+            <div className="assistant-compose-left">
             <Tabs value={evidenceMode} onValueChange={(value) => setEvidenceMode(value as AssistantEvidenceMode)} className="assistant-scope-tabs">
               <TabsList aria-label="Answer evidence scope">
                 {(Object.keys(assistantEvidencePolicies) as AssistantEvidenceMode[]).map((mode) => {
@@ -9132,14 +9136,6 @@ function AssistantView() {
                 })}
               </TabsList>
             </Tabs>
-            <div className="assistant-scope-summary">
-              <Badge tone={activeEvidencePolicy.tone}>
-                <ActiveEvidencePolicyIcon size={12} />
-                Evidence
-              </Badge>
-              <strong>{activeEvidencePolicy.label}</strong>
-              <span>{activeCapsule?.name ?? (assistantContextId === "vault" ? "Vault" : "Capsule")}</span>
-            </div>
             {assistantCapsules.length > 0 && (
               <SelectRoot value={assistantContextId} onValueChange={setAssistantContextId}>
                 <SelectTrigger className="assistant-context-select" aria-label="Assistant context">
@@ -9155,27 +9151,26 @@ function AssistantView() {
                 </SelectContent>
               </SelectRoot>
             )}
-          </div>
-          <Textarea
-            aria-label="Assistant question"
-            value={question}
-            placeholder="Ask anything in this workspace."
-            onChange={(event) => setQuestion(event.target.value)}
-          />
-          <div className="assistant-compose-actions">
-            <CapabilityStatus capability="transcribe_audio" compact />
-            <div>
+            </div>
+            <div className="assistant-compose-actions">
               <Button
                 icon={voiceQuestionRecordingState === "recording" ? <Pause size={16} /> : <Mic size={16} />}
+                size="icon"
                 variant={voiceQuestionRecordingState === "recording" ? "primary" : "quiet"}
+                aria-label={voiceQuestionRecordingState === "recording" ? "Stop question" : voiceQuestionRecordingState === "processing" ? "Saving voice question" : "Voice question"}
+                title={voiceQuestionRecordingState === "recording" ? "Stop question" : voiceQuestionRecordingState === "processing" ? "Saving voice question" : "Voice question"}
                 disabled={voiceQuestionRecordingState === "processing" || ask.isPending}
                 onClick={() => (voiceQuestionRecordingState === "recording" ? stopVoiceQuestionRecording() : void startVoiceQuestionRecording())}
-              >
-                {voiceQuestionRecordingState === "recording" ? "Stop question" : voiceQuestionRecordingState === "processing" ? "Saving" : "Voice question"}
-              </Button>
-              <Button icon={<MessageSquareText size={16} />} variant="primary" disabled={ask.isPending || !question.trim()} onClick={() => askQuestion()}>
-                {ask.isPending ? "Asking" : "Ask"}
-              </Button>
+              />
+              <Button
+                icon={ask.isPending ? <MessageSquareText size={16} /> : <ArrowUp size={16} />}
+                size="icon"
+                variant="primary"
+                aria-label={ask.isPending ? "Asking" : "Ask"}
+                title={ask.isPending ? "Asking" : "Ask"}
+                disabled={ask.isPending || !question.trim()}
+                onClick={() => askQuestion()}
+              />
             </div>
           </div>
           {voiceQuestionResult && (
