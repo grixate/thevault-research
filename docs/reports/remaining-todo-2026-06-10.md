@@ -272,6 +272,18 @@ Latest Assistant minimalist chat verification on 2026-06-21:
 - Renderer e2e smoke: passed.
 - In-app browser desktop Assistant smoke rendered with no horizontal overflow, `.assistant-composer-footer` present, `.assistant-scope-summary` absent, no visible `mock local`, and screenshot saved at `/tmp/vault-assistant-minimal-chat-desktop.png`.
 
+Latest command palette minimalist verification on 2026-06-21:
+
+- Fast actions now render like a Spotlight palette: icon, action name, and shortcut only.
+- Removed visible action-description sublines such as `Open a blank research note for authored thinking`, `Import pasted text, files, or audio into immutable Storage`, and route-explanation text for Notes/Storage.
+- Real search results still keep snippets and metadata because those explain matched evidence after a user searches.
+- Stable Playwright helper now covers `command-actions`; screenshot captured at `/tmp/vault-command-actions-minimal.png`.
+- Focused command search/palette tests: 5 passed.
+- Desktop tests: 77 passed.
+- Desktop production build: passed.
+- Renderer e2e smoke: passed.
+- `git diff --check`: passed.
+
 Latest secondary-surface header cleanup on 2026-06-21:
 
 - Evidence graph first glance now uses a plain `Evidence graph` header and keeps context in the compact claim-count strip; the old `claims and source blocks` eyebrow and working-map explanatory sentence are gone.
@@ -2722,6 +2734,7 @@ Current good state:
 - Assistant citation rows clamp long titles and exact quotes while preserving full evidence text.
 - Generated-note provenance and Storage import follow-ups now preserve long source/evidence labels without adding visible clutter.
 - Storage source status is now a disclosure that opens when review work needs attention.
+- Command palette fast actions now show only icon, action name, and shortcut; explanatory action sublines are gone.
 
 Remaining tasks:
 
@@ -2777,6 +2790,7 @@ Current good state:
 - Settings Advanced replaces the visible `Raw` tab with a labelled settings snapshot.
 - Learning and Local tools now share the same quieter language style as the rest of the app.
 - Global visual tokens and major Settings panels are calmer and closer to notes-app references.
+- Command palette fast actions now follow the same minimal Spotlight-like row pattern as Quick capture.
 
 Remaining tasks:
 

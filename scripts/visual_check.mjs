@@ -52,6 +52,11 @@ const scenarios = {
     await installEmptyVaultBridge(page);
     await openLocalTools(page);
   },
+  "command-actions": async (page) => {
+    await installEmptyVaultBridge(page);
+    await page.goto(baseUrl, { waitUntil: "networkidle" });
+    await page.locator(".command-search input").focus();
+  },
   "quick-note": async (page) => {
     await installEmptyVaultBridge(page);
     await openQuickNote(page);

@@ -2963,6 +2963,14 @@ describe("App", () => {
     expect(within(commands).getByText("Fast actions")).toBeTruthy();
     expect(within(commands).getByRole("option", { name: /Quick note/i })).toBeTruthy();
     expect(within(commands).getByRole("option", { name: /Quick task/i })).toBeTruthy();
+    expect(within(commands).getByRole("option", { name: /New note/i })).toBeTruthy();
+    expect(within(commands).getByRole("option", { name: /Add source/i })).toBeTruthy();
+    expect(within(commands).getByRole("option", { name: /Open Notes/i })).toBeTruthy();
+    expect(within(commands).getByRole("option", { name: /Open Storage/i })).toBeTruthy();
+    expect(within(commands).queryByText("Open a blank research note for authored thinking.")).toBeNull();
+    expect(within(commands).queryByText("Import pasted text, files, or audio into immutable Storage.")).toBeNull();
+    expect(within(commands).queryByText("Go to editable writing, quick captures, and synthesis.")).toBeNull();
+    expect(within(commands).queryByText("Go to imported source records and evidence blocks.")).toBeNull();
   });
 
   it("focuses command search from the Electron app shortcut event", async () => {

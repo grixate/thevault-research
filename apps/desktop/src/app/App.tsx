@@ -848,7 +848,6 @@ function TopBar() {
                         <Icon size={15} />
                         <span className="search-result-body">
                           <strong>{action.title}</strong>
-                          <span>{action.description}</span>
                         </span>
                         {action.shortcut && <kbd className="command-action-shortcut">{action.shortcut}</kbd>}
                       </button>
