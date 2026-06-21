@@ -127,6 +127,8 @@ function mapRoute(route: string, payload?: any): { method: string; path: string;
     "todos.create": { method: "POST", path: "/todos", body: payload ?? {} },
     "todos.update": { method: "PUT", path: `/todos/${payload?.todoId}`, body: payload?.data ?? {} },
     "todos.complete": { method: "POST", path: `/todos/${payload?.todoId}/complete`, body: {} },
+    "todos.context.update": { method: "PUT", path: `/todos/${payload?.todoId}/context-links/${payload?.linkId}`, body: payload?.data ?? {} },
+    "todos.context.delete": { method: "DELETE", path: `/todos/${payload?.todoId}/context-links/${payload?.linkId}` },
     "todoLists.list": { method: "GET", path: "/todo-lists" },
     "todoLists.create": { method: "POST", path: "/todo-lists", body: payload ?? {} },
     "todoLists.update": { method: "PUT", path: `/todo-lists/${payload?.listId}`, body: payload?.data ?? {} },

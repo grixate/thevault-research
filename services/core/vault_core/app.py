@@ -87,6 +87,7 @@ from vault_core.api.schemas import (
     SearchRequest,
     SpeechSynthesisRequest,
     SourcePipelineResponse,
+    TodoContextLinkUpdateRequest,
     TodoCreateRequest,
     TodoListCreateRequest,
     TodoListUpdateRequest,
@@ -193,7 +194,7 @@ from vault_core.db.session import VaultDatabase, dumps, loads, new_id, now_iso, 
 from vault_core.deps import get_db, require_auth
 from vault_core.domain.chunking import chunk_markdown, content_hash, estimate_tokens
 from vault_core.domain.extraction import deterministic_extract, validate_extracted_object
-from vault_core.todos import complete_todo, create_todo, create_todo_list, list_todo_lists, list_todos, update_todo, update_todo_list
+from vault_core.todos import complete_todo, create_todo, create_todo_list, delete_todo_context_link, list_todo_lists, list_todos, update_todo, update_todo_context_link, update_todo_list
 from vault_core.scripts.prepare_ai_registry_release_candidate import build_release_candidate_packet_from_overlay
 
 BUILTIN_TOOL_ID = "tool_claim_citation_checker"
@@ -452,6 +453,19 @@ def register_routes(app: FastAPI) -> None:
     @app.post("/todos/{todo_id}/complete", dependencies=[auth])
     def todo_complete(todo_id: str, db: VaultDatabase = Depends(get_db)) -> dict[str, Any]:
         return complete_todo(db, todo_id)
+
+    @app.put("/todos/{todo_id}/context-links/{link_id}", dependencies=[auth])
+    def todo_context_link_update(
+        todo_id: str,
+        link_id: str,
+        req: TodoContextLinkUpdateRequest,
+        db: VaultDatabase = Depends(get_db),
+    ) -> dict[str, Any]:
+        return update_todo_context_link(db, todo_id, link_id, req.model_dump(exclude_unset=True))
+
+    @app.delete("/todos/{todo_id}/context-links/{link_id}", dependencies=[auth])
+    def todo_context_link_delete(todo_id: str, link_id: str, db: VaultDatabase = Depends(get_db)) -> dict[str, Any]:
+        return delete_todo_context_link(db, todo_id, link_id)
 
     @app.get("/capsules", dependencies=[auth])
     def capsules(

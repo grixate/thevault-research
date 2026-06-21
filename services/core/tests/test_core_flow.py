@@ -571,6 +571,14 @@ def test_todos_quick_add_views_and_completion(client):
     assert created["labels"] == ["waiting"]
     assert created["list_name"] == "Paper review"
     assert created["context_links"][0]["target_id"] == note["id"]
+    context_link_id = created["context_links"][0]["id"]
+    context_updated = client.put(
+        f"/todos/{created['id']}/context-links/{context_link_id}",
+        json={"relation": "verifies", "locator": "paragraph 1", "exact_quote": "citation mismatch"},
+    ).json()
+    assert context_updated["context_links"][0]["relation"] == "verifies"
+    assert context_updated["context_links"][0]["locator"] == "paragraph 1"
+    assert context_updated["context_links"][0]["exact_quote"] == "citation mismatch"
 
     inbox = client.post("/todos", json={"text": "Clean inbox today"}).json()
     inbox_rows = client.get("/todos?view=inbox").json()
@@ -622,6 +630,10 @@ def test_todos_quick_add_views_and_completion(client):
     assert rolled["labels"] == ["urgent", "waiting"]
     recurrence_events = client.get("/events?limit=10").json()
     assert any(event["action"] == "todo.recurrence_completed" and event["target_id"] == created["id"] for event in recurrence_events)
+    context_removed = client.delete(f"/todos/{created['id']}/context-links/{context_link_id}").json()
+    assert context_removed["context_links"] == []
+    delete_events = client.get("/events?limit=10").json()
+    assert any(event["action"] == "todo_context.deleted" and event["target_id"] == created["id"] for event in delete_events)
 
     completed = client.post(f"/todos/{inbox['id']}/complete").json()
     assert completed["status"] == "completed"

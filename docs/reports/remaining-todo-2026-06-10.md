@@ -421,6 +421,14 @@ Latest task recurrence verification on 2026-06-21:
 - Non-recurring task completion still moves the task into Done.
 - Focused backend todo/recurrence tests, Python lint, and desktop production build: passed.
 
+Latest task context-link management verification on 2026-06-21:
+
+- Added backend routes to update and delete task context links, scoped by task id and link id.
+- Context-link edits support relation, locator, exact quote, and metadata while preserving the canonical target reference.
+- Task detail rail now shows compact context disclosures with inline relation/locator/quote editing and remove, keeping creation anchored in the originating Notes/Storage/Review/Capsule/Assistant surfaces.
+- Focused backend todo/context tests, Python lint, desktop production build, contract generation, and diff whitespace check: passed.
+- Playwright desktop Tasks smoke at 1440x950 edited a context relation in the detail rail with no horizontal overflow. Screenshot captured at `/tmp/vault-tasks-context-link-editor.png`.
+
 Latest focused verification on 2026-06-11 before the current claim-grammar slice:
 
 - Python core tests: 125 passed.
@@ -2820,8 +2828,9 @@ Current good state:
 - Lightweight list management is live from the side rail: create, inline rename, and archive lists.
 - Global quick-task capture is live from `Cmd/Ctrl+Shift+T`, the native app menu, and the command palette, using the same minimal Spotlight-style panel as Quick note.
 - Contextual task creation now exists from current Note, selected Storage source/source block, Review item, Graph claim, Capsule detail, and Assistant answer.
+- Existing task context links can be edited or removed from the quiet task detail rail.
 - Workspace backup preserves todo lists, tasks, labels, label links, and task context links as readable JSONL records plus the full SQLite backup.
-- Focused backend and desktop tests cover quick add, parsed list/label/priority/due date, list filtering, context links, task list counts, list management, detail metadata editing, recurrence completion, global quick-task capture, completion, stats, the desktop create/complete flow, and note-origin contextual task creation.
+- Focused backend and desktop tests cover quick add, parsed list/label/priority/due date, list filtering, context links, task list counts, list management, detail metadata editing, context-link editing/removal, recurrence completion, global quick-task capture, completion, stats, the desktop create/complete flow, and note-origin contextual task creation.
 
 Remaining tasks:
 
@@ -2831,7 +2840,6 @@ Remaining tasks:
   - Night Lab brief,
   - Learning item/tool result surfaces,
   - richer tests for Storage/Review/Capsule/Assistant task payloads.
-- Expand task detail editing to cover context/source-link management without making the rail feel like a project-management panel.
 - Add subtasks only after detail drawer and list management are stable.
 - Integrate AI-suggested todos as reviewable suggestions, not silent canonical tasks.
 - Integrate Markdown checkbox extraction/linking from Notes after the editor UX is stable.
@@ -2852,7 +2860,7 @@ Acceptance evidence:
 
 1. If continuing UX, keep the Notion/Obsidian/Apple Notes reset active: inspect Notes, Storage, Quick Note, Review, Assistant, Capsules, and Settings screenshots, then simplify the most overloaded flow first.
 2. If continuing Capsules, polish the alpha surface and attach dialog first, then continue from import review items into conflict-aware merge decisions or package contract docs.
-3. If continuing Tasks, add context/source-link management before considering subtasks or standalone task import/export.
+3. If continuing Tasks, continue contextual creation gaps, then AI-suggested todo review items before considering subtasks or standalone task import/export.
 4. If continuing local AI production, pick the first real approved runtime/model candidate set and run the release-packet tooling.
 5. If stabilizing before bigger registry edits, stage or commit the current v1 state.
 6. After any slice:

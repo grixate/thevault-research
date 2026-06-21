@@ -4528,7 +4528,7 @@ function TaskDetail({ todo, lists, onClose }: { todo: TodoItem; lists: TodoList[
         <div className="task-detail-context">
           <strong>Context</strong>
           {todo.context_links.map((link) => (
-            <span key={link.id} title={link.target_title ?? link.target_id}>{todoContextLabel(link)}</span>
+            <TaskContextLinkEditor key={link.id} todoId={todo.id} link={link} />
           ))}
         </div>
       )}
@@ -4537,6 +4537,72 @@ function TaskDetail({ todo, lists, onClose }: { todo: TodoItem; lists: TodoList[
         {updateTodo.isPending ? "Saving" : "Save"}
       </Button>
     </div>
+  );
+}
+
+function TaskContextLinkEditor({ todoId, link }: { todoId: string; link: TodoContextLink }) {
+  const queryClient = useQueryClient();
+  const [relation, setRelation] = useState(link.relation || "related");
+  const [locator, setLocator] = useState(link.locator ?? "");
+  const [exactQuote, setExactQuote] = useState(link.exact_quote ?? "");
+  useEffect(() => {
+    setRelation(link.relation || "related");
+    setLocator(link.locator ?? "");
+    setExactQuote(link.exact_quote ?? "");
+  }, [link.id, link.relation, link.locator, link.exact_quote]);
+  const invalidateTodos = () => {
+    queryClient.invalidateQueries({ queryKey: ["todos"] });
+    queryClient.invalidateQueries({ queryKey: ["todo-lists"] });
+    queryClient.invalidateQueries({ queryKey: ["stats"] });
+    queryClient.invalidateQueries({ queryKey: ["events"] });
+  };
+  const updateLink = useMutation({
+    mutationFn: () =>
+      vaultRequest<TodoItem>("todos.context.update", {
+        todoId,
+        linkId: link.id,
+        data: {
+          relation: relation.trim() || "related",
+          locator: locator.trim() || null,
+          exact_quote: exactQuote.trim() || null
+        }
+      }),
+    onSuccess: invalidateTodos
+  });
+  const deleteLink = useMutation({
+    mutationFn: () => vaultRequest<TodoItem>("todos.context.delete", { todoId, linkId: link.id }),
+    onSuccess: invalidateTodos
+  });
+  return (
+    <details className="task-context-link">
+      <summary>
+        <span title={link.target_title ?? link.target_id}>{todoContextLabel(link)}</span>
+        <small>{link.relation || "related"}</small>
+      </summary>
+      <div className="task-context-edit">
+        <label className="field">
+          <span>Relation</span>
+          <Input aria-label={`Relation for ${todoContextLabel(link)}`} value={relation} onChange={(event) => setRelation(event.target.value)} />
+        </label>
+        <label className="field">
+          <span>Locator</span>
+          <Input aria-label={`Locator for ${todoContextLabel(link)}`} value={locator} onChange={(event) => setLocator(event.target.value)} />
+        </label>
+        <label className="field">
+          <span>Quote</span>
+          <Textarea aria-label={`Quote for ${todoContextLabel(link)}`} value={exactQuote} onChange={(event) => setExactQuote(event.target.value)} />
+        </label>
+        {(updateLink.error || deleteLink.error) && <small className="model-test-error">{updateLink.error?.message || deleteLink.error?.message}</small>}
+        <div className="task-context-actions">
+          <Button type="button" variant="primary" disabled={updateLink.isPending || deleteLink.isPending} onClick={() => updateLink.mutate()}>
+            {updateLink.isPending ? "Saving" : "Save"}
+          </Button>
+          <Button type="button" variant="quiet" disabled={updateLink.isPending || deleteLink.isPending} onClick={() => deleteLink.mutate()}>
+            Remove
+          </Button>
+        </div>
+      </div>
+    </details>
   );
 }
 

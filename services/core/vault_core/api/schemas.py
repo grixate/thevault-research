@@ -141,6 +141,13 @@ class TodoContextLinkInput(BaseModel):
     metadata: dict[str, Any] = Field(default_factory=dict)
 
 
+class TodoContextLinkUpdateRequest(BaseModel):
+    relation: str | None = None
+    exact_quote: str | None = None
+    locator: str | None = None
+    metadata: dict[str, Any] | None = None
+
+
 class TodoCreateRequest(BaseModel):
     text: str | None = None
     title: str | None = None

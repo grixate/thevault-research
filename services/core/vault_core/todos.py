@@ -329,6 +329,65 @@ def complete_todo(db: VaultDatabase, todo_id: str) -> dict[str, Any]:
     return update_todo(db, todo_id, {"status": "completed"})
 
 
+def update_todo_context_link(db: VaultDatabase, todo_id: str, link_id: str, payload: dict[str, Any]) -> dict[str, Any]:
+    allowed = {
+        "relation": "relation",
+        "exact_quote": "exact_quote",
+        "locator": "locator",
+    }
+    assignments: list[str] = []
+    values: list[Any] = []
+    for key, column in allowed.items():
+        if key not in payload:
+            continue
+        value = str(payload[key] or "").strip() if key == "relation" else payload[key]
+        if key == "relation" and not value:
+            value = "related"
+        assignments.append(f"{column}=?")
+        values.append(value)
+    if "metadata" in payload:
+        metadata = payload.get("metadata")
+        if metadata is not None and not isinstance(metadata, dict):
+            raise HTTPException(422, "Todo context metadata must be an object")
+        assignments.append("metadata_json=?")
+        values.append(dumps(metadata or {}))
+    if not assignments:
+        raise HTTPException(422, "No todo context fields to update")
+    values.extend([link_id, todo_id, db.workspace_id])
+    with db.connect() as conn:
+        ensure_todo_context_link(conn, db.workspace_id, todo_id, link_id)
+        conn.execute(
+            f"""
+            UPDATE todo_context_links
+            SET {', '.join(assignments)}
+            WHERE id=? AND todo_id=? AND workspace_id=?
+            """,
+            tuple(values),
+        )
+        conn.execute("UPDATE todos SET updated_at=? WHERE id=? AND workspace_id=?", (now_iso(), todo_id, db.workspace_id))
+        db.event(conn, "todo_context.updated", "todo", todo_id, {"link_id": link_id, "fields": list(payload.keys())}, "user")
+        return get_todo_by_id(conn, db.workspace_id, todo_id)
+
+
+def delete_todo_context_link(db: VaultDatabase, todo_id: str, link_id: str) -> dict[str, Any]:
+    with db.connect() as conn:
+        ensure_todo_context_link(conn, db.workspace_id, todo_id, link_id)
+        conn.execute("DELETE FROM todo_context_links WHERE id=? AND todo_id=? AND workspace_id=?", (link_id, todo_id, db.workspace_id))
+        conn.execute("UPDATE todos SET updated_at=? WHERE id=? AND workspace_id=?", (now_iso(), todo_id, db.workspace_id))
+        db.event(conn, "todo_context.deleted", "todo", todo_id, {"link_id": link_id}, "user")
+        return get_todo_by_id(conn, db.workspace_id, todo_id)
+
+
+def ensure_todo_context_link(conn: sqlite3.Connection, workspace_id: str, todo_id: str, link_id: str) -> sqlite3.Row:
+    row = conn.execute(
+        "SELECT id FROM todo_context_links WHERE id=? AND todo_id=? AND workspace_id=?",
+        (link_id, todo_id, workspace_id),
+    ).fetchone()
+    if not row:
+        raise HTTPException(404, "Todo context link not found")
+    return row
+
+
 def get_todo_by_id(conn: sqlite3.Connection, workspace_id: str, todo_id: str) -> dict[str, Any]:
     row = conn.execute(
         """
