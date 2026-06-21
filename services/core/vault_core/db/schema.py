@@ -670,6 +670,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_capsule_versions_unique ON capsule_version
 CREATE INDEX IF NOT EXISTS idx_capsule_health_capsule_created ON capsule_health_snapshots(capsule_id, created_at);
 CREATE INDEX IF NOT EXISTS idx_todos_workspace_status_due ON todos(workspace_id, status, due_date);
 CREATE INDEX IF NOT EXISTS idx_todos_workspace_list ON todos(workspace_id, list_id, status);
+CREATE INDEX IF NOT EXISTS idx_todos_parent ON todos(parent_todo_id);
 CREATE INDEX IF NOT EXISTS idx_todo_context_links_target ON todo_context_links(workspace_id, target_type, target_id);
 CREATE INDEX IF NOT EXISTS idx_event_log_workspace_created ON event_log(workspace_id, created_at);
 """

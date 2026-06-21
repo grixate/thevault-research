@@ -760,6 +760,111 @@ describe("App", () => {
     await waitFor(() => expect(request).toHaveBeenCalledWith("todos.complete", { todoId: "todo_follow_up" }));
   });
 
+  it("adds and completes subtasks from the task detail rail", async () => {
+    let todoRows: any[] = [
+      {
+        id: "todo_parent",
+        title: "Prepare evidence packet",
+        description: "",
+        status: "open",
+        priority: 3,
+        due_date: null,
+        due_time: null,
+        recurrence_rule: null,
+        list_id: null,
+        list_name: null,
+        labels: [],
+        context_links: [],
+        subtasks: [
+          {
+            id: "todo_child_existing",
+            parent_todo_id: "todo_parent",
+            title: "Collect quotes",
+            description: "",
+            status: "open",
+            priority: 4,
+            labels: [],
+            context_links: [],
+            subtasks: [],
+            source_kind: "subtask",
+            source_ref: {},
+            provenance: {},
+            created_at: "2026-06-21T00:00:00Z",
+            updated_at: "2026-06-21T00:00:00Z"
+          }
+        ],
+        source_kind: "user",
+        source_ref: {},
+        provenance: {},
+        created_at: "2026-06-21T00:00:00Z",
+        updated_at: "2026-06-21T00:00:00Z",
+        completed_at: null
+      }
+    ];
+    const request = vi.fn(async (route: string, payload?: any) => {
+      if (route === "health.get") return { ok: true, version: "0.1.0", db_ready: true, workspace_id: "wrk_default" };
+      if (route === "jobs.list") return [];
+      if (route === "todos.list") return { items: todoRows, total: todoRows.length, view: payload?.view ?? "inbox" };
+      if (route === "todoLists.list") return [];
+      if (route === "todos.create") {
+        expect(payload).toEqual({
+          text: "Draft summary",
+          parent_todo_id: "todo_parent",
+          source_kind: "subtask",
+          source_ref: { parent_todo_id: "todo_parent" },
+          provenance: { created_from: "task_detail", parent_todo_id: "todo_parent" }
+        });
+        const subtask = {
+          id: "todo_child_new",
+          parent_todo_id: payload.parent_todo_id,
+          title: payload.text,
+          description: "",
+          status: "open",
+          priority: 4,
+          labels: [],
+          context_links: [],
+          subtasks: [],
+          source_kind: "subtask",
+          source_ref: payload.source_ref,
+          provenance: payload.provenance,
+          created_at: "2026-06-21T00:00:01Z",
+          updated_at: "2026-06-21T00:00:01Z"
+        };
+        todoRows = todoRows.map((todo) => (todo.id === payload.parent_todo_id ? { ...todo, subtasks: [...todo.subtasks, subtask] } : todo));
+        return subtask;
+      }
+      if (route === "todos.complete") {
+        todoRows = todoRows.map((todo) =>
+          todo.id === "todo_parent"
+            ? {
+                ...todo,
+                subtasks: todo.subtasks.map((subtask: any) => (subtask.id === payload.todoId ? { ...subtask, status: "completed", completed_at: "2026-06-21T00:00:02Z" } : subtask))
+              }
+            : todo
+        );
+        return todoRows[0].subtasks.find((subtask: any) => subtask.id === payload.todoId);
+      }
+      return [];
+    });
+    window.vault = { request, selectFiles: vi.fn(async () => []) };
+
+    renderApp();
+    fireEvent.click(await screen.findByRole("button", { name: "Tasks" }));
+    expect(await screen.findByText("Prepare evidence packet")).toBeTruthy();
+    expect(await screen.findByText("0/1 subtasks")).toBeTruthy();
+    fireEvent.click(await screen.findByText("Prepare evidence packet"));
+    expect(await screen.findByLabelText("Subtasks")).toBeTruthy();
+    fireEvent.change(await screen.findByLabelText("New subtask"), { target: { value: "Draft summary" } });
+    fireEvent.click(await screen.findByRole("button", { name: "Add subtask" }));
+
+    await waitFor(() => expect(request).toHaveBeenCalledWith("todos.create", expect.objectContaining({ parent_todo_id: "todo_parent" })));
+    expect((await screen.findAllByText("0/2 subtasks")).length).toBeGreaterThan(0);
+    fireEvent.click(await screen.findByRole("button", { name: "Complete subtask Draft summary" }));
+    await waitFor(() => expect(request).toHaveBeenCalledWith("todos.complete", { todoId: "todo_child_new" }));
+    expect((await screen.findAllByText("1/2 subtasks")).length).toBeGreaterThan(0);
+    expect(screen.getByRole("button", { name: "Complete Prepare evidence packet" })).toBeTruthy();
+  });
+
   it("creates a contextual task from the note editor", async () => {
     const note = {
       id: "note_context_task",

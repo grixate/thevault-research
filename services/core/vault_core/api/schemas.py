@@ -151,6 +151,7 @@ class TodoContextLinkUpdateRequest(BaseModel):
 class TodoCreateRequest(BaseModel):
     text: str | None = None
     title: str | None = None
+    parent_todo_id: str | None = None
     description: str = ""
     due_date: str | None = None
     priority: int | None = None

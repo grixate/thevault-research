@@ -57,6 +57,7 @@ def list_todos(db: VaultDatabase, *, view: str = "inbox", list_id: str | None = 
     if list_id:
         where.append("t.list_id=?")
         params.append(list_id)
+    where.append("t.parent_todo_id IS NULL")
     order = "t.completed_at DESC, t.updated_at DESC" if view == "completed" else "COALESCE(t.due_date, '9999-12-31'), t.priority, t.sort_index, t.created_at DESC"
     sql = f"""
         SELECT t.*, l.name AS list_name
@@ -196,19 +197,23 @@ def create_todo_with_conn(conn: sqlite3.Connection, db: VaultDatabase, payload: 
     due_date = payload.get("due_date") or parsed.get("due_date")
     recurrence_rule = payload.get("recurrence_rule") or parsed.get("recurrence_rule")
     context_links = payload.get("context_links") if isinstance(payload.get("context_links"), list) else []
+    parent_todo_id = str(payload.get("parent_todo_id") or "").strip() or None
     todo_id = new_id("todo")
+    if parent_todo_id:
+        ensure_todo_exists(conn, db.workspace_id, parent_todo_id)
     list_id = ensure_todo_list(conn, db.workspace_id, list_name, ts) if list_name else None
     conn.execute(
         """
         INSERT INTO todos
-          (id, workspace_id, list_id, title, description, status, priority, due_date,
+          (id, workspace_id, list_id, parent_todo_id, title, description, status, priority, due_date,
            recurrence_rule, source_kind, source_ref_json, provenance_json, created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, 'open', ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, 'open', ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         (
             todo_id,
             db.workspace_id,
             list_id,
+            parent_todo_id,
             title,
             str(payload.get("description") or ""),
             priority,
@@ -229,7 +234,7 @@ def create_todo_with_conn(conn: sqlite3.Connection, db: VaultDatabase, payload: 
         )
     for link in context_links:
         create_context_link(conn, db.workspace_id, todo_id, link, ts)
-    db.event(conn, "todo.created", "todo", todo_id, {"title": title, "due_date": due_date}, "user")
+    db.event(conn, "todo.created", "todo", todo_id, {"title": title, "due_date": due_date, "parent_todo_id": parent_todo_id}, "user")
     return get_todo_by_id(conn, db.workspace_id, todo_id)
 
 
@@ -393,6 +398,13 @@ def ensure_todo_context_link(conn: sqlite3.Connection, workspace_id: str, todo_i
     return row
 
 
+def ensure_todo_exists(conn: sqlite3.Connection, workspace_id: str, todo_id: str) -> sqlite3.Row:
+    row = conn.execute("SELECT id FROM todos WHERE id=? AND workspace_id=?", (todo_id, workspace_id)).fetchone()
+    if not row:
+        raise HTTPException(404, "Todo not found")
+    return row
+
+
 def get_todo_by_id(conn: sqlite3.Connection, workspace_id: str, todo_id: str) -> dict[str, Any]:
     row = conn.execute(
         """
@@ -443,8 +455,19 @@ def inflate_todo(conn: sqlite3.Connection, row: sqlite3.Row) -> dict[str, Any]:
         "SELECT * FROM todo_context_links WHERE todo_id=? ORDER BY created_at, id",
         (todo["id"],),
     ).fetchall()
+    subtask_rows = conn.execute(
+        """
+        SELECT t.*, l.name AS list_name
+        FROM todos t
+        LEFT JOIN todo_lists l ON l.id=t.list_id
+        WHERE t.workspace_id=? AND t.parent_todo_id=?
+        ORDER BY t.status='completed', t.sort_index, t.created_at, t.id
+        """,
+        (row["workspace_id"], todo["id"]),
+    ).fetchall()
     todo["labels"] = [row["name"] for row in label_rows]
     todo["context_links"] = [inflate_context_link(row) for row in context_rows]
+    todo["subtasks"] = [inflate_todo(conn, subtask) for subtask in subtask_rows]
     return todo
 
 

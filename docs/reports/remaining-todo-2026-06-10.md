@@ -479,6 +479,14 @@ Latest Markdown checkbox task verification on 2026-06-21:
 - The note content records `task_checkbox_links` after creation so the note remains the source of the checkbox-to-task mapping without adding visible clutter.
 - Focused desktop checkbox extraction test, full desktop tests, and diff whitespace check passed.
 
+Latest subtask verification on 2026-06-21:
+
+- Native tasks now support nested subtasks through the existing `parent_todo_id` schema field and regenerated API contracts.
+- Main task views stay quiet by showing only parent tasks; each parent payload carries its nested `subtasks` array for the detail rail.
+- The task detail rail now has a compact Subtasks section with inline add and complete controls, plus a small progress count in the row/detail metadata.
+- Creating a subtask records parent source/provenance metadata, and completing a subtask does not complete or duplicate the parent task.
+- Focused backend subtask tests, full backend core-flow tests, focused desktop subtask tests, Python lint, full desktop tests, desktop production build, contract generation, and diff whitespace check passed.
+
 Latest focused verification on 2026-06-11 before the current claim-grammar slice:
 
 - Python core tests: 125 passed.
@@ -2883,14 +2891,14 @@ Current good state:
 - Night Lab brief, selected Practice card, and selected Local helper result task origins now preserve source-specific metadata without adding explanatory panels.
 - Storage source/block, Review item, Capsule detail, and whole Assistant answer task origins now preserve richer audit metadata without adding visible UI clutter.
 - Unchecked Markdown checkboxes in Notes can be extracted into linked native tasks while checked and already-linked boxes are skipped.
+- Parent tasks can now carry nested subtasks, with compact add/complete controls in the existing task detail rail and progress shown as small metadata.
 - AI-suggested tasks are review-gated through `suggested_todo` items and only become native tasks after explicit approval.
 - Existing task context links can be edited or removed from the quiet task detail rail.
 - Workspace backup preserves todo lists, tasks, labels, label links, and task context links as readable JSONL records plus the full SQLite backup.
-- Focused backend and desktop tests cover quick add, parsed list/label/priority/due date, list filtering, context links, task list counts, list management, detail metadata editing, context-link editing/removal, recurrence completion, global quick-task capture, completion, stats, the desktop create/complete flow, note-origin contextual task creation, Markdown checkbox task extraction, Storage source/block tasks, Review item tasks, Capsule detail tasks, Assistant answer/citation task payloads, Night Lab brief tasks, Practice card tasks, helper-result tasks, and review-gated AI task suggestions.
+- Focused backend and desktop tests cover quick add, parsed list/label/priority/due date, list filtering, context links, task list counts, list management, detail metadata editing, context-link editing/removal, recurrence completion, subtasks, global quick-task capture, completion, stats, the desktop create/complete flow, note-origin contextual task creation, Markdown checkbox task extraction, Storage source/block tasks, Review item tasks, Capsule detail tasks, Assistant answer/citation task payloads, Night Lab brief tasks, Practice card tasks, helper-result tasks, and review-gated AI task suggestions.
 
 Remaining tasks:
 
-- Add subtasks only after detail drawer and list management are stable.
 - Add standalone task import/export only if it proves useful beyond full workspace backup.
 - Add mobile layout repair later with the broader mobile pass; current mobile remains explicitly not clean.
 
@@ -2908,7 +2916,7 @@ Acceptance evidence:
 
 1. If continuing UX, keep the Notion/Obsidian/Apple Notes reset active: inspect Notes, Storage, Quick Note, Review, Assistant, Capsules, and Settings screenshots, then simplify the most overloaded flow first.
 2. If continuing Capsules, polish the alpha surface and attach dialog first, then continue from import review items into conflict-aware merge decisions or package contract docs.
-3. If continuing Tasks, consider subtasks next, then standalone task import/export only if it proves useful beyond full workspace backup.
+3. If continuing Tasks, consider standalone task import/export only if it proves useful beyond full workspace backup; otherwise move to the next non-mobile workstream.
 4. If continuing local AI production, pick the first real approved runtime/model candidate set and run the release-packet tooling.
 5. If stabilizing before bigger registry edits, stage or commit the current v1 state.
 6. After any slice:

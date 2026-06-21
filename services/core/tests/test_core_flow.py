@@ -645,6 +645,31 @@ def test_todos_quick_add_views_and_completion(client):
     assert stats["due_todos"] == 0
 
 
+def test_todo_subtasks_are_nested_under_parent(client):
+    parent = client.post("/todos", json={"text": "Prepare evidence packet @writing"}).json()
+    first = client.post("/todos", json={"text": "Collect source quotes", "parent_todo_id": parent["id"]}).json()
+    second = client.post("/todos", json={"text": "Draft summary", "parent_todo_id": parent["id"]}).json()
+
+    assert first["parent_todo_id"] == parent["id"]
+    assert second["parent_todo_id"] == parent["id"]
+
+    inbox = client.get("/todos?view=inbox").json()
+    assert [todo["id"] for todo in inbox["items"]] == [parent["id"]]
+    nested = inbox["items"][0]["subtasks"]
+    assert [todo["title"] for todo in nested] == ["Collect source quotes", "Draft summary"]
+    assert all(todo["context_links"] == [] for todo in nested)
+
+    completed_subtask = client.post(f"/todos/{first['id']}/complete").json()
+    assert completed_subtask["status"] == "completed"
+
+    refreshed = client.get("/todos?view=inbox").json()["items"][0]
+    assert refreshed["status"] == "open"
+    assert [todo["status"] for todo in refreshed["subtasks"]] == ["open", "completed"]
+
+    missing_parent = client.post("/todos", json={"text": "Impossible child", "parent_todo_id": "todo_missing"})
+    assert missing_parent.status_code == 404
+
+
 def test_todo_recurrence_rule_next_dates():
     today = date(2026, 6, 21)
     assert next_recurrence_due_date("daily", "2026-06-21", today=today) == "2026-06-22"

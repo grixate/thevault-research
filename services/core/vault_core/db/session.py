@@ -118,6 +118,14 @@ def _ensure_schema_migrations(conn: sqlite3.Connection) -> None:
             "install_log_json": "TEXT NOT NULL DEFAULT '[]'",
         },
     )
+    _ensure_columns(
+        conn,
+        "todos",
+        {
+            "parent_todo_id": "TEXT",
+        },
+    )
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_todos_parent ON todos(parent_todo_id)")
     _backfill_installed_model_license_columns(conn)
 
 

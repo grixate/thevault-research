@@ -175,6 +175,7 @@ export type TodoContextLink = {
 
 export type TodoItem = {
   id: string;
+  parent_todo_id?: string | null;
   title: string;
   description: string;
   status: string;
@@ -189,6 +190,7 @@ export type TodoItem = {
   source_kind: string;
   source_ref?: Record<string, any>;
   provenance?: Record<string, any>;
+  subtasks?: TodoItem[];
   created_at: string;
   updated_at: string;
   completed_at?: string | null;

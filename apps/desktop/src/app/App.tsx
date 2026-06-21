@@ -4542,6 +4542,7 @@ function TaskDetail({ todo, lists, onClose }: { todo: TodoItem; lists: TodoList[
   const [listId, setListId] = useState(todo.list_id ?? "inbox");
   const [labels, setLabels] = useState(todo.labels.join(", "));
   const [recurrenceRule, setRecurrenceRule] = useState(todo.recurrence_rule ?? "");
+  const [subtaskText, setSubtaskText] = useState("");
   useEffect(() => {
     setTitle(todo.title);
     setDescription(todo.description ?? "");
@@ -4550,7 +4551,14 @@ function TaskDetail({ todo, lists, onClose }: { todo: TodoItem; lists: TodoList[
     setListId(todo.list_id ?? "inbox");
     setLabels(todo.labels.join(", "));
     setRecurrenceRule(todo.recurrence_rule ?? "");
+    setSubtaskText("");
   }, [todo.id, todo.title, todo.description, todo.due_date, todo.priority, todo.list_id, todo.labels, todo.recurrence_rule]);
+  const invalidateTodos = () => {
+    queryClient.invalidateQueries({ queryKey: ["todos"] });
+    queryClient.invalidateQueries({ queryKey: ["todo-lists"] });
+    queryClient.invalidateQueries({ queryKey: ["stats"] });
+    queryClient.invalidateQueries({ queryKey: ["events"] });
+  };
   const updateTodo = useMutation({
     mutationFn: () =>
       vaultRequest<TodoItem>("todos.update", {
@@ -4565,13 +4573,31 @@ function TaskDetail({ todo, lists, onClose }: { todo: TodoItem; lists: TodoList[
           recurrence_rule: recurrenceRule.trim() || null
         }
       }),
+    onSuccess: invalidateTodos
+  });
+  const createSubtask = useMutation({
+    mutationFn: () =>
+      vaultRequest<TodoItem>("todos.create", {
+        text: subtaskText.trim(),
+        parent_todo_id: todo.id,
+        source_kind: "subtask",
+        source_ref: { parent_todo_id: todo.id },
+        provenance: { created_from: "task_detail", parent_todo_id: todo.id }
+      }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["todos"] });
-      queryClient.invalidateQueries({ queryKey: ["todo-lists"] });
-      queryClient.invalidateQueries({ queryKey: ["stats"] });
-      queryClient.invalidateQueries({ queryKey: ["events"] });
+      setSubtaskText("");
+      invalidateTodos();
     }
   });
+  const completeSubtask = useMutation({
+    mutationFn: (subtask: TodoItem) => vaultRequest<TodoItem>("todos.complete", { todoId: subtask.id }),
+    onSuccess: invalidateTodos
+  });
+  function submitSubtask(event: ReactFormEvent) {
+    event.preventDefault();
+    if (!subtaskText.trim() || createSubtask.isPending) return;
+    createSubtask.mutate();
+  }
   return (
     <div className="task-detail" aria-label="Task detail">
       <div className="task-detail-header">
@@ -4626,6 +4652,36 @@ function TaskDetail({ todo, lists, onClose }: { todo: TodoItem; lists: TodoList[
         <span>Note</span>
         <Textarea aria-label="Task description" value={description} onChange={(event) => setDescription(event.target.value)} />
       </label>
+      <div className="task-detail-subtasks" aria-label="Subtasks">
+        <div className="task-detail-section-title">
+          <strong>Subtasks</strong>
+          {(todo.subtasks?.length ?? 0) > 0 && <small>{todoSubtaskProgress(todo)}</small>}
+        </div>
+        {(todo.subtasks ?? []).length > 0 && (
+          <div className="subtask-list">
+            {(todo.subtasks ?? []).map((subtask) => (
+              <article key={subtask.id} className={`subtask-row ${subtask.status === "completed" ? "completed" : ""}`}>
+                <button
+                  type="button"
+                  className="task-check"
+                  aria-label={subtask.status === "completed" ? `${subtask.title} completed` : `Complete subtask ${subtask.title}`}
+                  disabled={subtask.status === "completed" || completeSubtask.isPending}
+                  onClick={() => completeSubtask.mutate(subtask)}
+                >
+                  {subtask.status === "completed" && <Check size={13} />}
+                </button>
+                <span>{subtask.title}</span>
+              </article>
+            ))}
+          </div>
+        )}
+        <form className="subtask-add" onSubmit={submitSubtask}>
+          <Input aria-label="New subtask" placeholder="Add subtask" value={subtaskText} onChange={(event) => setSubtaskText(event.target.value)} />
+          <Button type="submit" size="icon" variant="quiet" icon={<Plus size={14} />} aria-label="Add subtask" disabled={!subtaskText.trim() || createSubtask.isPending} />
+        </form>
+        {createSubtask.error && <small className="model-test-error">{createSubtask.error.message}</small>}
+        {completeSubtask.error && <small className="model-test-error">{completeSubtask.error.message}</small>}
+      </div>
       {todo.context_links.length > 0 && (
         <div className="task-detail-context">
           <strong>Context</strong>
@@ -4726,9 +4782,16 @@ function todoMetaLine(todo: TodoItem): string {
   const parts = [
     todo.due_date ? todoDueLabel(todo.due_date) : "",
     todo.list_name ? `#${todo.list_name}` : "",
-    todo.recurrence_rule ? todo.recurrence_rule : ""
+    todo.recurrence_rule ? todo.recurrence_rule : "",
+    todo.subtasks?.length ? todoSubtaskProgress(todo) : ""
   ].filter(Boolean);
   return parts.join(" · ");
+}
+
+function todoSubtaskProgress(todo: TodoItem): string {
+  const subtasks = todo.subtasks ?? [];
+  const completed = subtasks.filter((subtask) => subtask.status === "completed").length;
+  return `${completed}/${subtasks.length} subtasks`;
 }
 
 function todoDueLabel(value: string): string {

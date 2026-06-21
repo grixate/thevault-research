@@ -14363,6 +14363,17 @@
             ],
             "title": "Title"
           },
+          "parent_todo_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Todo Id"
+          },
           "description": {
             "type": "string",
             "title": "Description",

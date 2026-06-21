@@ -2591,7 +2591,8 @@ textarea:not(.ui-textarea) {
 }
 
 .task-detail-header strong,
-.task-detail-context strong {
+.task-detail-context strong,
+.task-detail-section-title strong {
   color: var(--foreground);
   font-size: 12px;
 }
@@ -2603,6 +2604,61 @@ textarea:not(.ui-textarea) {
 .task-detail .ui-textarea {
   min-height: 82px;
   resize: vertical;
+}
+
+.task-detail-subtasks {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+  padding-top: 2px;
+}
+
+.task-detail-section-title,
+.subtask-row,
+.subtask-add {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.task-detail-section-title {
+  justify-content: space-between;
+}
+
+.task-detail-section-title small {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.subtask-list {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.subtask-row {
+  min-height: 28px;
+  color: var(--foreground);
+  font-size: 12px;
+}
+
+.subtask-row span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.subtask-row.completed span {
+  color: var(--muted);
+  text-decoration: line-through;
+}
+
+.subtask-add .ui-input {
+  min-height: 30px;
+  height: 30px;
+  font-size: 12px;
 }
 
 .task-detail-context {
