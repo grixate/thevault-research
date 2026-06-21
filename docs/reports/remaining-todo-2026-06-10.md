@@ -429,6 +429,13 @@ Latest task context-link management verification on 2026-06-21:
 - Focused backend todo/context tests, Python lint, desktop production build, contract generation, and diff whitespace check: passed.
 - Playwright desktop Tasks smoke at 1440x950 edited a context relation in the detail rail with no horizontal overflow. Screenshot captured at `/tmp/vault-tasks-context-link-editor.png`.
 
+Latest selected-note task verification on 2026-06-21:
+
+- The Note editor Task action now detects selected editor text and creates a task context link with `exact_quote`, a ProseMirror selection locator, and selected-text metadata including range, length, and stable hash.
+- When no text is selected, the same Task action still creates a whole-note follow-up without adding noisy controls.
+- Desktop production build and diff whitespace check passed.
+- Playwright desktop smoke at 1440x950 selected note text, created a task, and verified the resulting context link carried quote, relation, locator, and selected-text metadata. Screenshot captured at `/tmp/vault-note-selection-task.png`.
+
 Latest focused verification on 2026-06-11 before the current claim-grammar slice:
 
 - Python core tests: 125 passed.
@@ -2828,6 +2835,7 @@ Current good state:
 - Lightweight list management is live from the side rail: create, inline rename, and archive lists.
 - Global quick-task capture is live from `Cmd/Ctrl+Shift+T`, the native app menu, and the command palette, using the same minimal Spotlight-style panel as Quick note.
 - Contextual task creation now exists from current Note, selected Storage source/source block, Review item, Graph claim, Capsule detail, and Assistant answer.
+- Selecting text in a Note before using the Task action preserves the selected quote, locator, and hash metadata.
 - Existing task context links can be edited or removed from the quiet task detail rail.
 - Workspace backup preserves todo lists, tasks, labels, label links, and task context links as readable JSONL records plus the full SQLite backup.
 - Focused backend and desktop tests cover quick add, parsed list/label/priority/due date, list filtering, context links, task list counts, list management, detail metadata editing, context-link editing/removal, recurrence completion, global quick-task capture, completion, stats, the desktop create/complete flow, and note-origin contextual task creation.
@@ -2835,7 +2843,6 @@ Current good state:
 Remaining tasks:
 
 - Finish contextual task creation:
-  - selected Note text, not only the current note,
   - individual Assistant citations,
   - Night Lab brief,
   - Learning item/tool result surfaces,

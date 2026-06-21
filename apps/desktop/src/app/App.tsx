@@ -1478,6 +1478,35 @@ function stableSnapshot(value: unknown): string {
   return JSON.stringify(value);
 }
 
+function noteSelectedTaskContext(editor: Editor | null): { defaultTitle: string; exactQuote: string; locator: string; metadata: Record<string, unknown> } | null {
+  if (!editor) return null;
+  const { from, to, empty } = editor.state.selection;
+  if (empty || from === to) return null;
+  const exactQuote = editor.state.doc.textBetween(from, to, " ").replace(/\s+/g, " ").trim();
+  if (!exactQuote) return null;
+  return {
+    defaultTitle: `Follow up: ${middleTruncate(exactQuote, 72)}`,
+    exactQuote,
+    locator: `note selection ${from}-${to}`,
+    metadata: {
+      locator_kind: "prosemirror_selection",
+      selection_from: from,
+      selection_to: to,
+      selected_text_hash: stableTextHash(exactQuote),
+      selected_text_length: exactQuote.length
+    }
+  };
+}
+
+function stableTextHash(value: string): string {
+  let hash = 0x811c9dc5;
+  for (let index = 0; index < value.length; index += 1) {
+    hash ^= value.charCodeAt(index);
+    hash = Math.imul(hash, 0x01000193);
+  }
+  return (hash >>> 0).toString(16).padStart(8, "0");
+}
+
 function noteSnapshotFromPersisted(note: Note): string {
   return stableSnapshot({
     title: note.title,
@@ -5305,6 +5334,7 @@ function NoteEditor({ note }: { note?: Note }) {
   const versionRows = versions.data ?? [];
   const selectedVersion = versionRows.find((version) => version.version === selectedVersionNumber) ?? versionRows[0];
   const canRestoreSelectedVersion = Boolean(selectedVersion && selectedVersion.version !== note.version);
+  const selectedTaskContext = noteSelectedTaskContext(editor);
 
   return (
     <Panel className="editor-pane">
@@ -5350,7 +5380,17 @@ function NoteEditor({ note }: { note?: Note }) {
                 <Button icon={<Archive size={16} />} onClick={() => generate.mutate()}>
                   Draft memo
                 </Button>
-                <TaskCreateButton targetType="note" targetId={note.id} targetTitle={title || note.title} />
+                <TaskCreateButton
+                  targetType="note"
+                  targetId={note.id}
+                  targetTitle={title || note.title}
+                  defaultTitle={selectedTaskContext?.defaultTitle}
+                  relation={selectedTaskContext ? "follow_up_selected_text" : "follow_up"}
+                  exactQuote={selectedTaskContext?.exactQuote}
+                  locator={selectedTaskContext?.locator}
+                  metadata={selectedTaskContext?.metadata}
+                  buttonTitle={selectedTaskContext ? "Create task from selected text" : "Create task from this note"}
+                />
                 <CapsuleAttachButton targetType="note" targetId={note.id} targetTitle={title || note.title} defaultRole="core" />
               </div>
             </section>
