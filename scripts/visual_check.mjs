@@ -25,6 +25,23 @@ const scenarios = {
   "review-empty": async (page) => {
     await installEmptyVaultBridge(page);
     await openReview(page);
+  },
+  "quick-note": async (page) => {
+    await installEmptyVaultBridge(page);
+    await openQuickNote(page);
+  },
+  "quick-storage": async (page) => {
+    await installEmptyVaultBridge(page);
+    await openQuickNote(page);
+    await page.getByRole("button", { name: "Capture to Storage" }).click();
+  },
+  "quick-source": async (page) => {
+    await scenarios["quick-storage"](page);
+  },
+  "quick-task": async (page) => {
+    await installEmptyVaultBridge(page);
+    await openQuickNote(page);
+    await page.getByRole("button", { name: "Save as task" }).click();
   }
 };
 
@@ -62,6 +79,11 @@ async function openReview(page) {
   await page.goto(baseUrl, { waitUntil: "networkidle" });
   const review = page.locator('.main-nav button[aria-label="Review"]');
   if (await review.count()) await review.first().click();
+}
+
+async function openQuickNote(page) {
+  await page.goto(baseUrl, { waitUntil: "networkidle" });
+  await page.locator('.topbar button[aria-label="Quick note"]').click();
 }
 
 async function installEmptyVaultBridge(page) {

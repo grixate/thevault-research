@@ -1900,7 +1900,7 @@ describe("App", () => {
     fireEvent.keyDown(document, { code: "KeyN", key: "N", metaKey: true, shiftKey: true });
     const quickNoteText = await screen.findByLabelText("Quick note text");
     expect(screen.getByRole("button", { name: /save as note/i }).getAttribute("aria-pressed")).toBe("true");
-    expect(screen.getByRole("button", { name: /save as source/i }).getAttribute("aria-pressed")).toBe("false");
+    expect(screen.getByRole("button", { name: /^capture to storage$/i }).getAttribute("aria-pressed")).toBe("false");
     fireEvent.change(quickNoteText, { target: { value: "Shortcut thought\nSecond line" } });
     fireEvent.keyDown(quickNoteText, { key: "Enter", code: "Enter", metaKey: true });
 
@@ -2021,9 +2021,9 @@ describe("App", () => {
     fireEvent.keyDown(document, { code: "KeyN", key: "N", metaKey: true, shiftKey: true });
     const quickNoteText = await screen.findByLabelText("Quick note text");
     fireEvent.change(quickNoteText, { target: { value: "Exact excerpt from a paper." } });
-    fireEvent.click(screen.getByRole("button", { name: /save as source/i }));
+    fireEvent.click(screen.getByRole("button", { name: /^capture to storage$/i }));
     expect(screen.getByRole("button", { name: /save as note/i }).getAttribute("aria-pressed")).toBe("false");
-    expect(screen.getByRole("button", { name: /save as source/i }).getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByRole("button", { name: /^capture to storage$/i }).getAttribute("aria-pressed")).toBe("true");
     expect(screen.getByTitle("Command or Control Enter")).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: /^save to storage$/i }));
 

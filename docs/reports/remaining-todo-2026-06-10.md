@@ -623,7 +623,7 @@ Latest desktop verification on 2026-06-12 after the current minimalist workspace
 - Review list copy was reduced to status/counts; the repeated trust-gate teaching text was removed from the list and detail empty states.
 - Assistant idle state no longer renders grounding/citation scaffolding before a question is asked.
 - Assistant was reshaped from a split workbench into a modern chat-style flow: centered conversation, prompt chips, compact evidence selector, bottom composer, voice question, and answer-owned grounding/citations.
-- Desktop Quick note was redesigned into a Spotlight-like capture surface: no visible title, no leading note icon, close icon anchored top-right, one borderless writing area, subtle `Note` / `Source` destination control, keyboard hint, and one icon save action. Visible helper description, route-card sublines, destination badges, and Cancel clutter were removed.
+- Desktop Quick note was redesigned into a Spotlight-like capture surface: no visible title, no leading note icon, close icon anchored top-right, one borderless writing area, subtle `Note` / `Task` / `Storage` destination control, keyboard hint, and one icon save action. Visible helper description, route-card sublines, destination badges, and Cancel clutter were removed.
 - The editor header was softened into a document-first surface: title, quiet note context, save/status badges, compact formatting toolbar, and a secondary local-tools drawer.
 - Notes empty state now offers only the practical starts: `Quick note`, `New note`, and `Storage`.
 - Global visual variables moved from cream-heavy tones toward a neutral Shadcn `new-york`/Apple-notes-like graphite paper palette.
@@ -637,8 +637,17 @@ Latest desktop verification on 2026-06-12 after the current minimalist workspace
 - Playwright follow-up smoke: Storage, Review, and Assistant rendered with no horizontal overflow, no path strip, no topbar subtitle, and no section descriptions. Storage has one `Add source` action; Assistant no longer shows the old idle grounding copy. Screenshots captured at `/tmp/vault-storage-minimal-desktop.png`, `/tmp/vault-storage-minimal-mobile.png`, `/tmp/vault-review-minimal-desktop.png`, `/tmp/vault-assistant-minimal-desktop.png`, and `/tmp/vault-assistant-minimal-v2-desktop.png`.
 - Playwright Assistant chat smoke: Assistant rendered at 1440x950 and 390x844 with no horizontal overflow, no old split-pane compose/answer surfaces, prompt chips visible, and no section descriptions. Screenshots captured at `/tmp/vault-assistant-chat-desktop.png` and `/tmp/vault-assistant-chat-mobile.png`.
 - User review note on 2026-06-12: the Assistant mobile layout is still broken despite the no-overflow smoke result. Do not treat the mobile screenshot as accepted visual QA. Skip mobile repair for the next slice unless explicitly resumed.
-- Playwright desktop Quick note smoke: Quick note rendered at 1440x950 with no horizontal overflow, no visible helper description, no destination badges, no Cancel button, no leading note icon, a borderless textarea, and the expected `Note`/`Source` destination control. Screenshots captured at `/tmp/vault-quick-note-spotlight-desktop.png`, `/tmp/vault-quick-note-spotlight-desktop-v2.png`, and accepted direction `/tmp/vault-quick-note-spotlight-desktop-v3.png`.
+- Playwright desktop Quick note smoke: Quick note rendered at 1440x950 with no horizontal overflow, no visible helper description, no destination badges, no Cancel button, no leading note icon, a borderless textarea, and the expected `Note`/`Storage` destination control. Screenshots captured at `/tmp/vault-quick-note-spotlight-desktop.png`, `/tmp/vault-quick-note-spotlight-desktop-v2.png`, and accepted direction `/tmp/vault-quick-note-spotlight-desktop-v3.png`.
+- Playwright desktop Quick capture follow-up smoke: the stable visual helper now covers `quick-note`, `quick-storage`, and `quick-task`; all three rendered at 1440x950 with the same Spotlight-like sheet and the destination control now reads `Note`, `Task`, `Storage`. Screenshots captured at `/tmp/vault-quick-note-storage-label.png`, `/tmp/vault-quick-storage-label.png`, and `/tmp/vault-quick-task-label.png`.
 - Playwright desktop Add source smoke: paste/files/audio intake rendered at 1440x950 with no horizontal overflow and none of the old explanatory strings (`Paste source text`, `Import Markdown`, `The original file`, `local voice route`, `timestamped transcript blocks`, `Paste the source exactly as captured.`). Screenshots captured at `/tmp/vault-add-source-paste-desktop.png`, `/tmp/vault-add-source-files-desktop.png`, and `/tmp/vault-add-source-audio-desktop.png`.
+
+Latest desktop verification on 2026-06-21 after the Quick capture Storage naming slice:
+
+- Focused Quick note/task/Storage tests: 10 passed.
+- Desktop tests: 77 passed.
+- Desktop production build: passed.
+- Renderer e2e smoke: passed.
+- `git diff --check`: passed.
 
 Latest desktop verification on 2026-06-11 after the current Notes/Storage/Quick Note UX slice:
 

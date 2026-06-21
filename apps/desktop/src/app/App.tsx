@@ -972,11 +972,11 @@ function TopBar() {
                       type="button"
                       className={`quick-note-route-option ${quickNoteDestination === "storage" ? "active" : ""}`}
                       aria-pressed={quickNoteDestination === "storage"}
-                      aria-label="Save as source"
+                      aria-label="Capture to Storage"
                       onClick={() => setQuickNoteDestination("storage")}
                     >
                       <HardDrive size={14} />
-                      <strong>Source</strong>
+                      <strong>Storage</strong>
                     </button>
                   </div>
                   <div className="quick-note-actions">
@@ -1030,13 +1030,13 @@ function quickNoteContent(text: string): Record<string, unknown> {
 
 function quickCaptureTitle(destination: QuickCaptureDestination): string {
   if (destination === "tasks") return "Quick task";
-  if (destination === "storage") return "Quick source";
+  if (destination === "storage") return "Quick storage";
   return "Quick note";
 }
 
 function quickCaptureInputLabel(destination: QuickCaptureDestination): string {
   if (destination === "tasks") return "Quick task text";
-  if (destination === "storage") return "Quick source text";
+  if (destination === "storage") return "Quick storage text";
   return "Quick note text";
 }
 
