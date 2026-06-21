@@ -1,0 +1,22 @@
+Whisper runtime package verification: pass
+Package: /tmp/vault-whisper-package-script/dist/whisper.cpp-v1.8.6-macos-arm64.tar.gz
+SHA-256: cfbba61b4f9a4fa3c0387ff7816c1368cac6394f2c97432e22b635564f03ad6d
+Size bytes: 1224375
+Archive member: whisper.cpp-v1.8.6-macos-arm64/whisper-cli
+Smoke: pass (usage: /var/folders/6_/_w9p3ldd2y35d4fd05wrzny00000gn/T/vault-whisper-package-verify-vb67iavp/whisper-cli [options] file0 file1 ...)
+
+Checks:
+- pass: package:path - Package exists: /tmp/vault-whisper-package-script/dist/whisper.cpp-v1.8.6-macos-arm64.tar.gz.
+- pass: package:filename - Package filename is whisper.cpp-v1.8.6-macos-arm64.tar.gz; expected whisper.cpp-v1.8.6-macos-arm64.tar.gz.
+- pass: package:size - Package size is 1224375; expected 1224375.
+- pass: package:sha256 - Package SHA-256 is cfbba61b4f9a4fa3c0387ff7816c1368cac6394f2c97432e22b635564f03ad6d; expected cfbba61b4f9a4fa3c0387ff7816c1368cac6394f2c97432e22b635564f03ad6d.
+- pass: archive:member - Archive member found: whisper.cpp-v1.8.6-macos-arm64/whisper-cli.
+- pass: binary:executable - Extracted binary is executable.
+- pass: binary:smoke - Smoke command passed: usage: /var/folders/6_/_w9p3ldd2y35d4fd05wrzny00000gn/T/vault-whisper-package-verify-vb67iavp/whisper-cli [options] file0 file1 ....
+- pass: metadata:filename - Metadata package filename matches candidate asset.
+- pass: metadata:sha256 - Metadata package SHA-256 matches candidate asset.
+- pass: metadata:size - Metadata package size matches candidate asset.
+- pass: metadata:archive_member - Metadata archive member matches candidate source.
+
+Next actions:
+- Publish this package to the approved immutable URL, then apply the URL helper and re-run source/byte probes.

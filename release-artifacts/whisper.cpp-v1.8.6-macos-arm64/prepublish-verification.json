@@ -1,0 +1,123 @@
+{
+  "status": "pass",
+  "candidate_id": "whisper-cpp-macos-arm64",
+  "package": {
+    "path": "/tmp/vault-whisper-package-script/dist/whisper.cpp-v1.8.6-macos-arm64.tar.gz",
+    "filename": "whisper.cpp-v1.8.6-macos-arm64.tar.gz",
+    "sha256": "cfbba61b4f9a4fa3c0387ff7816c1368cac6394f2c97432e22b635564f03ad6d",
+    "size_bytes": 1224375,
+    "expected_sha256": "cfbba61b4f9a4fa3c0387ff7816c1368cac6394f2c97432e22b635564f03ad6d",
+    "expected_size_bytes": 1224375
+  },
+  "archive_member": "whisper.cpp-v1.8.6-macos-arm64/whisper-cli",
+  "binary": {
+    "path": "/var/folders/6_/_w9p3ldd2y35d4fd05wrzny00000gn/T/vault-whisper-package-verify-5d7u5wcj/whisper-cli",
+    "sha256": "8c967474d3c6acc16949e20a66abbc5da771bb04212e401ca1d11d3f5b89f3fc",
+    "size_bytes": 3232440,
+    "executable": true,
+    "smoke": {
+      "status": "pass",
+      "command": [
+        "/var/folders/6_/_w9p3ldd2y35d4fd05wrzny00000gn/T/vault-whisper-package-verify-5d7u5wcj/whisper-cli",
+        "--help"
+      ],
+      "exit_code": 0,
+      "first_line": "usage: /var/folders/6_/_w9p3ldd2y35d4fd05wrzny00000gn/T/vault-whisper-package-verify-5d7u5wcj/whisper-cli [options] file0 file1 ...",
+      "detail": "Smoke command passed: usage: /var/folders/6_/_w9p3ldd2y35d4fd05wrzny00000gn/T/vault-whisper-package-verify-5d7u5wcj/whisper-cli [options] file0 file1 ...."
+    }
+  },
+  "metadata": {
+    "runtime_id": "whisper-cpp-managed-runtime",
+    "shortlist_id": "whisper-cpp-macos-arm64",
+    "source_repo": "ggml-org/whisper.cpp",
+    "source_tag": "v1.8.6",
+    "source_url": "https://github.com/ggml-org/whisper.cpp/archive/refs/tags/v1.8.6.tar.gz",
+    "package_filename": "whisper.cpp-v1.8.6-macos-arm64.tar.gz",
+    "package_path": "/tmp/vault-whisper-package-script/dist/whisper.cpp-v1.8.6-macos-arm64.tar.gz",
+    "archive_format": "tar.gz",
+    "archive_member": "whisper.cpp-v1.8.6-macos-arm64/whisper-cli",
+    "sha256": "cfbba61b4f9a4fa3c0387ff7816c1368cac6394f2c97432e22b635564f03ad6d",
+    "size_bytes": 1224375,
+    "binary_sha256": "8c967474d3c6acc16949e20a66abbc5da771bb04212e401ca1d11d3f5b89f3fc",
+    "binary_size_bytes": 3232440,
+    "build": {
+      "system": "Darwin",
+      "machine": "arm64",
+      "cmake": "/opt/homebrew/bin/cmake",
+      "cmake_args": [
+        "-DCMAKE_BUILD_TYPE=Release",
+        "-DWHISPER_BUILD_TESTS=OFF",
+        "-DBUILD_SHARED_LIBS=OFF"
+      ]
+    },
+    "smoke_test": {
+      "args": [
+        "--help"
+      ],
+      "allowed_exit_codes": [
+        0
+      ],
+      "first_line": "usage: /tmp/vault-whisper-package-script/package/whisper.cpp-v1.8.6-macos-arm64/whisper-cli [options] file0 file1 ..."
+    }
+  },
+  "checks": [
+    {
+      "id": "package:path",
+      "status": "pass",
+      "detail": "Package exists: /tmp/vault-whisper-package-script/dist/whisper.cpp-v1.8.6-macos-arm64.tar.gz."
+    },
+    {
+      "id": "package:filename",
+      "status": "pass",
+      "detail": "Package filename is whisper.cpp-v1.8.6-macos-arm64.tar.gz; expected whisper.cpp-v1.8.6-macos-arm64.tar.gz."
+    },
+    {
+      "id": "package:size",
+      "status": "pass",
+      "detail": "Package size is 1224375; expected 1224375."
+    },
+    {
+      "id": "package:sha256",
+      "status": "pass",
+      "detail": "Package SHA-256 is cfbba61b4f9a4fa3c0387ff7816c1368cac6394f2c97432e22b635564f03ad6d; expected cfbba61b4f9a4fa3c0387ff7816c1368cac6394f2c97432e22b635564f03ad6d."
+    },
+    {
+      "id": "archive:member",
+      "status": "pass",
+      "detail": "Archive member found: whisper.cpp-v1.8.6-macos-arm64/whisper-cli."
+    },
+    {
+      "id": "binary:executable",
+      "status": "pass",
+      "detail": "Extracted binary is executable."
+    },
+    {
+      "id": "binary:smoke",
+      "status": "pass",
+      "detail": "Smoke command passed: usage: /var/folders/6_/_w9p3ldd2y35d4fd05wrzny00000gn/T/vault-whisper-package-verify-5d7u5wcj/whisper-cli [options] file0 file1 ...."
+    },
+    {
+      "id": "metadata:filename",
+      "status": "pass",
+      "detail": "Metadata package filename matches candidate asset."
+    },
+    {
+      "id": "metadata:sha256",
+      "status": "pass",
+      "detail": "Metadata package SHA-256 matches candidate asset."
+    },
+    {
+      "id": "metadata:size",
+      "status": "pass",
+      "detail": "Metadata package size matches candidate asset."
+    },
+    {
+      "id": "metadata:archive_member",
+      "status": "pass",
+      "detail": "Metadata archive member matches candidate source."
+    }
+  ],
+  "next_actions": [
+    "Publish this package to the approved immutable URL, then apply the URL helper and re-run source/byte probes."
+  ]
+}
