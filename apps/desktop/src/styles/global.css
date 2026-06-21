@@ -935,7 +935,6 @@ textarea:not(.ui-textarea) {
 }
 
 .capsule-title-meta,
-.capsule-health-row,
 .capsule-versions {
   display: flex;
   flex-wrap: wrap;
@@ -956,6 +955,51 @@ textarea:not(.ui-textarea) {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.capsule-status-note {
+  color: var(--amber) !important;
+}
+
+.capsule-status {
+  display: grid;
+  gap: 0;
+  border-top: 1px solid var(--line);
+}
+
+.capsule-status > summary {
+  width: max-content;
+  padding-block: 8px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 1.2;
+  list-style: none;
+  cursor: pointer;
+}
+
+.capsule-status > summary::-webkit-details-marker {
+  display: none;
+}
+
+.capsule-status > summary::after {
+  content: " +";
+}
+
+.capsule-status[open] > summary::after {
+  content: " -";
+}
+
+.capsule-status > div {
+  display: grid;
+  gap: 5px;
+  padding-bottom: 10px;
+}
+
+.capsule-status span {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.4;
 }
 
 .capsule-version-diff {
@@ -998,7 +1042,7 @@ textarea:not(.ui-textarea) {
 .capsule-workbench {
   display: grid;
   gap: 0;
-  border-top: 1px solid var(--line);
+  border-block: 1px solid var(--line);
 }
 
 .capsule-add-panel,
@@ -1011,7 +1055,7 @@ textarea:not(.ui-textarea) {
 }
 
 .capsule-add-panel {
-  grid-template-columns: 104px minmax(180px, 1fr) 132px auto auto;
+  grid-template-columns: 104px minmax(180px, 1fr) 128px auto auto;
 }
 
 .capsule-snapshot-panel {
@@ -1086,7 +1130,7 @@ textarea:not(.ui-textarea) {
 .capsule-items {
   display: grid;
   gap: 0;
-  border-block: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
 }
 
 .capsule-items article {
@@ -1538,7 +1582,8 @@ textarea:not(.ui-textarea) {
   border-top: 1px solid var(--line);
 }
 
-.capsule-import-history-head,
+.capsule-import-history.loading,
+.capsule-import-history > summary,
 .capsule-import-history > span {
   display: flex;
   align-items: center;
@@ -1548,7 +1593,26 @@ textarea:not(.ui-textarea) {
   font-size: 11px;
 }
 
-.capsule-import-history-head strong {
+.capsule-import-history > summary {
+  list-style: none;
+  cursor: pointer;
+}
+
+.capsule-import-history > summary::-webkit-details-marker {
+  display: none;
+}
+
+.capsule-import-history > summary::after {
+  content: " -";
+  padding-left: 8px;
+}
+
+.capsule-import-history:not([open]) > summary::after {
+  content: " +";
+}
+
+.capsule-import-history > summary span,
+.capsule-import-history.loading > span:first-child {
   color: var(--muted);
   font-size: 11px;
   font-weight: 700;

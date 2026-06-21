@@ -7692,7 +7692,6 @@ function CapsulesView() {
             <button key={capsule.id} className={selected?.id === capsule.id ? "active" : ""} onClick={() => setSelectedCapsuleId(capsule.id)}>
               <span className="note-list-title">
                 <strong>{capsule.name}</strong>
-                <Badge tone={capsuleHealthTone(capsule.health?.status)}>{capsuleHealthLabel(capsule.health?.status)}</Badge>
               </span>
               <span className="note-list-preview">{capsuleCountsLine(capsule.counts)}</span>
               <small className="note-list-meta">
@@ -7806,7 +7805,6 @@ function CapsulesView() {
               </details>
               {createCapsule.error && <small className="model-test-error">{createCapsule.error.message}</small>}
               <div className="source-dialog-actions">
-                <small>{draft.name.trim() ? "Draft" : ""}</small>
                 <Button type="submit" disabled={!draft.name.trim() || createCapsule.isPending}>
                   {createCapsule.isPending ? "Creating" : "Create"}
                 </Button>
@@ -7834,19 +7832,19 @@ function CapsuleImportHistory({
 }) {
   if (loading) {
     return (
-      <section className="capsule-import-history" aria-label="Capsule import history">
-        <strong>Imports</strong>
+      <section className="capsule-import-history loading" aria-label="Capsule import history">
+        <span>Imports</span>
         <span>Loading</span>
       </section>
     );
   }
   if (imports.length === 0) return null;
   return (
-    <section className="capsule-import-history" aria-label="Capsule import history">
-      <div className="capsule-import-history-head">
-        <strong>Imports</strong>
-        {total > imports.length && <small>{imports.length}/{total}</small>}
-      </div>
+    <details className="capsule-import-history" aria-label="Capsule import history" open>
+      <summary>
+        <span>Imports</span>
+        <small>{total > imports.length ? `${imports.length}/${total}` : String(total)}</small>
+      </summary>
       {imports.map((item) => {
         const importId = item.import_id || String((item as any).id || "");
         const capsule = item.manifest?.capsule ?? {};
@@ -7861,7 +7859,7 @@ function CapsuleImportHistory({
           </button>
         );
       })}
-    </section>
+    </details>
   );
 }
 
@@ -8139,6 +8137,8 @@ function CapsuleDetail({ capsule, onOpenTarget }: { capsule: Capsule; onOpenTarg
     versionDiff.mutate({ fromVersionId: versions[1].id, toVersionId: versions[0].id });
   }
   const capsuleSummary = [capsule.purpose, capsule.description].map((value) => value?.trim()).filter(Boolean).join(" · ");
+  const capsuleWarnings = visibleCapsuleWarnings(capsule);
+  const itemCount = capsule.items?.length ?? 0;
   return (
     <>
       <SectionHeader
@@ -8216,13 +8216,16 @@ function CapsuleDetail({ capsule, onOpenTarget }: { capsule: Capsule; onOpenTarg
         }
       />
       <div className="capsule-title-meta">
-        <Badge tone={capsuleHealthTone(capsule.health?.status)}>{capsuleHealthLabel(capsule.health?.status)}</Badge>
         <span>{capsuleOptionLabel(capsule.capsule_type)}</span>
         <span>{capsule.version}</span>
-        <span>{Math.round((capsule.health?.score ?? 0) * 100)}%</span>
         <span aria-label="Capsule counts">{capsuleCountsLine(capsule.counts)}</span>
         {capsuleForkParent(capsule) && <span>Fork of {capsuleForkParent(capsule)}</span>}
         {capsuleSummary && <span className="capsule-title-note" title={capsuleSummary}>{capsuleSummary}</span>}
+        {capsuleWarnings.length > 0 && (
+          <span className="capsule-status-note" title={capsuleWarnings.join("\n")}>
+            {capsuleWarnings.length === 1 ? "Needs review" : `${capsuleWarnings.length} review notes`}
+          </span>
+        )}
       </div>
       <div className="capsule-workbench">
         <section className="capsule-add-panel" aria-label="Add to capsule">
@@ -8269,7 +8272,7 @@ function CapsuleDetail({ capsule, onOpenTarget }: { capsule: Capsule; onOpenTarg
               <span>Include evidence</span>
             </label>
           )}
-          <Button size="sm" disabled={!targetId || addItem.isPending} onClick={() => addItem.mutate()}>
+          <Button size="sm" icon={<Plus size={14} />} disabled={!targetId || addItem.isPending} onClick={() => addItem.mutate()}>
             Add {capsuleTargetNoun(targetType)}
           </Button>
         </section>
@@ -8286,14 +8289,16 @@ function CapsuleDetail({ capsule, onOpenTarget }: { capsule: Capsule; onOpenTarg
             versionDiff.error?.message}
         </small>
       )}
-      <div className="capsule-health-row">
-        {visibleCapsuleWarnings(capsule).slice(0, 3).map((warning) => (
-          <Badge key={warning} tone="warn">
-            {warning}
-          </Badge>
-        ))}
-        {visibleCapsuleWarnings(capsule).length === 0 && (capsule.items ?? []).length > 0 && <Badge tone="good">clean</Badge>}
-      </div>
+      {capsuleWarnings.length > 0 && itemCount > 0 && (
+        <details className="capsule-status">
+          <summary>Review notes</summary>
+          <div>
+            {capsuleWarnings.slice(0, 4).map((warning) => (
+              <span key={warning}>{warning}</span>
+            ))}
+          </div>
+        </details>
+      )}
       <section className="capsule-items" aria-label="Capsule items">
         {(capsule.items ?? []).length === 0 && <p className="empty-copy">No items</p>}
         {(capsule.items ?? []).map((item) => (

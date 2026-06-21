@@ -225,6 +225,18 @@ Latest capsule workflow verification on 2026-06-15:
 - Desktop tests: 63 passed.
 - Desktop production build: passed.
 
+Latest capsule minimalist UX verification on 2026-06-21:
+
+- Capsule list rows no longer repeat health badges next to the title, so long capsule names get the row instead of being squeezed by status chrome.
+- Capsule detail no longer foregrounds a permanent health badge/score or a `clean` chip. Review signals now appear as a single quiet `Needs review` text note and a collapsible `Review notes` disclosure only when there is actionable status.
+- Capsule curation now reads as a list/document surface: compact metadata, one inline add row, item rows, icon-led header actions, and version history behind `Versions`.
+- Capsule import history was reduced to a native disclosure-style list, and the New capsule dialog dropped the decorative `Draft` footer text.
+- Focused Capsule desktop tests: 5 passed.
+- Desktop tests: 77 passed.
+- Desktop production build: passed.
+- Renderer e2e smoke: passed.
+- Playwright desktop Capsules smoke: rendered at 1440x950 with no horizontal overflow, full capsule list title visible, no stray `clean` text, and screenshot captured at `/tmp/vault-capsules-minimal-desktop.png`.
+
 Latest capsule export verification on 2026-06-15:
 
 - Added backend capsule export preview, `.vaultcapsule` package creation, export history listing, version-specific export, and private-full source blob packaging.
@@ -2797,7 +2809,7 @@ Current good state:
   - capsule index,
   - create capsule dialog,
   - selected capsule detail,
-  - health/status,
+  - quiet review status only when there is something actionable,
   - add existing note/source/claim/concept/practice/tool,
   - evidence auto-include toggle for claims,
   - compact More actions for health, learning generation, fork, and task creation,
@@ -2827,6 +2839,7 @@ Current good state:
 - Search can run inside a capsule context through `/search` `capsule_id`, keeping FTS/vector/hybrid results limited to active capsule source, source-block, note-source, and claim references.
 - Workspace backup includes capsule tables as readable JSONL records plus the full SQLite backup.
 - Desktop Capsules can curate richer global references from the compact add panel: concepts from the graph, practice items from Learning, and installed local tools.
+- Desktop Capsules now meets the accepted minimalist bar for the first curation surface: list rows avoid duplicate status badges, detail status avoids permanent health chips/scores, import history is quiet, and item membership remains the visual center.
 - Compact capsule attach entry points exist in the real workflows:
   - current Note,
   - selected Storage source,
@@ -2837,12 +2850,7 @@ Current good state:
 
 Remaining tasks:
 
-- Polish the Capsules UI to the accepted minimalist bar before expanding it:
-  - no explanatory capsule marketing copy,
-  - no card-heavy dashboard treatment,
-  - clear source/note/claim attachment flow,
-  - responsive desktop-first layout,
-  - mobile noted later with the broader mobile repair pass.
+- Continue testing the polished Capsules UI with denser real-world capsule data; mobile remains deferred to the broader mobile repair pass.
 - Polish capsule learning quality:
   - add learning-path controls only if they stay minimal.
 - Harden/export follow-ups:
@@ -2914,8 +2922,8 @@ Acceptance evidence:
 
 ## Recommended Next Session Steps
 
-1. If continuing UX, keep the Notion/Obsidian/Apple Notes reset active: inspect Notes, Storage, Quick Note, Review, Assistant, Capsules, and Settings screenshots, then simplify the most overloaded flow first.
-2. If continuing Capsules, polish the alpha surface and attach dialog first, then continue from import review items into conflict-aware merge decisions or package contract docs.
+1. If continuing UX, keep the Notion/Obsidian/Apple Notes reset active: inspect Notes, Storage, Quick Note, Review, Assistant, and Settings screenshots, then simplify the most overloaded remaining desktop flow first.
+2. If continuing Capsules, test the polished curation surface with denser real data, then continue capsule learning quality, conflict-aware import merge decisions, or package contract docs.
 3. If continuing Tasks, consider standalone task import/export only if it proves useful beyond full workspace backup; otherwise move to the next non-mobile workstream.
 4. If continuing local AI production, pick the first real approved runtime/model candidate set and run the release-packet tooling.
 5. If stabilizing before bigger registry edits, stage or commit the current v1 state.
