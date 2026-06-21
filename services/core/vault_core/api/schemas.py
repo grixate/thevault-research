@@ -156,11 +156,27 @@ class TodoCreateRequest(BaseModel):
     context_links: list[TodoContextLinkInput] = Field(default_factory=list)
 
 
+class TodoListCreateRequest(BaseModel):
+    name: str
+    color: str | None = None
+    icon: str | None = None
+
+
+class TodoListUpdateRequest(BaseModel):
+    name: str | None = None
+    color: str | None = None
+    icon: str | None = None
+    status: Literal["active", "archived"] | None = None
+
+
 class TodoUpdateRequest(BaseModel):
     title: str | None = None
     description: str | None = None
     status: Literal["open", "completed", "cancelled", "archived"] | None = None
     priority: int | None = None
+    labels: list[str] | None = None
+    list_id: str | None = None
+    list_name: str | None = None
     due_date: str | None = None
     due_time: str | None = None
     deadline_date: str | None = None

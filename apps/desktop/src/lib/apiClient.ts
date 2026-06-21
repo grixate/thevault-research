@@ -128,6 +128,8 @@ function mapRoute(route: string, payload?: any): { method: string; path: string;
     "todos.update": { method: "PUT", path: `/todos/${payload?.todoId}`, body: payload?.data ?? {} },
     "todos.complete": { method: "POST", path: `/todos/${payload?.todoId}/complete`, body: {} },
     "todoLists.list": { method: "GET", path: "/todo-lists" },
+    "todoLists.create": { method: "POST", path: "/todo-lists", body: payload ?? {} },
+    "todoLists.update": { method: "PUT", path: `/todo-lists/${payload?.listId}`, body: payload?.data ?? {} },
     "capsules.list": { method: "GET", path: `/capsules?query=${encodeURIComponent(payload?.query ?? "")}&status=${encodeURIComponent(payload?.status ?? "")}&domain=${encodeURIComponent(payload?.domain ?? "")}&tag=${encodeURIComponent(payload?.tag ?? "")}&limit=${payload?.limit ?? 50}&offset=${payload?.offset ?? 0}` },
     "capsules.create": { method: "POST", path: "/capsules", body: payload ?? {} },
     "capsules.fork": { method: "POST", path: `/capsules/${payload?.capsuleId}/fork`, body: payload?.data ?? {} },

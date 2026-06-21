@@ -4198,6 +4198,9 @@ function TasksView() {
   const queryClient = useQueryClient();
   const [view, setView] = useState<TodoView>("inbox");
   const [quickAdd, setQuickAdd] = useState("");
+  const [newListName, setNewListName] = useState("");
+  const [editingListId, setEditingListId] = useState<string | null>(null);
+  const [editingListName, setEditingListName] = useState("");
   const [selectedListId, setSelectedListId] = useState<string | null>(null);
   const [selectedTodoId, setSelectedTodoId] = useState<string | null>(null);
   const todos = useQuery({
@@ -4226,10 +4229,30 @@ function TasksView() {
       queryClient.invalidateQueries({ queryKey: ["events"] });
     }
   });
+  const createList = useMutation({
+    mutationFn: (name: string) => vaultRequest<TodoList>("todoLists.create", { name }),
+    onSuccess: (created) => {
+      setNewListName("");
+      setSelectedListId(created.id);
+      queryClient.invalidateQueries({ queryKey: ["todos"] });
+      queryClient.invalidateQueries({ queryKey: ["todo-lists"] });
+      queryClient.invalidateQueries({ queryKey: ["events"] });
+    }
+  });
+  const updateList = useMutation({
+    mutationFn: ({ listId, data }: { listId: string; data: Record<string, any> }) => vaultRequest<TodoList>("todoLists.update", { listId, data }),
+    onSuccess: (updated) => {
+      setEditingListId(null);
+      setEditingListName("");
+      if (updated.status === "archived" && selectedListId === updated.id) setSelectedListId(null);
+      queryClient.invalidateQueries({ queryKey: ["todos"] });
+      queryClient.invalidateQueries({ queryKey: ["todo-lists"] });
+      queryClient.invalidateQueries({ queryKey: ["events"] });
+    }
+  });
   const rows = todos.data?.items ?? [];
   const openRows = view === "completed" ? rows : rows.filter((todo) => todo.status !== "completed");
   const selectedTodo = rows.find((todo) => todo.id === selectedTodoId) ?? null;
-  const selectedList = listRows.find((list) => list.id === selectedListId);
   useEffect(() => {
     if (selectedTodoId && !rows.some((todo) => todo.id === selectedTodoId)) setSelectedTodoId(null);
   }, [rows, selectedTodoId]);
@@ -4239,6 +4262,25 @@ function TasksView() {
     const text = quickAdd.trim();
     if (!text || createTodo.isPending) return;
     createTodo.mutate(text);
+  }
+
+  function submitNewList(event: ReactFormEvent) {
+    event.preventDefault();
+    const name = newListName.trim();
+    if (!name || createList.isPending) return;
+    createList.mutate(name);
+  }
+
+  function startEditingList(list: TodoList) {
+    setEditingListId(list.id);
+    setEditingListName(list.name);
+  }
+
+  function submitListRename(event: ReactFormEvent, list: TodoList) {
+    event.preventDefault();
+    const name = editingListName.trim();
+    if (!name || updateList.isPending) return;
+    updateList.mutate({ listId: list.id, data: { name } });
   }
 
   return (
@@ -4259,7 +4301,6 @@ function TasksView() {
               </button>
             ))}
           </div>
-          <span>{selectedList ? selectedList.name : todos.data?.total ?? 0}</span>
         </div>
         <form className="task-quick-add" onSubmit={submitQuickAdd}>
           <Input
@@ -4289,22 +4330,64 @@ function TasksView() {
       </Panel>
       <aside className="tasks-side" aria-label="Task lists">
         {selectedTodo ? (
-          <TaskDetail todo={selectedTodo} onClose={() => setSelectedTodoId(null)} />
+          <TaskDetail todo={selectedTodo} lists={listRows} onClose={() => setSelectedTodoId(null)} />
         ) : (
           <>
             <div className="tasks-side-section">
-              <strong>Lists</strong>
+              <div className="tasks-side-title">
+                <strong>Lists</strong>
+              </div>
               <button type="button" className={!selectedListId ? "active" : ""} onClick={() => setSelectedListId(null)}>
                 <span>{view === "inbox" ? "Inbox" : "All"}</span>
               </button>
               {lists.isLoading && <span>Loading...</span>}
               {!lists.isLoading && listRows.length === 0 && <span>No lists</span>}
               {listRows.map((list) => (
-                <button key={list.id} type="button" className={selectedListId === list.id ? "active" : ""} title={list.name} onClick={() => setSelectedListId(list.id)}>
-                  <span>{list.name}</span>
-                  <small>{list.open_count}</small>
-                </button>
+                <div key={list.id} className={`task-list-row ${selectedListId === list.id ? "active" : ""}`}>
+                  {editingListId === list.id ? (
+                    <form className="task-list-edit" onSubmit={(event) => submitListRename(event, list)}>
+                      <Input
+                        aria-label={`Rename ${list.name}`}
+                        value={editingListName}
+                        onChange={(event) => setEditingListName(event.target.value)}
+                        autoFocus
+                      />
+                      <Button type="submit" size="icon" variant="quiet" icon={<Check size={14} />} aria-label="Save list name" disabled={!editingListName.trim() || updateList.isPending} />
+                      <Button type="button" size="icon" variant="quiet" icon={<X size={14} />} aria-label="Cancel list rename" onClick={() => setEditingListId(null)} />
+                    </form>
+                  ) : (
+                    <>
+                      <button type="button" title={list.name} onClick={() => setSelectedListId(list.id)}>
+                        <span>{list.name}</span>
+                        <small>{list.open_count}</small>
+                      </button>
+                      <button type="button" className="task-list-icon" aria-label={`Rename ${list.name}`} onClick={() => startEditingList(list)}>
+                        <TextCursorInput size={13} />
+                      </button>
+                      <button
+                        type="button"
+                        className="task-list-icon"
+                        aria-label={`Archive ${list.name}`}
+                        disabled={updateList.isPending}
+                        onClick={() => updateList.mutate({ listId: list.id, data: { status: "archived" } })}
+                      >
+                        <Archive size={13} />
+                      </button>
+                    </>
+                  )}
+                </div>
               ))}
+              <form className="task-list-add" onSubmit={submitNewList}>
+                <Input
+                  aria-label="New list name"
+                  placeholder="New list"
+                  value={newListName}
+                  onChange={(event) => setNewListName(event.target.value)}
+                />
+                <Button type="submit" size="icon" variant="quiet" icon={<Plus size={14} />} aria-label="Create list" disabled={!newListName.trim() || createList.isPending} />
+              </form>
+              {createList.error && <small className="model-test-error">{createList.error.message}</small>}
+              {updateList.error && <small className="model-test-error">{updateList.error.message}</small>}
             </div>
           </>
         )}
@@ -4348,18 +4431,24 @@ function TaskRow({ todo, selected, completing, onSelect, onComplete }: { todo: T
   );
 }
 
-function TaskDetail({ todo, onClose }: { todo: TodoItem; onClose: () => void }) {
+function TaskDetail({ todo, lists, onClose }: { todo: TodoItem; lists: TodoList[]; onClose: () => void }) {
   const queryClient = useQueryClient();
   const [title, setTitle] = useState(todo.title);
   const [description, setDescription] = useState(todo.description ?? "");
   const [dueDate, setDueDate] = useState(todo.due_date ?? "");
   const [priority, setPriority] = useState(String(todo.priority || 4));
+  const [listId, setListId] = useState(todo.list_id ?? "inbox");
+  const [labels, setLabels] = useState(todo.labels.join(", "));
+  const [recurrenceRule, setRecurrenceRule] = useState(todo.recurrence_rule ?? "");
   useEffect(() => {
     setTitle(todo.title);
     setDescription(todo.description ?? "");
     setDueDate(todo.due_date ?? "");
     setPriority(String(todo.priority || 4));
-  }, [todo.id, todo.title, todo.description, todo.due_date, todo.priority]);
+    setListId(todo.list_id ?? "inbox");
+    setLabels(todo.labels.join(", "));
+    setRecurrenceRule(todo.recurrence_rule ?? "");
+  }, [todo.id, todo.title, todo.description, todo.due_date, todo.priority, todo.list_id, todo.labels, todo.recurrence_rule]);
   const updateTodo = useMutation({
     mutationFn: () =>
       vaultRequest<TodoItem>("todos.update", {
@@ -4368,7 +4457,10 @@ function TaskDetail({ todo, onClose }: { todo: TodoItem; onClose: () => void }) 
           title: title.trim(),
           description,
           due_date: dueDate || null,
-          priority: Number(priority)
+          priority: Number(priority),
+          list_id: listId === "inbox" ? null : listId,
+          labels: labels.split(",").map((label) => label.trim()).filter(Boolean),
+          recurrence_rule: recurrenceRule.trim() || null
         }
       }),
     onSuccess: () => {
@@ -4393,6 +4485,20 @@ function TaskDetail({ todo, onClose }: { todo: TodoItem; onClose: () => void }) 
         <Input aria-label="Task due date" type="date" value={dueDate} onChange={(event) => setDueDate(event.target.value)} />
       </label>
       <label className="field">
+        <span>List</span>
+        <SelectRoot value={listId} onValueChange={setListId}>
+          <SelectTrigger aria-label="Task list">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="inbox">Inbox</SelectItem>
+            {lists.map((list) => (
+              <SelectItem key={list.id} value={list.id}>{list.name}</SelectItem>
+            ))}
+          </SelectContent>
+        </SelectRoot>
+      </label>
+      <label className="field">
         <span>Priority</span>
         <SelectRoot value={priority} onValueChange={setPriority}>
           <SelectTrigger aria-label="Task priority">
@@ -4405,6 +4511,14 @@ function TaskDetail({ todo, onClose }: { todo: TodoItem; onClose: () => void }) 
             <SelectItem value="4">p4</SelectItem>
           </SelectContent>
         </SelectRoot>
+      </label>
+      <label className="field">
+        <span>Labels</span>
+        <Input aria-label="Task labels" placeholder="waiting, reading" value={labels} onChange={(event) => setLabels(event.target.value)} />
+      </label>
+      <label className="field">
+        <span>Repeats</span>
+        <Input aria-label="Task recurrence" placeholder="every friday" value={recurrenceRule} onChange={(event) => setRecurrenceRule(event.target.value)} />
       </label>
       <label className="field">
         <span>Note</span>

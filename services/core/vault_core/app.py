@@ -88,6 +88,8 @@ from vault_core.api.schemas import (
     SpeechSynthesisRequest,
     SourcePipelineResponse,
     TodoCreateRequest,
+    TodoListCreateRequest,
+    TodoListUpdateRequest,
     TodoUpdateRequest,
     TranscriptionRequest,
     ToolProposeRequest,
@@ -191,7 +193,7 @@ from vault_core.db.session import VaultDatabase, dumps, loads, new_id, now_iso, 
 from vault_core.deps import get_db, require_auth
 from vault_core.domain.chunking import chunk_markdown, content_hash, estimate_tokens
 from vault_core.domain.extraction import deterministic_extract, validate_extracted_object
-from vault_core.todos import complete_todo, create_todo, list_todo_lists, list_todos, update_todo
+from vault_core.todos import complete_todo, create_todo, create_todo_list, list_todo_lists, list_todos, update_todo, update_todo_list
 from vault_core.scripts.prepare_ai_registry_release_candidate import build_release_candidate_packet_from_overlay
 
 BUILTIN_TOOL_ID = "tool_claim_citation_checker"
@@ -430,6 +432,14 @@ def register_routes(app: FastAPI) -> None:
     @app.get("/todo-lists", dependencies=[auth])
     def todo_lists(db: VaultDatabase = Depends(get_db)) -> list[dict[str, Any]]:
         return list_todo_lists(db)
+
+    @app.post("/todo-lists", dependencies=[auth])
+    def todo_list_create(req: TodoListCreateRequest, db: VaultDatabase = Depends(get_db)) -> dict[str, Any]:
+        return create_todo_list(db, req.model_dump())
+
+    @app.put("/todo-lists/{list_id}", dependencies=[auth])
+    def todo_list_update(list_id: str, req: TodoListUpdateRequest, db: VaultDatabase = Depends(get_db)) -> dict[str, Any]:
+        return update_todo_list(db, list_id, req.model_dump(exclude_unset=True))
 
     @app.post("/todos", dependencies=[auth])
     def todo_create(req: TodoCreateRequest, db: VaultDatabase = Depends(get_db)) -> dict[str, Any]:

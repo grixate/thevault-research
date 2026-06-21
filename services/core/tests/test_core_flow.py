@@ -581,17 +581,36 @@ def test_todos_quick_add_views_and_completion(client):
     assert lists[0]["open_count"] == 1
     list_rows = client.get(f"/todos?view=inbox&list_id={lists[0]['id']}").json()
     assert [todo["id"] for todo in list_rows["items"]] == [created["id"]]
+    follow_ups = client.post("/todo-lists", json={"name": "Follow ups"}).json()
+    assert follow_ups["name"] == "Follow ups"
 
     empty_title = client.put(f"/todos/{created['id']}", json={"title": "   "})
     assert empty_title.status_code == 422
 
     updated = client.put(
         f"/todos/{created['id']}",
-        json={"title": "Email Anna about quote mismatch", "due_date": tomorrow, "priority": 1, "description": "Ask for exact source."},
+        json={
+            "title": "Email Anna about quote mismatch",
+            "due_date": tomorrow,
+            "priority": 1,
+            "description": "Ask for exact source.",
+            "list_id": follow_ups["id"],
+            "labels": ["urgent", "waiting"],
+            "recurrence_rule": "every friday",
+        },
     ).json()
     assert updated["title"] == "Email Anna about quote mismatch"
     assert updated["priority"] == 1
     assert updated["description"] == "Ask for exact source."
+    assert updated["list_id"] == follow_ups["id"]
+    assert updated["list_name"] == "Follow ups"
+    assert updated["labels"] == ["urgent", "waiting"]
+    assert updated["recurrence_rule"] == "every friday"
+    renamed = client.put(f"/todo-lists/{follow_ups['id']}", json={"name": "Follow-up"}).json()
+    assert renamed["name"] == "Follow-up"
+    archived = client.put(f"/todo-lists/{follow_ups['id']}", json={"status": "archived"}).json()
+    assert archived["status"] == "archived"
+    assert follow_ups["id"] not in {item["id"] for item in client.get("/todo-lists").json()}
 
     completed = client.post(f"/todos/{created['id']}/complete").json()
     assert completed["status"] == "completed"

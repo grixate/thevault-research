@@ -90,6 +90,93 @@ def list_todo_lists(db: VaultDatabase) -> list[dict[str, Any]]:
         return rows_to_dicts(rows)
 
 
+def create_todo_list(db: VaultDatabase, payload: dict[str, Any]) -> dict[str, Any]:
+    name = str(payload.get("name") or "").strip()
+    if not name:
+        raise HTTPException(422, "Todo list name is required")
+    ts = now_iso()
+    with db.connect() as conn:
+        existing = conn.execute(
+            "SELECT id, status FROM todo_lists WHERE workspace_id=? AND lower(name)=lower(?)",
+            (db.workspace_id, name),
+        ).fetchone()
+        if existing:
+            if existing["status"] != "active":
+                conn.execute(
+                    "UPDATE todo_lists SET status='active', archived_at=NULL, updated_at=? WHERE id=? AND workspace_id=?",
+                    (ts, existing["id"], db.workspace_id),
+                )
+            return get_todo_list_by_id(conn, db.workspace_id, str(existing["id"]))
+        list_id = new_id("tdl")
+        sort_index = int(
+            conn.execute(
+                "SELECT COALESCE(MAX(sort_index), 0) + 1 FROM todo_lists WHERE workspace_id=?",
+                (db.workspace_id,),
+            ).fetchone()[0]
+        )
+        conn.execute(
+            """
+            INSERT INTO todo_lists (id, workspace_id, name, color, icon, sort_index, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                list_id,
+                db.workspace_id,
+                name,
+                payload.get("color"),
+                payload.get("icon"),
+                sort_index,
+                ts,
+                ts,
+            ),
+        )
+        db.event(conn, "todo_list.created", "todo_list", list_id, {"name": name}, "user")
+        return get_todo_list_by_id(conn, db.workspace_id, list_id)
+
+
+def update_todo_list(db: VaultDatabase, list_id: str, payload: dict[str, Any]) -> dict[str, Any]:
+    ts = now_iso()
+    assignments: list[str] = []
+    values: list[Any] = []
+    if "name" in payload:
+        name = str(payload.get("name") or "").strip()
+        if not name:
+            raise HTTPException(422, "Todo list name is required")
+        assignments.append("name=?")
+        values.append(name)
+    for key in ("color", "icon"):
+        if key in payload:
+            assignments.append(f"{key}=?")
+            values.append(payload.get(key))
+    if "status" in payload:
+        status = str(payload.get("status") or "")
+        if status not in {"active", "archived"}:
+            raise HTTPException(422, "Unsupported todo list status")
+        assignments.append("status=?")
+        values.append(status)
+        assignments.append("archived_at=?")
+        values.append(ts if status == "archived" else None)
+    if not assignments:
+        raise HTTPException(422, "No todo list fields to update")
+    assignments.append("updated_at=?")
+    values.append(ts)
+    values.extend([list_id, db.workspace_id])
+    with db.connect() as conn:
+        existing = conn.execute("SELECT id FROM todo_lists WHERE id=? AND workspace_id=?", (list_id, db.workspace_id)).fetchone()
+        if not existing:
+            raise HTTPException(404, "Todo list not found")
+        if "name" in payload:
+            duplicate = conn.execute(
+                "SELECT id FROM todo_lists WHERE workspace_id=? AND lower(name)=lower(?) AND id!=?",
+                (db.workspace_id, str(payload.get("name") or "").strip(), list_id),
+            ).fetchone()
+            if duplicate:
+                raise HTTPException(409, "Todo list name already exists")
+        conn.execute(f"UPDATE todo_lists SET {', '.join(assignments)} WHERE id=? AND workspace_id=?", tuple(values))
+        db.event(conn, "todo_list.updated", "todo_list", list_id, {"fields": list(payload.keys())}, "user")
+        return get_todo_list_by_id(conn, db.workspace_id, list_id)
+
+
 def create_todo(db: VaultDatabase, payload: dict[str, Any]) -> dict[str, Any]:
     parsed = parse_todo_text(str(payload.get("text") or payload.get("title") or ""))
     title = str(payload.get("title") or parsed["title"]).strip()
@@ -176,8 +263,17 @@ def update_todo(db: VaultDatabase, todo_id: str, payload: dict[str, Any]) -> dic
         if status == "cancelled":
             assignments.append("cancelled_at=?")
             values.append(ts)
+    label_values = payload.get("labels") if isinstance(payload.get("labels"), list) else None
+    list_id_value: str | None | object = _UNSET
+    if "list_id" in payload:
+        raw_list_id = payload.get("list_id")
+        list_id_value = str(raw_list_id).strip() if raw_list_id else None
+    if "list_name" in payload:
+        list_name = str(payload.get("list_name") or "").strip()
+        list_id_value = list_name
     if not assignments:
-        raise HTTPException(422, "No todo fields to update")
+        if label_values is None and list_id_value is _UNSET:
+            raise HTTPException(422, "No todo fields to update")
     assignments.append("updated_at=?")
     values.append(ts)
     values.extend([todo_id, db.workspace_id])
@@ -185,7 +281,13 @@ def update_todo(db: VaultDatabase, todo_id: str, payload: dict[str, Any]) -> dic
         existing = conn.execute("SELECT id FROM todos WHERE id=? AND workspace_id=?", (todo_id, db.workspace_id)).fetchone()
         if not existing:
             raise HTTPException(404, "Todo not found")
+        if list_id_value is not _UNSET:
+            resolved_list_id = resolve_todo_list_id(conn, db.workspace_id, list_id_value, ts)
+            assignments.insert(-1, "list_id=?")
+            values.insert(-3, resolved_list_id)
         conn.execute(f"UPDATE todos SET {', '.join(assignments)} WHERE id=? AND workspace_id=?", tuple(values))
+        if label_values is not None:
+            replace_todo_labels(conn, db.workspace_id, todo_id, label_values, ts)
         db.event(conn, "todo.updated", "todo", todo_id, {"fields": list(payload.keys())}, "user")
         return get_todo_by_id(conn, db.workspace_id, todo_id)
 
@@ -207,6 +309,23 @@ def get_todo_by_id(conn: sqlite3.Connection, workspace_id: str, todo_id: str) ->
     if not row:
         raise HTTPException(404, "Todo not found")
     return inflate_todo(conn, row)
+
+
+def get_todo_list_by_id(conn: sqlite3.Connection, workspace_id: str, list_id: str) -> dict[str, Any]:
+    row = conn.execute(
+        """
+        SELECT l.*,
+               COUNT(t.id) AS open_count
+        FROM todo_lists l
+        LEFT JOIN todos t ON t.list_id=l.id AND t.status='open'
+        WHERE l.id=? AND l.workspace_id=?
+        GROUP BY l.id
+        """,
+        (list_id, workspace_id),
+    ).fetchone()
+    if not row:
+        raise HTTPException(404, "Todo list not found")
+    return dict(row)
 
 
 def inflate_todo(conn: sqlite3.Connection, row: sqlite3.Row) -> dict[str, Any]:
@@ -326,9 +445,39 @@ def normalize_string_list(values: list[Any]) -> list[str]:
     return result
 
 
+_UNSET = object()
+
+
+def resolve_todo_list_id(conn: sqlite3.Connection, workspace_id: str, value: Any, ts: str) -> str | None:
+    if value is None:
+        return None
+    text = str(value or "").strip()
+    if not text:
+        return None
+    existing = conn.execute("SELECT id FROM todo_lists WHERE id=? AND workspace_id=? AND status='active'", (text, workspace_id)).fetchone()
+    if existing:
+        return str(existing["id"])
+    return ensure_todo_list(conn, workspace_id, text, ts)
+
+
+def replace_todo_labels(conn: sqlite3.Connection, workspace_id: str, todo_id: str, labels: list[Any], ts: str) -> None:
+    normalized = normalize_string_list(labels)
+    conn.execute("DELETE FROM todo_label_links WHERE todo_id=?", (todo_id,))
+    for label_name in normalized:
+        label_id = ensure_todo_label(conn, workspace_id, label_name, ts)
+        conn.execute(
+            "INSERT OR IGNORE INTO todo_label_links (todo_id, label_id, created_at) VALUES (?, ?, ?)",
+            (todo_id, label_id, ts),
+        )
+
+
 def ensure_todo_list(conn: sqlite3.Connection, workspace_id: str, name: str, ts: str) -> str:
     existing = conn.execute("SELECT id FROM todo_lists WHERE workspace_id=? AND lower(name)=lower(?)", (workspace_id, name)).fetchone()
     if existing:
+        conn.execute(
+            "UPDATE todo_lists SET status='active', archived_at=NULL, updated_at=? WHERE id=? AND workspace_id=? AND status!='active'",
+            (ts, existing["id"], workspace_id),
+        )
         return str(existing["id"])
     list_id = new_id("tdl")
     conn.execute(

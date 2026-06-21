@@ -2305,7 +2305,12 @@ textarea:not(.ui-textarea) {
 .task-quick-add,
 .task-row,
 .task-row-tags,
-.tasks-side-section button {
+.tasks-side-title,
+.tasks-side-section > button,
+.task-list-row,
+.task-list-row > button,
+.task-list-edit,
+.task-list-add {
   display: flex;
   align-items: center;
   min-width: 0;
@@ -2421,7 +2426,8 @@ textarea:not(.ui-textarea) {
 
 .task-row-main strong,
 .task-row-main span,
-.tasks-side-section button span {
+.tasks-side-section > button span,
+.task-list-row > button span {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -2469,7 +2475,7 @@ textarea:not(.ui-textarea) {
 
 .tasks-side-section {
   display: grid;
-  gap: 8px;
+  gap: 6px;
   min-width: 0;
   padding: 14px 0;
   border-block: 1px solid var(--line);
@@ -2477,6 +2483,12 @@ textarea:not(.ui-textarea) {
 
 .tasks-side-section + .tasks-side-section {
   border-top: 0;
+}
+
+.tasks-side-title {
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0 2px 2px;
 }
 
 .tasks-side-section strong {
@@ -2490,7 +2502,8 @@ textarea:not(.ui-textarea) {
   font-size: 12px;
 }
 
-.tasks-side-section button {
+.tasks-side-section > button,
+.task-list-row > button:first-child {
   justify-content: space-between;
   gap: 8px;
   width: 100%;
@@ -2504,9 +2517,62 @@ textarea:not(.ui-textarea) {
   text-align: left;
 }
 
-.tasks-side-section button.active,
-.tasks-side-section button:hover {
+.tasks-side-section > button.active,
+.tasks-side-section > button:hover,
+.task-list-row.active,
+.task-list-row:hover {
   background: var(--muted-bg);
+}
+
+.task-list-row {
+  gap: 2px;
+  border-radius: 5px;
+}
+
+.task-list-row > button:first-child {
+  width: auto;
+  flex: 1 1 auto;
+}
+
+.task-list-icon {
+  width: 26px;
+  height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  padding: 0;
+  color: var(--muted);
+  background: transparent;
+  border: 0;
+  border-radius: 5px;
+  cursor: pointer;
+  opacity: 0;
+}
+
+.task-list-row:hover .task-list-icon,
+.task-list-row.active .task-list-icon,
+.task-list-icon:focus-visible {
+  opacity: 1;
+}
+
+.task-list-icon:hover {
+  color: var(--foreground);
+  background: var(--card);
+}
+
+.task-list-edit,
+.task-list-add {
+  gap: 4px;
+  width: 100%;
+  min-width: 0;
+}
+
+.task-list-edit .ui-input,
+.task-list-add .ui-input {
+  min-height: 30px;
+  height: 30px;
+  font-size: 12px;
 }
 
 .task-detail {
