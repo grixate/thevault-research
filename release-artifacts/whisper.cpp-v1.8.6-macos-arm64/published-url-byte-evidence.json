@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-06-21T20:40:08.462497+00:00",
+  "models": {},
+  "runtimes": {
+    "whisper-cpp-managed-runtime": {
+      "files": [
+        {
+          "filename": "whisper.cpp-v1.8.6-macos-arm64.tar.gz",
+          "sha256": "cfbba61b4f9a4fa3c0387ff7816c1368cac6394f2c97432e22b635564f03ad6d",
+          "size_bytes": 1224375
+        }
+      ],
+      "filename": "whisper.cpp-v1.8.6-macos-arm64.tar.gz",
+      "sha256": "cfbba61b4f9a4fa3c0387ff7816c1368cac6394f2c97432e22b635564f03ad6d",
+      "size_bytes": 1224375
+    }
+  }
+}

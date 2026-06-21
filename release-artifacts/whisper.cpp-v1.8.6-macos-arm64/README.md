@@ -10,6 +10,9 @@ voice pipeline.
 - Size: `1224375`
 - Build script: `scripts/package_whisper_cpp_runtime.sh`
 - Verification: `prepublish-verification.txt` and `prepublish-verification.json`
+- Published URL byte verification: `published-url-byte-verification.txt`
+- Published URL byte evidence: `published-url-byte-evidence.json`
+- Published URL source probe: `published-url-source-probe.json`
 
 The package is built from the upstream `ggml-org/whisper.cpp` `v1.8.6` source
 tag because that upstream release does not provide a macOS arm64 `whisper-cli`

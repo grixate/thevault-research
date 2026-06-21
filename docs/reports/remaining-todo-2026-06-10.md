@@ -131,19 +131,32 @@ Verified after that slice:
 - `uv run pytest tests/test_core_flow.py -k "whisper_runtime_package_verify or whisper_runtime_package_url or managed_runtime_url_archive_install"`: passed, 7 focused tests.
 - `uv run ruff check vault_core tests`: passed.
 
-Recommended next slice: publish `/tmp/vault-whisper-package-script/dist/whisper.cpp-v1.8.6-macos-arm64.tar.gz` to an approved immutable release URL, then run:
+Latest Whisper runtime publication slice on 2026-06-21:
 
-```bash
-./scripts/apply_whisper_runtime_package_url.sh \
-  --url APPROVED_HTTPS_URL_FOR_whisper.cpp-v1.8.6-macos-arm64.tar.gz \
-  --output-shortlist /tmp/vault-candidate-shortlist.with-whisper-url.json \
-  --runtime-output /tmp/vault-candidate-runtime-registry.with-whisper-url.json \
-  --format summary
-```
+- Rebuilt the macOS arm64 `whisper-cli` package from `ggml-org/whisper.cpp` `v1.8.6`; SHA-256 and size still match the pinned candidate evidence.
+- Published the package, metadata, and prepublish verification evidence under `release-artifacts/whisper.cpp-v1.8.6-macos-arm64/`.
+- Pushed artifact commit `c8c890ca3f1a3b6f10a74ca3b59f11e6a91f61bf`.
+- Updated `services/core/vault_core/ai/models/candidate_shortlist.json` to use the commit-pinned package URL:
+  `https://raw.githubusercontent.com/grixate/thevault-research/c8c890ca3f1a3b6f10a74ca3b59f11e6a91f61bf/release-artifacts/whisper.cpp-v1.8.6-macos-arm64/whisper.cpp-v1.8.6-macos-arm64.tar.gz`
+- Generated `/tmp/vault-candidate-runtime-registry.with-whisper-url.bundled.json` from the updated bundled shortlist; 3 applied / 0 skipped / 0 errors.
+- Verified the published package URL from that generated runtime registry:
+  - report: `/tmp/vault-whisper-bundled-url-byte-verification.txt`
+  - evidence: `/tmp/vault-whisper-bundled-url-byte-evidence.json`
+  - result: 1/1 file verified, 5/5 checks pass, 0 blocked.
+- Probed the generated runtime registry:
+  - report: `/tmp/vault-whisper-bundled-url-source-probe.json`
+  - `whisper-cpp-managed-runtime:files[0]:source`: pass, HTTP 200, `Content-Length: 1224375`
+  - `whisper-cpp-managed-runtime:license`: pass
+  - full report still has warn status only because unrelated bundled production model placeholders remain pending.
+- Focused local-AI candidate/runtime/package tests after updating assertions: 10 passed.
+- Full `tests/test_core_flow.py` was run before the final fixture assertion update and reached 157 passed / 1 stale placeholder expectation; the stale expectation is now covered by the focused green run.
+- `uv run ruff check vault_core tests`: passed.
+- `./scripts/validate_ai_registries.sh`: passed with 0 errors and the expected 75 production-placeholder warnings.
+- `./scripts/plan_ai_candidate_shortlist.sh --format json --output /tmp/vault-candidate-shortlist.published-whisper-plan.json`: passed.
 
-Then re-run source probe and byte verification against `/tmp/vault-candidate-runtime-registry.with-whisper-url.json`.
+Recommended next slice: apply the published Whisper runtime byte evidence to candidate runtime registries, regenerate the release packet, and continue the approval-evidence overlay path. Do not mark production local AI ready until approval evidence, dry-run pinning, final pinning, setup-run smoke, and capability-route activation are complete.
 
-Note: strict production is still blocked by design. Merged byte evidence now covers all 10 production model candidate IDs plus selected llama.cpp/Piper runtime archives. The whisper.cpp macOS arm64 runtime package is built, pinned in candidate metadata, and pre-publish verified with filename, size, SHA-256, archive member, executable bit, `--help` smoke, and metadata checks passing. It still needs an approved immutable URL. Source/license probing has 0 blocked checks against the latest temporary patched candidates and only the unpublished whisper package URL pending. None of this pins production registries or marks approval complete. The candidate set still lacks release approval evidence, a published whisper.cpp runtime package URL, full setup-run smoke verification with approved manifests, and capability-route activation.
+Note: strict production is still blocked by design. Merged byte evidence covers all 10 production model candidate IDs plus selected llama.cpp/Piper runtime archives, and the Whisper runtime package now has a commit-pinned HTTP(S) URL with source probe and byte verification passing. None of this pins production registries or marks approval complete. The candidate set still lacks release approval evidence, applied final runtime evidence overlays, full setup-run smoke verification with approved manifests, and capability-route activation.
 
 ## Current State
 
@@ -922,10 +935,12 @@ Latest backend/local-AI verification on 2026-06-12 after the current whisper-run
 - Source/license probe after all model byte evidence: expected warn result; 53 checks, 52 pass, 0 blocked, 1 pending for unpublished `whisper-cpp-managed-runtime` package URL.
 - Combined candidate release plan after all model byte evidence: expected blocked exit; structural validation passed with 0 errors and 14 warnings; 142 checks, 20 blocked, 0 check warnings.
 - Release packet after all model byte evidence: expected blocked result; `/tmp/vault-all-models-release-packet/candidate-ai-registry-release-packet.md` now includes a `Blocking Details` section naming `source_probe` / `whisper-cpp-managed-runtime:files[0]:source` as the remaining source-probe finding.
+- Whisper runtime package URL publication: passed on 2026-06-21. The candidate shortlist now points at a commit-pinned raw GitHub URL under `release-artifacts/whisper.cpp-v1.8.6-macos-arm64/`, and the generated candidate runtime registry verifies that URL for source, size, license, and bytes.
 - Focused/adjacent registry/readiness/overlay tests: 24 passed.
 - Focused shortlist/runtime candidate tests after the whisper-runtime package update: 6 passed.
 - Focused evidence merge/artifact verification/evidence overlay tests: 11 passed.
 - Focused local-AI registry/artifact/release-packet tests after duplicate-download reuse, retry hardening, packet blocker details, and the whisper URL helper: 22 passed.
+- Focused local-AI candidate/runtime/package tests after the published package URL update: 10 passed.
 - Python lint: passed.
 
 Latest readiness snapshot:
@@ -2646,7 +2661,7 @@ Remaining tasks:
   - approver,
   - approval timestamp,
   - evidence reference.
-- Publish/probe the whisper.cpp runtime package URL, then run approval evidence overlay, release packet creation, dry-run pinning, and final pinning.
+- Apply the published/probed whisper.cpp runtime package evidence, then run approval evidence overlay, release packet creation, dry-run pinning, and final pinning.
 
 Acceptance evidence:
 

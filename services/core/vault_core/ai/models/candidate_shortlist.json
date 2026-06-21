@@ -229,7 +229,7 @@
         "repo": "ggml-org/whisper.cpp",
         "tag": "v1.8.6",
         "asset": "whisper.cpp-v1.8.6-macos-arm64.tar.gz",
-        "url": "REPLACE_WITH_APPROVED_WHISPER_CPP_PACKAGE_URL",
+        "url": "https://raw.githubusercontent.com/grixate/thevault-research/c8c890ca3f1a3b6f10a74ca3b59f11e6a91f61bf/release-artifacts/whisper.cpp-v1.8.6-macos-arm64/whisper.cpp-v1.8.6-macos-arm64.tar.gz",
         "archive_member": "whisper.cpp-v1.8.6-macos-arm64/whisper-cli",
         "asset_sha256": "cfbba61b4f9a4fa3c0387ff7816c1368cac6394f2c97432e22b635564f03ad6d",
         "asset_size_bytes": 1224375,
@@ -276,9 +276,9 @@
       "evidence_urls": [
         "https://github.com/ggml-org/whisper.cpp/releases/tag/v1.8.6",
         "https://github.com/ggml-org/whisper.cpp/blob/v1.8.6/LICENSE",
-        "file:///tmp/vault-whisper-package-script/dist/whisper.cpp-v1.8.6-macos-arm64.tar.gz"
+        "https://raw.githubusercontent.com/grixate/thevault-research/c8c890ca3f1a3b6f10a74ca3b59f11e6a91f61bf/release-artifacts/whisper.cpp-v1.8.6-macos-arm64/whisper.cpp-v1.8.6-macos-arm64.tar.gz"
       ],
-      "rationale": "Latest whisper.cpp release v1.8.6 was checked on 2026-06-12. It exposes Windows CLI zips, CUDA Windows zips, an Apple xcframework, and a Java wrapper zip, but no macOS arm64 whisper-cli runtime archive. A static macOS arm64 whisper-cli package was built from the v1.8.6 source tag with scripts/package_whisper_cpp_runtime.sh using CMake Release and BUILD_SHARED_LIBS=OFF. The package filename, archive member, size, SHA-256, license URL, and smoke command are pinned; it remains blocked until the package is published to an approved release URL, source/byte probes are rerun against that URL, and reviewer approval evidence is applied."
+      "rationale": "Latest whisper.cpp release v1.8.6 was checked on 2026-06-12. It exposes Windows CLI zips, CUDA Windows zips, an Apple xcframework, and a Java wrapper zip, but no macOS arm64 whisper-cli runtime archive. A static macOS arm64 whisper-cli package was built from the v1.8.6 source tag with scripts/package_whisper_cpp_runtime.sh using CMake Release and BUILD_SHARED_LIBS=OFF. The package filename, archive member, size, SHA-256, license URL, and smoke command are pinned, and the package now has a commit-pinned raw GitHub URL with source and byte probes passing. It remains blocked until the published evidence is applied to the candidate runtime registry and reviewer approval evidence is applied."
     },
     {
       "id": "piper-macos-arm64",

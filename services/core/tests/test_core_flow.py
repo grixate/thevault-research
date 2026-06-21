@@ -45,6 +45,14 @@ from vault_core.domain.chunking import content_hash
 from vault_core.todos import next_recurrence_due_date
 
 
+PUBLISHED_WHISPER_RUNTIME_PACKAGE_URL = (
+    "https://raw.githubusercontent.com/grixate/thevault-research/"
+    "c8c890ca3f1a3b6f10a74ca3b59f11e6a91f61bf/"
+    "release-artifacts/whisper.cpp-v1.8.6-macos-arm64/"
+    "whisper.cpp-v1.8.6-macos-arm64.tar.gz"
+)
+
+
 def wait_for_job(client, job_id: str, timeout: float = 5.0) -> dict:
     deadline = time.time() + timeout
     last_job: dict | None = None
@@ -3259,7 +3267,7 @@ def test_ai_candidate_shortlist_records_packaged_whisper_runtime_candidate():
     assert whisper_runtime["lifecycle_status"] == "needs_release_evidence"
     assert whisper_runtime["source"]["tag"] == "v1.8.6"
     assert whisper_runtime["source"]["asset"] == "whisper.cpp-v1.8.6-macos-arm64.tar.gz"
-    assert whisper_runtime["source"]["url"] == "REPLACE_WITH_APPROVED_WHISPER_CPP_PACKAGE_URL"
+    assert whisper_runtime["source"]["url"] == PUBLISHED_WHISPER_RUNTIME_PACKAGE_URL
     assert whisper_runtime["source"]["archive_member"] == "whisper.cpp-v1.8.6-macos-arm64/whisper-cli"
     assert whisper_runtime["source"]["asset_sha256"] == "cfbba61b4f9a4fa3c0387ff7816c1368cac6394f2c97432e22b635564f03ad6d"
     assert whisper_runtime["source"]["asset_size_bytes"] == 1224375
@@ -3440,7 +3448,7 @@ def test_ai_candidate_runtime_registry_generation_patches_selected_runtime_candi
     assert whisper_runtime["version"] == "v1.8.6"
     assert whisper_runtime["source"] == {
         "type": "url",
-        "url": "REPLACE_WITH_APPROVED_WHISPER_CPP_PACKAGE_URL",
+        "url": PUBLISHED_WHISPER_RUNTIME_PACKAGE_URL,
         "archive_format": "tar.gz",
         "archive_member": "whisper.cpp-v1.8.6-macos-arm64/whisper-cli",
     }
@@ -3486,7 +3494,7 @@ def test_ai_candidate_runtime_registry_cli_writes_release_review_input(tmp_path)
     )
     assert (
         runtimes_by_id["whisper-cpp-managed-runtime"]["source"]["url"]
-        == "REPLACE_WITH_APPROVED_WHISPER_CPP_PACKAGE_URL"
+        == PUBLISHED_WHISPER_RUNTIME_PACKAGE_URL
     )
     assert runtimes_by_id["whisper-cpp-managed-runtime"]["files"][0]["size_bytes"] == 1224375
 
@@ -3514,7 +3522,7 @@ def test_whisper_runtime_package_url_cli_updates_shortlist_and_runtime_registry(
     assert result.returncode == 0
     report = json.loads(result.stdout)
     assert report["status"] == "applied"
-    assert report["previous_url"] == "REPLACE_WITH_APPROVED_WHISPER_CPP_PACKAGE_URL"
+    assert report["previous_url"] == PUBLISHED_WHISPER_RUNTIME_PACKAGE_URL
     assert report["runtime_generation"] == {
         "applied_count": 3,
         "skipped_count": 0,
