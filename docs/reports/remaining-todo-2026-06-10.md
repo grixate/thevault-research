@@ -273,6 +273,15 @@ Latest Notes minimalist first-glance verification on 2026-06-21:
 - Focused Notes/Storage/quick-note tests: 34 passed.
 - Visual checks: `node scripts/visual_check.mjs notes-loading /tmp/vault-notes-loading.png` and `node scripts/visual_check.mjs notes-empty /tmp/vault-notes-empty-resolved.png` passed; screenshots saved at those paths.
 
+Latest Storage minimalist first-glance verification on 2026-06-21:
+
+- Removed the duplicate left-pane `No sources` empty card. The list stays quiet when empty; the detail pane owns the resolved-empty `No sources` state with one `Add source` action.
+- Hid the Storage header `Add source` action and search/count controls until sources exist, avoiding first-run duplicate actions and `0/0 shown` noise.
+- Removed the loading `Source status` panel and empty pipeline shell; source status only appears when there is real pipeline stage work to show.
+- Extended `scripts/visual_check.mjs` with `storage-loading` and `storage-empty` scenarios using the same approved stable Chromium command prefix.
+- Focused Storage/source/evidence tests: 21 passed.
+- Visual checks: `node scripts/visual_check.mjs storage-loading /tmp/vault-storage-loading.png` and `node scripts/visual_check.mjs storage-empty /tmp/vault-storage-empty-resolved.png` passed; screenshots saved at those paths.
+
 Latest capsule export verification on 2026-06-15:
 
 - Added backend capsule export preview, `.vaultcapsule` package creation, export history listing, version-specific export, and private-full source blob packaging.

@@ -5963,28 +5963,26 @@ async function copyBlock(block: SourceBlock) {
         <SectionHeader
           title="Storage"
           actions={
-            <Button icon={<Plus size={16} />} onClick={() => setSourceDialogOpen(true)}>
-              Add source
-            </Button>
+            sourceRows.length > 0 ? (
+              <Button icon={<Plus size={16} />} onClick={() => setSourceDialogOpen(true)}>
+                Add source
+              </Button>
+            ) : undefined
           }
         />
-        <div className="source-list-tools">
-          <label className="source-list-search">
-            <Search size={15} />
-            <input value={sourceQuery} onChange={(event) => setSourceQuery(event.target.value)} placeholder="Search Storage" aria-label="Search Storage sources" />
-          </label>
-          <small>
-            {filteredSources.length}/{sourceCount} shown
-          </small>
-        </div>
+        {sourceRows.length > 0 && (
+          <div className="source-list-tools">
+            <label className="source-list-search">
+              <Search size={15} />
+              <input value={sourceQuery} onChange={(event) => setSourceQuery(event.target.value)} placeholder="Search Storage" aria-label="Search Storage sources" />
+            </label>
+            <small>
+              {filteredSources.length}/{sourceCount} shown
+            </small>
+          </div>
+        )}
         <div className="entity-list">
           {sources.isLoading && <div className="entity-list-empty">Loading Storage...</div>}
-          {!sources.isLoading && sourceRows.length === 0 && (
-            <div className="entity-list-empty">
-              <HardDrive size={18} />
-              <strong>No sources</strong>
-            </div>
-          )}
           {!sources.isLoading && sourceRows.length > 0 && filteredSources.length === 0 && (
             <div className="entity-list-empty">
               <Search size={18} />
@@ -6012,38 +6010,36 @@ async function copyBlock(block: SourceBlock) {
         </div>
       </Panel>
       <Panel className="source-detail">
-        <SectionHeader
-          title={selected?.title ?? "Select a source"}
-          eyebrow={selected?.type}
-          actions={
-            selected ? (
-              <>
-              {linkedNoteId && (
-                <Button icon={<NotebookPen size={16} />} variant="quiet" onClick={openLinkedNote}>
-                  Open note
-                </Button>
-              )}
-              <TaskCreateButton
-                targetType="source"
-                targetId={selected.id}
-                targetTitle={selected.title}
-                metadata={{
-                  created_from: "storage_source",
-                  source_type: selected.type,
-                  content_hash: selected.content_hash,
-                  block_count: blockCount
-                }}
-              />
-              <CapsuleAttachButton targetType="source" targetId={selected.id} targetTitle={selected.title} defaultRole="primary_source" showExportPolicy />
-              <Button icon={<Sparkles size={16} />} disabled={!selected} onClick={() => extract.mutate()}>
-                Find claims
-              </Button>
-              </>
-            ) : undefined
-          }
-        />
         {selected ? (
           <>
+            <SectionHeader
+              title={selected.title}
+              eyebrow={selected.type}
+              actions={
+                <>
+                  {linkedNoteId && (
+                    <Button icon={<NotebookPen size={16} />} variant="quiet" onClick={openLinkedNote}>
+                      Open note
+                    </Button>
+                  )}
+                  <TaskCreateButton
+                    targetType="source"
+                    targetId={selected.id}
+                    targetTitle={selected.title}
+                    metadata={{
+                      created_from: "storage_source",
+                      source_type: selected.type,
+                      content_hash: selected.content_hash,
+                      block_count: blockCount
+                    }}
+                  />
+                  <CapsuleAttachButton targetType="source" targetId={selected.id} targetTitle={selected.title} defaultRole="primary_source" showExportPolicy />
+                  <Button icon={<Sparkles size={16} />} disabled={!selected} onClick={() => extract.mutate()}>
+                    Find claims
+                  </Button>
+                </>
+              }
+            />
             <div className="source-meta-strip" aria-label="Selected source metadata">
               <Badge tone="info">{selected.type}</Badge>
               <span>{blockCount} block{blockCount === 1 ? "" : "s"}</span>
@@ -6166,10 +6162,12 @@ async function copyBlock(block: SourceBlock) {
             </div>
           </>
         ) : (
-          <div className="surface-empty-state">
-            <HardDrive size={20} />
-            <strong>No source selected</strong>
-          </div>
+          <StorageEmptyDetail
+            isLoading={sources.isLoading}
+            hasSources={sourceRows.length > 0}
+            hasFilter={sourceQuery.trim().length > 0}
+            onAddSource={() => setSourceDialogOpen(true)}
+          />
         )}
       </Panel>
       <Dialog.Root open={sourceDialogOpen} onOpenChange={setSourceDialogOpen}>
@@ -6248,6 +6246,35 @@ async function copyBlock(block: SourceBlock) {
   );
 }
 
+function StorageEmptyDetail({
+  isLoading,
+  hasSources,
+  hasFilter,
+  onAddSource
+}: {
+  isLoading: boolean;
+  hasSources: boolean;
+  hasFilter: boolean;
+  onAddSource: () => void;
+}) {
+  if (isLoading) return <div className="source-detail-loading" aria-label="Loading Storage" aria-busy="true" />;
+  if (hasSources && hasFilter) {
+    return (
+      <div className="surface-empty-state">
+        <strong>No matching source</strong>
+      </div>
+    );
+  }
+  return (
+    <div className="surface-empty-state">
+      <strong>No sources</strong>
+      <Button icon={<Plus size={15} />} onClick={onAddSource}>
+        Add source
+      </Button>
+    </div>
+  );
+}
+
 function SourcePipelinePanel({
   pipeline,
   loading,
@@ -6259,20 +6286,7 @@ function SourcePipelinePanel({
   busy: boolean;
   onStageAction: (stage: SourcePipelineStage) => void;
 }) {
-  if (loading) {
-    return (
-      <section className="source-pipeline-panel" aria-label="Source pipeline">
-        <div className="source-pipeline-header">
-          <div>
-            <strong>Source status</strong>
-            <span>Checking Storage state...</span>
-          </div>
-          <Badge tone="info">loading</Badge>
-        </div>
-      </section>
-    );
-  }
-  if (!pipeline || !Array.isArray(pipeline.stages)) return null;
+  if (loading || !pipeline || !Array.isArray(pipeline.stages) || pipeline.stages.length === 0) return null;
   const openWork = pipeline.pending_review_items + pipeline.needs_edit_review_items;
   const shouldOpen = openWork > 0 || pipeline.stages.some((stage) => stage.status === "ready" || stage.status === "blocked");
   return (

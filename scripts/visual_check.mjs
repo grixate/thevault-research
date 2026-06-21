@@ -11,6 +11,13 @@ const scenarios = {
   "notes-empty": async (page) => {
     await installEmptyVaultBridge(page);
     await openNotes(page);
+  },
+  "storage-loading": async (page) => {
+    await openStorage(page);
+  },
+  "storage-empty": async (page) => {
+    await installEmptyVaultBridge(page);
+    await openStorage(page);
   }
 };
 
@@ -36,6 +43,12 @@ async function openNotes(page) {
   await page.goto(baseUrl, { waitUntil: "networkidle" });
   const notes = page.locator('.main-nav button[aria-label="Notes"]');
   if (await notes.count()) await notes.first().click();
+}
+
+async function openStorage(page) {
+  await page.goto(baseUrl, { waitUntil: "networkidle" });
+  const storage = page.locator('.main-nav button[aria-label="Storage"]');
+  if (await storage.count()) await storage.first().click();
 }
 
 async function installEmptyVaultBridge(page) {
