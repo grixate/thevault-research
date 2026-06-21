@@ -243,11 +243,20 @@ Latest Settings Models minimalist verification on 2026-06-21:
 - Removed the old visible copy `Models for notes, search, and voice` and `Start with one recommended local pack...`.
 - Removed the three-card local-AI command center (`Local models`, `Trusted models`, `Starter models`, `Items to finish`) and replaced it with status, essentials, files, runtimes, search, and the current useful actions.
 - Runtime test/import remain accessible as icon-only controls in the local environment strip.
+- Settings tabs now own the page-level title inside the panel: `Models`, `Search`, and `Advanced` render without the old `local preferences` / `local index and ranking` eyebrow copy.
+- Settings disclosure rows are quieter: `Approval details`, `Model library`, and `Model task routing` no longer render explanatory sublines by default.
 - Focused Settings/model/runtime/voice/search/privacy/backup tests: 12 passed.
 - Desktop tests: 77 passed.
 - Desktop production build: passed.
 - Renderer e2e smoke: passed.
 - In-app browser desktop Settings smoke rendered at 1440x950 with no horizontal overflow, `.settings-model-strip` present, `.settings-hero` absent, old hero copy absent, and old command-center card classes absent.
+- Stable Playwright helper Settings smokes now cover `settings-models`, `settings-search`, and `settings-advanced`; refreshed screenshots captured at `/tmp/vault-settings-models-minimal-header.png`, `/tmp/vault-settings-search-minimal-header.png`, and `/tmp/vault-settings-advanced-minimal-header.png`.
+- Focused Settings header/disclosure regression test: passed.
+- Focused Settings Search progress regression test: passed.
+- Latest desktop tests after this slice: 77 passed.
+- Latest desktop production build after this slice: passed.
+- Latest renderer e2e smoke after this slice: passed.
+- `git diff --check`: passed.
 - Standalone shell-launched Chromium still hits the managed macOS sandbox Mach-port denial. Use the stable helper `node scripts/visual_check.mjs <scenario> <output>` for headless visual QA; the `node scripts/visual_check.mjs` prefix has been approved so repeated screenshot checks do not interrupt autonomous work.
 
 Latest Assistant minimalist chat verification on 2026-06-21:
@@ -2751,6 +2760,8 @@ Current good state:
 - The mobile top bar no longer forces desktop search width below 760px.
 - Evidence graph uses a compact context line and inline detail metadata instead of card-heavy metrics.
 - Settings Search keeps raw capability bindings in a `Model task routing` disclosure with user-facing task names.
+- Settings tabs now show tab-specific panel titles and avoid redundant eyebrow descriptions.
+- Settings disclosure rows now prefer one-line labels over explanatory sublines.
 - Settings Voice now uses user-facing Dictation/Read aloud labels instead of STT/TTS route language.
 - Settings Privacy/Export now use workspace-backup and stayed-on-this-device wording.
 - Search index and ranking test results now share the same local-first privacy wording.

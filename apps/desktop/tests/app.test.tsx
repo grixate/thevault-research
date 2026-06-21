@@ -5303,6 +5303,10 @@ describe("App", () => {
     expect(within(settingsTabs).getByRole("tab", { name: "Models" }).getAttribute("data-state")).toBe("active");
     expect(within(settingsTabs).getByRole("tab", { name: "Search" })).toBeTruthy();
     expect(within(settingsTabs).getByRole("tab", { name: "Advanced" })).toBeTruthy();
+    expect(await screen.findByRole("heading", { name: "Models", level: 2 })).toBeTruthy();
+    expect(screen.queryByText("local preferences")).toBeNull();
+    expect(screen.queryByText("Model approvals, evidence, and setup tools.")).toBeNull();
+    expect(screen.queryByText("Installed models, runtimes, downloads, and local pack details.")).toBeNull();
     const commandCenter = await screen.findByLabelText("Local AI setup summary");
     expect(within(commandCenter).getByText("starter")).toBeTruthy();
     expect(within(commandCenter).getByText("Connect local model tasks")).toBeTruthy();
@@ -5909,7 +5913,12 @@ describe("App", () => {
     fireEvent.click(within(setupGuide as HTMLElement).getByRole("button", { name: /install starter runtime/i }));
     await waitFor(() => expect(request).toHaveBeenCalledWith("ai.runtimes.install", { runtimeId: "llama-cpp-fixture-runtime" }));
     expect(within(setupGuide as HTMLElement).queryByRole("button", { name: /download starter/i })).toBeNull();
+    fireEvent.click(within(settingsTabs).getByRole("tab", { name: "Search" }));
+    expect(await screen.findByRole("heading", { name: "Search", level: 2 })).toBeTruthy();
+    expect(screen.queryByText("local index and ranking")).toBeNull();
+    expect(screen.queryByText("Choose which local provider handles each model-backed task.")).toBeNull();
     fireEvent.click(within(settingsTabs).getByRole("tab", { name: "Advanced" }));
+    expect(await screen.findByRole("heading", { name: "Advanced", level: 2 })).toBeTruthy();
     expect(await screen.findByText("Settings snapshot")).toBeTruthy();
     expect(await screen.findByLabelText("Settings JSON snapshot")).toBeTruthy();
   });
@@ -7737,7 +7746,7 @@ describe("App", () => {
     fireEvent.click(await screen.findByRole("tab", { name: /search/i }));
     expect(await screen.findByRole("heading", { name: "Search index" })).toBeTruthy();
     expect(await screen.findByText("Model task routing")).toBeTruthy();
-    expect(await screen.findByText("Choose which local provider handles each model-backed task.")).toBeTruthy();
+    expect(screen.queryByText("Choose which local provider handles each model-backed task.")).toBeNull();
     expect((await screen.findAllByText("Search index")).length).toBeGreaterThan(1);
     expect(await screen.findByLabelText("Provider for Search index")).toBeTruthy();
     expect(await screen.findByText("Embedding reindex")).toBeTruthy();

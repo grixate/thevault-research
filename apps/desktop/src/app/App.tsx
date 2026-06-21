@@ -11300,11 +11300,12 @@ function SettingsView() {
     { id: "export", label: "Export" },
     { id: "raw", label: "Advanced" }
   ];
+  const activeSettingsTab = settingsTabItems.find((item) => item.id === tab) ?? settingsTabItems[0];
 
   return (
     <div className="surface settings-layout">
       <Panel>
-        <SectionHeader title="Models" eyebrow="local preferences" />
+        <SectionHeader title={activeSettingsTab.label} />
         <Tabs value={tab} onValueChange={(value) => setTab(value as typeof tab)} className="settings-tabs">
           <TabsList aria-label="Settings sections">
             {settingsTabItems.map((item) => (
@@ -11368,7 +11369,6 @@ function SettingsView() {
               <summary>
                 <span>
                   <strong>Approval details</strong>
-                  <small>Model approvals, evidence, and setup tools.</small>
                 </span>
                 <Badge tone={readinessReport.data?.production_ready ? "good" : "warn"}>
                   {readinessReport.data?.production_ready ? "ready" : `${readinessReport.data?.summary?.blocked_count ?? 0} items`}
@@ -11468,7 +11468,6 @@ function SettingsView() {
               <summary>
                 <span>
                   <strong>Model library</strong>
-                  <small>Installed models, runtimes, downloads, and local pack details.</small>
                 </span>
                 <span className="settings-library-counts">
                   <Badge tone="neutral">{models.length} models</Badge>
@@ -11820,7 +11819,6 @@ function SettingsView() {
 
         {tab === "routing" && (
           <div className="settings-section">
-            <SectionHeader title="Search" eyebrow="local index and ranking" />
             <div className="workflow-toolbar">
               <CapabilityStatus capability="embed_text" />
               <Button
@@ -12079,7 +12077,6 @@ function SettingsView() {
               <summary>
                 <span>
                   <strong>Model task routing</strong>
-                  <small>Choose which local provider handles each model-backed task.</small>
                 </span>
               </summary>
               <div className="capability-list">

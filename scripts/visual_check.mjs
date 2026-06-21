@@ -26,6 +26,20 @@ const scenarios = {
     await installEmptyVaultBridge(page);
     await openReview(page);
   },
+  "settings-models": async (page) => {
+    await installEmptyVaultBridge(page);
+    await openSettings(page);
+  },
+  "settings-search": async (page) => {
+    await installEmptyVaultBridge(page);
+    await openSettings(page);
+    await page.getByRole("tab", { name: "Search" }).click();
+  },
+  "settings-advanced": async (page) => {
+    await installEmptyVaultBridge(page);
+    await openSettings(page);
+    await page.getByRole("tab", { name: "Advanced" }).click();
+  },
   "quick-note": async (page) => {
     await installEmptyVaultBridge(page);
     await openQuickNote(page);
@@ -79,6 +93,12 @@ async function openReview(page) {
   await page.goto(baseUrl, { waitUntil: "networkidle" });
   const review = page.locator('.main-nav button[aria-label="Review"]');
   if (await review.count()) await review.first().click();
+}
+
+async function openSettings(page) {
+  await page.goto(baseUrl, { waitUntil: "networkidle" });
+  const settings = page.locator('.main-nav button[aria-label="Models"]');
+  if (await settings.count()) await settings.first().click();
 }
 
 async function openQuickNote(page) {
