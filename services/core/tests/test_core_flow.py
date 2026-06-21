@@ -11,7 +11,7 @@ import tarfile
 import threading
 import time
 import zipfile
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
@@ -42,6 +42,7 @@ from vault_core.app import create_app
 from vault_core.config import Settings
 from vault_core.db.session import dumps, new_id, now_iso
 from vault_core.domain.chunking import content_hash
+from vault_core.todos import next_recurrence_due_date
 
 
 def wait_for_job(client, job_id: str, timeout: float = 5.0) -> dict:
@@ -612,14 +613,38 @@ def test_todos_quick_add_views_and_completion(client):
     assert archived["status"] == "archived"
     assert follow_ups["id"] not in {item["id"] for item in client.get("/todo-lists").json()}
 
-    completed = client.post(f"/todos/{created['id']}/complete").json()
+    rolled = client.post(f"/todos/{created['id']}/complete").json()
+    assert rolled["status"] == "open"
+    assert rolled["completed_at"] is None
+    assert rolled["due_date"] == next_recurrence_due_date("every friday", tomorrow)
+    assert rolled["recurrence_rule"] == "every friday"
+    assert rolled["list_id"] == follow_ups["id"]
+    assert rolled["labels"] == ["urgent", "waiting"]
+    recurrence_events = client.get("/events?limit=10").json()
+    assert any(event["action"] == "todo.recurrence_completed" and event["target_id"] == created["id"] for event in recurrence_events)
+
+    completed = client.post(f"/todos/{inbox['id']}/complete").json()
     assert completed["status"] == "completed"
     assert completed["completed_at"]
     completed_rows = client.get("/todos?view=completed").json()
-    assert created["id"] in {todo["id"] for todo in completed_rows["items"]}
+    assert inbox["id"] in {todo["id"] for todo in completed_rows["items"]}
     stats = client.get("/stats").json()
     assert stats["open_todos"] == 1
-    assert stats["due_todos"] >= 1
+    assert stats["due_todos"] == 0
+
+
+def test_todo_recurrence_rule_next_dates():
+    today = date(2026, 6, 21)
+    assert next_recurrence_due_date("daily", "2026-06-21", today=today) == "2026-06-22"
+    assert next_recurrence_due_date("daily", "2026-06-18", today=today) == "2026-06-22"
+    assert next_recurrence_due_date("weekly", "2026-06-21", today=today) == "2026-06-28"
+    assert next_recurrence_due_date("every weekday", "2026-06-19", today=today) == "2026-06-22"
+    assert next_recurrence_due_date("every 3 days", "2026-06-21", today=today) == "2026-06-24"
+    assert next_recurrence_due_date("every 2 weeks", "2026-06-21", today=today) == "2026-07-05"
+    assert next_recurrence_due_date("every month", "2026-01-31", today=date(2026, 1, 31)) == "2026-02-28"
+    assert next_recurrence_due_date("every friday", "2026-06-19", today=today) == "2026-06-26"
+    assert next_recurrence_due_date("nonsense", "2026-06-21", today=today) is None
+    assert next_recurrence_due_date("daily", None, today=date(2026, 6, 21)) == "2026-06-22"
 
 
 def test_note_version_restore_creates_new_version_and_rechunks_note_source(client):

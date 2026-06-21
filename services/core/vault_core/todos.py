@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import re
 import sqlite3
+from calendar import monthrange
 from datetime import UTC, date, datetime, timedelta
 from typing import Any
 
@@ -293,6 +294,38 @@ def update_todo(db: VaultDatabase, todo_id: str, payload: dict[str, Any]) -> dic
 
 
 def complete_todo(db: VaultDatabase, todo_id: str) -> dict[str, Any]:
+    ts = now_iso()
+    with db.connect() as conn:
+        row = conn.execute("SELECT * FROM todos WHERE id=? AND workspace_id=?", (todo_id, db.workspace_id)).fetchone()
+        if not row:
+            raise HTTPException(404, "Todo not found")
+        if row["status"] == "completed":
+            return get_todo_by_id(conn, db.workspace_id, todo_id)
+        recurrence_rule = str(row["recurrence_rule"] or "").strip()
+        next_due_date = next_recurrence_due_date(recurrence_rule, row["due_date"])
+        if next_due_date:
+            conn.execute(
+                """
+                UPDATE todos
+                SET status='open', due_date=?, completed_at=NULL, updated_at=?
+                WHERE id=? AND workspace_id=?
+                """,
+                (next_due_date, ts, todo_id, db.workspace_id),
+            )
+            db.event(
+                conn,
+                "todo.recurrence_completed",
+                "todo",
+                todo_id,
+                {
+                    "completed_at": ts,
+                    "previous_due_date": row["due_date"],
+                    "next_due_date": next_due_date,
+                    "recurrence_rule": recurrence_rule,
+                },
+                "user",
+            )
+            return get_todo_by_id(conn, db.workspace_id, todo_id)
     return update_todo(db, todo_id, {"status": "completed"})
 
 
@@ -422,6 +455,70 @@ def next_weekday(today: date, weekday: int) -> date:
     if days == 0:
         days = 7
     return today + timedelta(days=days)
+
+
+def next_recurrence_due_date(rule: str | None, due_date: str | None, *, today: date | None = None) -> str | None:
+    rule_text = normalize_recurrence_rule(rule)
+    if not rule_text:
+        return None
+    current_day = today or datetime.now(UTC).date()
+    anchor = parse_due_date(due_date) or current_day
+    candidate = advance_recurrence_due_date(rule_text, anchor)
+    if not candidate:
+        return None
+    for _ in range(400):
+        if candidate > current_day:
+            return candidate.isoformat()
+        candidate = advance_recurrence_due_date(rule_text, candidate)
+        if not candidate:
+            return None
+    return candidate.isoformat()
+
+
+def advance_recurrence_due_date(rule_text: str, anchor: date) -> date | None:
+    match = re.fullmatch(r"every\s+(\d+)\s+days?", rule_text)
+    if match:
+        return anchor + timedelta(days=max(1, int(match.group(1))))
+    match = re.fullmatch(r"every\s+(\d+)\s+weeks?", rule_text)
+    if match:
+        return anchor + timedelta(weeks=max(1, int(match.group(1))))
+    if rule_text in {"daily", "every day", "every daily"}:
+        return anchor + timedelta(days=1)
+    if rule_text in {"weekly", "every week", "every weekly"}:
+        return anchor + timedelta(weeks=1)
+    if rule_text in {"weekday", "weekdays", "every weekday", "every weekdays"}:
+        next_day = anchor + timedelta(days=1)
+        while next_day.weekday() >= 5:
+            next_day += timedelta(days=1)
+        return next_day
+    match = re.fullmatch(r"every\s+(" + "|".join(WEEKDAYS) + r")", rule_text)
+    if match:
+        return next_weekday(anchor, WEEKDAYS[match.group(1)])
+    if rule_text in {"monthly", "every month", "every monthly"}:
+        return add_month(anchor)
+    return None
+
+
+def normalize_recurrence_rule(rule: str | None) -> str:
+    return re.sub(r"\s+", " ", str(rule or "").strip().lower().strip("."))
+
+
+def parse_due_date(value: str | None) -> date | None:
+    if not value:
+        return None
+    try:
+        return date.fromisoformat(str(value))
+    except ValueError:
+        return None
+
+
+def add_month(value: date) -> date:
+    month = value.month + 1
+    year = value.year
+    if month == 13:
+        month = 1
+        year += 1
+    return date(year, month, min(value.day, monthrange(year, month)[1]))
 
 
 def normalize_todo_view(view: str) -> str:

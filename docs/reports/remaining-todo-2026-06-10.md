@@ -414,6 +414,13 @@ Latest task backup verification on 2026-06-21:
 - Settings Export copy now names Tasks as part of the local workspace backup.
 - Focused backend workspace export test, Python lint, and desktop production build: passed.
 
+Latest task recurrence verification on 2026-06-21:
+
+- Completing a recurring task now rolls the same task forward to the next due date, keeps it open, clears `completed_at`, and records a `todo.recurrence_completed` event for the completed occurrence.
+- Supported v1 recurrence rules now include daily, weekly, every weekday, every N days, every N weeks, every month on the same day, and `every <weekday>`.
+- Non-recurring task completion still moves the task into Done.
+- Focused backend todo/recurrence tests, Python lint, and desktop production build: passed.
+
 Latest focused verification on 2026-06-11 before the current claim-grammar slice:
 
 - Python core tests: 125 passed.
@@ -2809,11 +2816,12 @@ Current good state:
 - List filtering is live from the side rail, including listed tasks under the Inbox view.
 - Quick-add selects the parsed destination list after creation so the created task remains visible.
 - A minimal detail rail can edit task title, due date, priority, list, labels, recurrence, and description.
+- Completing recurring tasks generates the next occurrence date while preserving the open task.
 - Lightweight list management is live from the side rail: create, inline rename, and archive lists.
 - Global quick-task capture is live from `Cmd/Ctrl+Shift+T`, the native app menu, and the command palette, using the same minimal Spotlight-style panel as Quick note.
 - Contextual task creation now exists from current Note, selected Storage source/source block, Review item, Graph claim, Capsule detail, and Assistant answer.
 - Workspace backup preserves todo lists, tasks, labels, label links, and task context links as readable JSONL records plus the full SQLite backup.
-- Focused backend and desktop tests cover quick add, parsed list/label/priority/due date, list filtering, context links, task list counts, list management, detail metadata editing, global quick-task capture, completion, stats, the desktop create/complete flow, and note-origin contextual task creation.
+- Focused backend and desktop tests cover quick add, parsed list/label/priority/due date, list filtering, context links, task list counts, list management, detail metadata editing, recurrence completion, global quick-task capture, completion, stats, the desktop create/complete flow, and note-origin contextual task creation.
 
 Remaining tasks:
 
@@ -2824,7 +2832,6 @@ Remaining tasks:
   - Learning item/tool result surfaces,
   - richer tests for Storage/Review/Capsule/Assistant task payloads.
 - Expand task detail editing to cover context/source-link management without making the rail feel like a project-management panel.
-- Add generated next occurrences after completion for recurring tasks.
 - Add subtasks only after detail drawer and list management are stable.
 - Integrate AI-suggested todos as reviewable suggestions, not silent canonical tasks.
 - Integrate Markdown checkbox extraction/linking from Notes after the editor UX is stable.
@@ -2845,7 +2852,7 @@ Acceptance evidence:
 
 1. If continuing UX, keep the Notion/Obsidian/Apple Notes reset active: inspect Notes, Storage, Quick Note, Review, Assistant, Capsules, and Settings screenshots, then simplify the most overloaded flow first.
 2. If continuing Capsules, polish the alpha surface and attach dialog first, then continue from import review items into conflict-aware merge decisions or package contract docs.
-3. If continuing Tasks, add recurrence completion behavior and context/source-link management before considering standalone task import/export.
+3. If continuing Tasks, add context/source-link management before considering subtasks or standalone task import/export.
 4. If continuing local AI production, pick the first real approved runtime/model candidate set and run the release-packet tooling.
 5. If stabilizing before bigger registry edits, stage or commit the current v1 state.
 6. After any slice:
