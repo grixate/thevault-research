@@ -282,6 +282,16 @@ Latest Storage minimalist first-glance verification on 2026-06-21:
 - Focused Storage/source/evidence tests: 21 passed.
 - Visual checks: `node scripts/visual_check.mjs storage-loading /tmp/vault-storage-loading.png` and `node scripts/visual_check.mjs storage-empty /tmp/vault-storage-empty-resolved.png` passed; screenshots saved at those paths.
 
+Latest Review minimalist first-glance verification on 2026-06-21:
+
+- Review no longer shows the decision summary or proposal filters when there are no proposals in the current status view.
+- The list pane stays quiet in the empty state; the detail pane owns the single `Review is clear.` message.
+- Review loading no longer flashes a false clear state; it shows one loading row in the list and keeps the detail pane visually blank.
+- Filtered-empty detail now says `No matching proposals` instead of implying Review is clear.
+- Extended `scripts/visual_check.mjs` with `review-loading` and `review-empty` scenarios using the same approved stable Chromium command prefix.
+- Focused Review/proposal tests: 13 passed.
+- Visual checks: `node scripts/visual_check.mjs review-loading /tmp/vault-review-loading.png` and `node scripts/visual_check.mjs review-empty /tmp/vault-review-empty-resolved.png` passed; screenshots saved at those paths.
+
 Latest capsule export verification on 2026-06-15:
 
 - Added backend capsule export preview, `.vaultcapsule` package creation, export history listing, version-specific export, and private-full source blob packaging.

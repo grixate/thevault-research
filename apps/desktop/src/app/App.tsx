@@ -6770,6 +6770,8 @@ function ReviewView() {
   const selectedPendingItems = pendingVisibleItems.filter((reviewItem) => selectedReviewIds.includes(reviewItem.id));
   const allVisibleSelected = pendingVisibleItems.length > 0 && pendingVisibleItems.every((reviewItem) => selectedReviewIds.includes(reviewItem.id));
   const pendingCount = reviewItems.filter((reviewItem) => reviewItem.status === "pending").length;
+  const hasReviewItems = reviewItems.length > 0;
+  const hasActiveFilters = typeFilter !== "all" || scopeQuery.trim().length > 0;
   useEffect(() => {
     setDecisionNote("");
     setReviewCapsuleId("none");
@@ -6863,38 +6865,42 @@ function ReviewView() {
             </TabsTrigger>
           </TabsList>
         </Tabs>
-        <div className="review-decision-summary" aria-label="Review decision summary">
-          <Badge tone={pendingCount ? "warn" : "good"}>{pendingCount ? `${pendingCount} to decide` : "clear"}</Badge>
-          <div>
-            <span>
-              {selectedPendingItems.length
-                ? `${selectedPendingItems.length} selected for one shared decision.`
-                : `${visibleReviewItems.length} visible proposal${visibleReviewItems.length === 1 ? "" : "s"}.`}
-            </span>
+        {hasReviewItems && (
+          <div className="review-decision-summary" aria-label="Review decision summary">
+            <Badge tone={pendingCount ? "warn" : "good"}>{pendingCount ? `${pendingCount} to decide` : "clear"}</Badge>
+            <div>
+              <span>
+                {selectedPendingItems.length
+                  ? `${selectedPendingItems.length} selected for one shared decision.`
+                  : `${visibleReviewItems.length} visible proposal${visibleReviewItems.length === 1 ? "" : "s"}.`}
+              </span>
+            </div>
           </div>
-        </div>
-        <div className="review-filter-bar">
-          <label className="field">
-            <span>Kind</span>
-            <SelectRoot value={typeFilter} onValueChange={setTypeFilter}>
-              <SelectTrigger aria-label="Proposal kind">
-                <SelectValue placeholder="All proposals" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All proposals</SelectItem>
-                {itemTypes.map((itemType) => (
-                  <SelectItem key={itemType} value={itemType}>
-                    {reviewItemLabel(itemType)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </SelectRoot>
-          </label>
-          <label className="field">
-            <span>Find</span>
-            <Input aria-label="Find review proposals" value={scopeQuery} placeholder="Title, source, quote, model" onChange={(event) => setScopeQuery(event.target.value)} />
-          </label>
-        </div>
+        )}
+        {hasReviewItems && (
+          <div className="review-filter-bar">
+            <label className="field">
+              <span>Kind</span>
+              <SelectRoot value={typeFilter} onValueChange={setTypeFilter}>
+                <SelectTrigger aria-label="Proposal kind">
+                  <SelectValue placeholder="All proposals" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All proposals</SelectItem>
+                  {itemTypes.map((itemType) => (
+                    <SelectItem key={itemType} value={itemType}>
+                      {reviewItemLabel(itemType)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </SelectRoot>
+            </label>
+            <label className="field">
+              <span>Find</span>
+              <Input aria-label="Find review proposals" value={scopeQuery} placeholder="Title, source, quote, model" onChange={(event) => setScopeQuery(event.target.value)} />
+            </label>
+          </div>
+        )}
         {statusFilter === "pending" && pendingVisibleItems.length > 0 && (
           <div className="review-bulk-panel" aria-label="Shared decision actions">
             <div className="review-bulk-summary">
@@ -6929,8 +6935,8 @@ function ReviewView() {
             )}
           </div>
         )}
-        {reviewItems.length === 0 && <p className="empty-copy">Review is clear.</p>}
-        {reviewItems.length > 0 && visibleReviewItems.length === 0 && <p className="empty-copy">No review items match these filters.</p>}
+        {review.isLoading && <div className="entity-list-empty">Loading Review...</div>}
+        {!review.isLoading && hasReviewItems && visibleReviewItems.length === 0 && <p className="empty-copy">No review items match these filters.</p>}
         {visibleReviewItems.map((reviewItem) => {
           const selectable = statusFilter === "pending" && reviewItem.status === "pending";
           const selected = selectedReviewIds.includes(reviewItem.id);
@@ -7054,9 +7060,33 @@ function ReviewView() {
             </details>
           </>
         ) : (
-          <p className="empty-copy">Review is clear.</p>
+          <ReviewEmptyDetail isLoading={review.isLoading} statusFilter={statusFilter} hasActiveFilters={hasActiveFilters} />
         )}
       </Panel>
+    </div>
+  );
+}
+
+function ReviewEmptyDetail({
+  isLoading,
+  statusFilter,
+  hasActiveFilters
+}: {
+  isLoading: boolean;
+  statusFilter: "pending" | "dismissed";
+  hasActiveFilters: boolean;
+}) {
+  if (isLoading) return <div className="source-detail-loading" aria-label="Loading Review" aria-busy="true" />;
+  if (hasActiveFilters) {
+    return (
+      <div className="surface-empty-state">
+        <strong>No matching proposals</strong>
+      </div>
+    );
+  }
+  return (
+    <div className="surface-empty-state">
+      <strong>{statusFilter === "pending" ? "Review is clear." : "No rejected proposals"}</strong>
     </div>
   );
 }
