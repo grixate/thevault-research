@@ -407,6 +407,13 @@ Latest task list/detail verification on 2026-06-21:
 - Focused backend todo route/parser/list-management test, Python lint, desktop production build, contract generation, and diff whitespace check: passed.
 - Playwright desktop Tasks smoke at 1440x950 created a list, added a parsed listed task, edited detail metadata, and captured screenshots at `/tmp/vault-tasks-list-detail.png` and `/tmp/vault-tasks-lists.png`; `scrollWidth` matched viewport width.
 
+Latest task backup verification on 2026-06-21:
+
+- Workspace backup now includes readable JSONL exports for `todo_lists`, `todos`, `todo_labels`, `todo_label_links`, and `todo_context_links`.
+- Task backup JSON columns are inflated in readable records, including todo source refs/provenance and context-link metadata.
+- Settings Export copy now names Tasks as part of the local workspace backup.
+- Focused backend workspace export test, Python lint, and desktop production build: passed.
+
 Latest focused verification on 2026-06-11 before the current claim-grammar slice:
 
 - Python core tests: 125 passed.
@@ -2805,6 +2812,7 @@ Current good state:
 - Lightweight list management is live from the side rail: create, inline rename, and archive lists.
 - Global quick-task capture is live from `Cmd/Ctrl+Shift+T`, the native app menu, and the command palette, using the same minimal Spotlight-style panel as Quick note.
 - Contextual task creation now exists from current Note, selected Storage source/source block, Review item, Graph claim, Capsule detail, and Assistant answer.
+- Workspace backup preserves todo lists, tasks, labels, label links, and task context links as readable JSONL records plus the full SQLite backup.
 - Focused backend and desktop tests cover quick add, parsed list/label/priority/due date, list filtering, context links, task list counts, list management, detail metadata editing, global quick-task capture, completion, stats, the desktop create/complete flow, and note-origin contextual task creation.
 
 Remaining tasks:
@@ -2820,7 +2828,7 @@ Remaining tasks:
 - Add subtasks only after detail drawer and list management are stable.
 - Integrate AI-suggested todos as reviewable suggestions, not silent canonical tasks.
 - Integrate Markdown checkbox extraction/linking from Notes after the editor UX is stable.
-- Add import/export and workspace backup coverage for task tables.
+- Add standalone task import/export only if it proves useful beyond full workspace backup.
 - Add mobile layout repair later with the broader mobile pass; current mobile remains explicitly not clean.
 
 Acceptance evidence:
@@ -2829,7 +2837,7 @@ Acceptance evidence:
 - Quick add keeps working with natural tokens and does not leak token syntax into the saved title.
 - Contextual task creation preserves links back to the originating Vault object instead of duplicating source text.
 - AI-generated tasks remain reviewable/provisional until accepted.
-- Task backup/export preserves todo lists, tasks, labels, and context links.
+- Workspace backup preserves todo lists, tasks, labels, and context links.
 - Browser screenshots show Tasks as a minimal Apple Notes/Todoist-like utility, not a card-heavy project dashboard.
 - Backend and desktop tests cover quick add, views, list filtering, context links, completion, detail editing, generated suggestions, backup/export, and contextual creation from Notes/Storage/Review/Capsules/Assistant.
 
@@ -2837,7 +2845,7 @@ Acceptance evidence:
 
 1. If continuing UX, keep the Notion/Obsidian/Apple Notes reset active: inspect Notes, Storage, Quick Note, Review, Assistant, Capsules, and Settings screenshots, then simplify the most overloaded flow first.
 2. If continuing Capsules, polish the alpha surface and attach dialog first, then continue from import review items into conflict-aware merge decisions or package contract docs.
-3. If continuing Tasks, add workspace backup/export coverage first, then recurrence completion behavior and context/source-link management.
+3. If continuing Tasks, add recurrence completion behavior and context/source-link management before considering standalone task import/export.
 4. If continuing local AI production, pick the first real approved runtime/model candidate set and run the release-packet tooling.
 5. If stabilizing before bigger registry edits, stage or commit the current v1 state.
 6. After any slice:

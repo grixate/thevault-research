@@ -3273,6 +3273,11 @@ def create_workspace_export(settings: Settings, db: VaultDatabase) -> dict[str, 
                 "capsule_exports": "JSONL",
                 "capsule_imports": "JSONL",
                 "capsule_changelog": "JSONL",
+                "todo_lists": "JSONL",
+                "todos": "JSONL",
+                "todo_labels": "JSONL",
+                "todo_label_links": "JSONL",
+                "todo_context_links": "JSONL",
                 "database_backup": "SQLite",
             },
             "counts": {key: len(value) for key, value in data["records"].items()},
@@ -3299,6 +3304,11 @@ def create_workspace_export(settings: Settings, db: VaultDatabase) -> dict[str, 
             write_zip_jsonl(archive, "data/capsule_exports.jsonl", data["records"]["capsule_exports"])
             write_zip_jsonl(archive, "data/capsule_imports.jsonl", data["records"]["capsule_imports"])
             write_zip_jsonl(archive, "data/capsule_changelog.jsonl", data["records"]["capsule_changelog"])
+            write_zip_jsonl(archive, "data/todo_lists.jsonl", data["records"]["todo_lists"])
+            write_zip_jsonl(archive, "data/todos.jsonl", data["records"]["todos"])
+            write_zip_jsonl(archive, "data/todo_labels.jsonl", data["records"]["todo_labels"])
+            write_zip_jsonl(archive, "data/todo_label_links.jsonl", data["records"]["todo_label_links"])
+            write_zip_jsonl(archive, "data/todo_context_links.jsonl", data["records"]["todo_context_links"])
             archive.write(backup_db_path, "backup/vault.db")
             blob_entries = add_blobs_to_export(archive, settings.blob_dir)
             manifest["blobs"] = blob_entries
@@ -3426,6 +3436,32 @@ def collect_workspace_export_data(settings: Settings, db: VaultDatabase) -> dict
             "capsule_changelog": export_rows(
                 conn.execute("SELECT * FROM capsule_changelog WHERE workspace_id=? ORDER BY capsule_id, created_at, id", (db.workspace_id,)).fetchall(),
                 json_fields={"payload_json": "payload"},
+            ),
+            "todo_lists": export_rows(
+                conn.execute("SELECT * FROM todo_lists WHERE workspace_id=? ORDER BY sort_index, lower(name), id", (db.workspace_id,)).fetchall()
+            ),
+            "todos": export_rows(
+                conn.execute("SELECT * FROM todos WHERE workspace_id=? ORDER BY created_at, id", (db.workspace_id,)).fetchall(),
+                json_fields={"source_ref_json": "source_ref", "provenance_json": "provenance"},
+            ),
+            "todo_labels": export_rows(
+                conn.execute("SELECT * FROM todo_labels WHERE workspace_id=? ORDER BY lower(name), id", (db.workspace_id,)).fetchall()
+            ),
+            "todo_label_links": export_rows(
+                conn.execute(
+                    """
+                    SELECT link.*
+                    FROM todo_label_links link
+                    JOIN todos t ON t.id=link.todo_id
+                    WHERE t.workspace_id=?
+                    ORDER BY link.created_at, link.todo_id, link.label_id
+                    """,
+                    (db.workspace_id,),
+                ).fetchall()
+            ),
+            "todo_context_links": export_rows(
+                conn.execute("SELECT * FROM todo_context_links WHERE workspace_id=? ORDER BY created_at, id", (db.workspace_id,)).fetchall(),
+                json_fields={"metadata_json": "metadata"},
             ),
         }
     return {"database_schema_version": schema_version, "records": records}

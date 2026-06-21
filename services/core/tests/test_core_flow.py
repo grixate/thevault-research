@@ -696,6 +696,24 @@ def test_workspace_export_contains_notes_sources_graph_review_and_backup(client)
     ).json()
     forked = client.post(f"/capsules/{capsule['id']}/fork", json={"name": "Workspace Export Capsule Fork"}).json()
     capsule_export = client.post(f"/capsules/{capsule['id']}/export", json={"export_mode": "reference_only"}).json()
+    todo_list = client.post("/todo-lists", json={"name": "Export follow-ups"}).json()
+    todo = client.post(
+        "/todos",
+        json={
+            "text": "Check exported task backup tomorrow @backup #Export follow-ups p2",
+            "source_ref": {"origin": "workspace_export_test"},
+            "provenance": {"created_by": "test"},
+            "context_links": [
+                {
+                    "target_type": "note",
+                    "target_id": note["id"],
+                    "target_title": note["title"],
+                    "relation": "follow_up",
+                    "metadata": {"backup_test": True},
+                }
+            ],
+        },
+    ).json()
 
     exported = client.post("/export/workspace").json()
 
@@ -711,8 +729,14 @@ def test_workspace_export_contains_notes_sources_graph_review_and_backup(client)
     assert exported["manifest"]["counts"]["capsule_dependencies"] >= 1
     assert exported["manifest"]["counts"]["capsule_health_snapshots"] >= 1
     assert exported["manifest"]["counts"]["capsule_exports"] >= 1
+    assert exported["manifest"]["counts"]["todo_lists"] >= 1
+    assert exported["manifest"]["counts"]["todos"] >= 1
+    assert exported["manifest"]["counts"]["todo_labels"] >= 1
+    assert exported["manifest"]["counts"]["todo_label_links"] >= 1
+    assert exported["manifest"]["counts"]["todo_context_links"] >= 1
     assert exported["manifest"]["formats"]["notes"] == "Markdown + JSONL metadata"
     assert exported["manifest"]["formats"]["capsules"] == "JSONL"
+    assert exported["manifest"]["formats"]["todos"] == "JSONL"
     with zipfile.ZipFile(export_path) as archive:
         names = set(archive.namelist())
         assert "manifest.json" in names
@@ -728,6 +752,11 @@ def test_workspace_export_contains_notes_sources_graph_review_and_backup(client)
         assert "data/capsule_exports.jsonl" in names
         assert "data/capsule_imports.jsonl" in names
         assert "data/capsule_changelog.jsonl" in names
+        assert "data/todo_lists.jsonl" in names
+        assert "data/todos.jsonl" in names
+        assert "data/todo_labels.jsonl" in names
+        assert "data/todo_label_links.jsonl" in names
+        assert "data/todo_context_links.jsonl" in names
         assert "backup/vault.db" in names
         note_files = [name for name in names if name.startswith("notes/") and name.endswith(f"{note['id']}.md")]
         assert note_files
@@ -749,6 +778,27 @@ def test_workspace_export_contains_notes_sources_graph_review_and_backup(client)
         assert any(item["capsule_id"] == capsule["id"] and isinstance(item["warnings"], list) for item in capsule_health)
         capsule_exports = [json.loads(line) for line in archive.read("data/capsule_exports.jsonl").decode("utf-8").splitlines()]
         assert any(item["id"] == capsule_export["export_id"] and item["privacy_report"]["status"] == "ready" for item in capsule_exports)
+        todo_lists = [json.loads(line) for line in archive.read("data/todo_lists.jsonl").decode("utf-8").splitlines()]
+        assert any(item["id"] == todo_list["id"] and item["name"] == "Export follow-ups" for item in todo_lists)
+        todos = [json.loads(line) for line in archive.read("data/todos.jsonl").decode("utf-8").splitlines()]
+        assert any(
+            item["id"] == todo["id"]
+            and item["list_id"] == todo_list["id"]
+            and item["source_ref"] == {"origin": "workspace_export_test"}
+            and item["provenance"] == {"created_by": "test"}
+            for item in todos
+        )
+        todo_labels = [json.loads(line) for line in archive.read("data/todo_labels.jsonl").decode("utf-8").splitlines()]
+        backup_label = next(item for item in todo_labels if item["name"] == "backup")
+        todo_label_links = [json.loads(line) for line in archive.read("data/todo_label_links.jsonl").decode("utf-8").splitlines()]
+        assert any(item["todo_id"] == todo["id"] and item["label_id"] == backup_label["id"] for item in todo_label_links)
+        todo_context_links = [json.loads(line) for line in archive.read("data/todo_context_links.jsonl").decode("utf-8").splitlines()]
+        assert any(
+            item["todo_id"] == todo["id"]
+            and item["target_id"] == note["id"]
+            and item["metadata"] == {"backup_test": True}
+            for item in todo_context_links
+        )
 
 
 def test_capsule_private_full_export_includes_source_blobs(client, tmp_path):
