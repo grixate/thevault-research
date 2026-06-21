@@ -830,6 +830,216 @@ describe("App", () => {
     );
   });
 
+  it("creates contextual tasks from Storage sources and exact source blocks", async () => {
+    const source = {
+      id: "src_task_payload",
+      type: "pdf",
+      title: "Field study notes",
+      content_hash: "hash_field_study",
+      metadata: {},
+      created_at: "2026-06-21T00:00:00Z",
+      updated_at: "2026-06-21T00:00:00Z"
+    };
+    const block = {
+      id: "blk_task_payload",
+      source_id: source.id,
+      block_index: 2,
+      locator: "p3",
+      heading_path: "Findings / Method",
+      text: "Participants described the local workflow as fragmented."
+    };
+    const createdPayloads: any[] = [];
+    const request = vi.fn(async (route: string, payload?: any) => {
+      if (route === "health.get") return { ok: true, version: "0.1.0", db_ready: true, workspace_id: "wrk_default" };
+      if (route === "jobs.list" || route === "events.list") return [];
+      if (route === "stats.get") {
+        return {
+          sources: 1,
+          source_blocks: 1,
+          notes: 0,
+          claims: 0,
+          claims_without_evidence: 0,
+          contradicted_claims: 0,
+          pending_review_items: 0,
+          generated_notes_pending_review: 0,
+          installed_tools: 0,
+          failed_jobs: 0,
+          learning_items: 0
+        };
+      }
+      if (route === "sources.list") return [source];
+      if (route === "sources.blocks") return [block];
+      if (route === "sources.pipeline") return { stages: [], source_type: "pdf", source_status: "ready", block_count: 1, pending_review_items: 0, needs_edit_review_items: 0, approved_claims: 0 };
+      if (route === "ai.capabilities" || route === "ai.providers") return [];
+      if (route === "todos.create") {
+        createdPayloads.push(payload);
+        return {
+          id: `todo_storage_${createdPayloads.length}`,
+          title: payload.text,
+          status: "open",
+          priority: 3,
+          labels: [],
+          context_links: payload.context_links,
+          provenance: payload.provenance,
+          created_at: "2026-06-21T00:00:01Z",
+          updated_at: "2026-06-21T00:00:01Z"
+        };
+      }
+      return [];
+    });
+    window.vault = { request, selectFiles: vi.fn(async () => []) };
+    useUIStore.setState({ surface: "sources", selectedSourceId: source.id, selectedSourceBlockId: block.id });
+    const { container } = renderApp();
+
+    expect((await screen.findAllByText("Field study notes")).length).toBeGreaterThan(0);
+    const sourceDetail = container.querySelector(".source-detail");
+    expect(sourceDetail).toBeTruthy();
+    fireEvent.click(within(sourceDetail as HTMLElement).getAllByRole("button", { name: "Task" })[0]);
+    fireEvent.click(within(await screen.findByRole("dialog", { name: "New task" })).getByRole("button", { name: "Save" }));
+    await waitFor(() => expect(createdPayloads).toHaveLength(1));
+
+    expect(createdPayloads[0]).toEqual({
+      text: "Check Field study notes",
+      provenance: { created_from: "source" },
+      context_links: [
+        {
+          target_type: "source",
+          target_id: source.id,
+          target_title: source.title,
+          relation: "follow_up",
+          exact_quote: undefined,
+          locator: undefined,
+          metadata: {
+            created_from: "storage_source",
+            source_type: "pdf",
+            content_hash: "hash_field_study",
+            block_count: 1
+          }
+        }
+      ]
+    });
+
+    const blockInspector = container.querySelector(".source-block-inspector");
+    expect(blockInspector).toBeTruthy();
+    fireEvent.click(within(blockInspector as HTMLElement).getByRole("button", { name: "Task" }));
+    fireEvent.click(within(await screen.findByRole("dialog", { name: "New task" })).getByRole("button", { name: "Save" }));
+    await waitFor(() => expect(createdPayloads).toHaveLength(2));
+
+    expect(createdPayloads[1]).toEqual({
+      text: "Check Field study notes p3",
+      provenance: { created_from: "source_block" },
+      context_links: [
+        {
+          target_type: "source_block",
+          target_id: block.id,
+          target_title: "Field study notes p3",
+          relation: "follow_up",
+          exact_quote: block.text,
+          locator: "p3",
+          metadata: {
+            created_from: "storage_block",
+            source_id: source.id,
+            source_title: source.title,
+            source_type: "pdf",
+            block_index: 2,
+            heading_path: "Findings / Method",
+            exact_quote_hash: expect.any(String)
+          }
+        }
+      ]
+    });
+  });
+
+  it("creates contextual tasks from Review items with review metadata", async () => {
+    const reviewItem = {
+      id: "rev_context_task",
+      item_type: "claim_status_change",
+      title: "Unsupported claim: Evidence is thin",
+      summary: "This claim needs a tighter citation.",
+      payload: {
+        claim_id: "clm_thin",
+        source_id: "src_thin",
+        source_block_id: "blk_thin",
+        current_status: "supported",
+        suggested_status: "weakly_supported",
+        model_id: "mock-local-llm"
+      },
+      status: "pending",
+      created_by_job_id: "job_review_payload",
+      created_at: "2026-06-21T00:00:00Z"
+    };
+    let createdPayload: any;
+    const request = vi.fn(async (route: string, payload?: any) => {
+      if (route === "health.get") return { ok: true, version: "0.1.0", db_ready: true, workspace_id: "wrk_default" };
+      if (route === "jobs.list" || route === "events.list") return [];
+      if (route === "stats.get") {
+        return {
+          sources: 1,
+          source_blocks: 1,
+          notes: 0,
+          claims: 1,
+          claims_without_evidence: 1,
+          contradicted_claims: 0,
+          pending_review_items: 1,
+          generated_notes_pending_review: 0,
+          installed_tools: 0,
+          failed_jobs: 0,
+          learning_items: 0
+        };
+      }
+      if (route === "review.list") return [reviewItem];
+      if (route === "capsules.list") return { items: [], total: 0 };
+      if (route === "todos.create") {
+        createdPayload = payload;
+        return {
+          id: "todo_review_payload",
+          title: payload.text,
+          status: "open",
+          priority: 3,
+          labels: [],
+          context_links: payload.context_links,
+          provenance: payload.provenance,
+          created_at: "2026-06-21T00:00:01Z",
+          updated_at: "2026-06-21T00:00:01Z"
+        };
+      }
+      return [];
+    });
+    window.vault = { request, selectFiles: vi.fn(async () => []) };
+    useUIStore.setState({ surface: "review", selectedReviewItemId: reviewItem.id });
+    renderApp();
+
+    expect((await screen.findAllByText("Unsupported claim: Evidence is thin")).length).toBeGreaterThan(0);
+    fireEvent.click(await screen.findByRole("button", { name: "Task" }));
+    fireEvent.click(within(await screen.findByRole("dialog", { name: "New task" })).getByRole("button", { name: "Save" }));
+
+    await waitFor(() => expect(createdPayload).toBeTruthy());
+    expect(createdPayload).toEqual({
+      text: "Review Unsupported claim: Evidence is thin",
+      provenance: { created_from: "review_item" },
+      context_links: [
+        {
+          target_type: "review_item",
+          target_id: reviewItem.id,
+          target_title: reviewItem.title,
+          relation: "follow_up",
+          exact_quote: undefined,
+          locator: undefined,
+          metadata: {
+            created_from: "review_item",
+            item_type: "claim_status_change",
+            status: "pending",
+            created_by_job_id: "job_review_payload",
+            model_id: "mock-local-llm",
+            source_id: "src_thin",
+            source_block_id: "blk_thin",
+            claim_id: "clm_thin"
+          }
+        }
+      ]
+    });
+  });
+
   it("creates a capsule from the Capsules surface", async () => {
     const capsule = {
       id: "cap_acoustics",
@@ -1132,6 +1342,102 @@ describe("App", () => {
     expect(within(conflictComparison).getByText("Resonance depends on room boundaries.")).toBeTruthy();
     expect(await screen.findByText("Create new")).toBeTruthy();
     expect(await screen.findByText("Approval creates a weakly supported local claim that still needs evidence review.")).toBeTruthy();
+  });
+
+  it("creates contextual tasks from Capsule detail with capsule metadata", async () => {
+    const capsule = {
+      id: "cap_task_payload",
+      name: "Focused Research Capsule",
+      slug: "focused-research-capsule",
+      description: null,
+      purpose: "Keep the current synthesis bounded.",
+      capsule_type: "project",
+      status: "active",
+      version: "0.3.0",
+      language: "en",
+      domains: ["research"],
+      tags: [],
+      epistemic_strictness: "strict",
+      default_source_policy: "reference_only",
+      updated_at: "2026-06-21T00:00:00Z",
+      counts: { sources: 2, notes: 1, claims: 3, concepts: 0, tools: 0 },
+      health: { score: 0.82, status: "healthy", warnings: [] },
+      items: [],
+      versions: [],
+      dependencies: [],
+      activity: []
+    };
+    let createdPayload: any;
+    const request = vi.fn(async (route: string, payload?: any) => {
+      if (route === "health.get") return { ok: true, version: "0.1.0", db_ready: true, workspace_id: "wrk_default" };
+      if (route === "jobs.list" || route === "events.list") return [];
+      if (route === "stats.get") {
+        return {
+          sources: 2,
+          source_blocks: 4,
+          notes: 1,
+          claims: 3,
+          claims_without_evidence: 0,
+          contradicted_claims: 0,
+          pending_review_items: 0,
+          generated_notes_pending_review: 0,
+          installed_tools: 0,
+          failed_jobs: 0,
+          learning_items: 0
+        };
+      }
+      if (route === "capsules.list") return { items: [capsule], total: 1 };
+      if (route === "capsules.get") return capsule;
+      if (route === "capsules.imports") return { items: [], total: 0 };
+      if (route === "notes.list" || route === "sources.list" || route === "claims.list" || route === "graph.nodes" || route === "learning.items" || route === "tools.list") return [];
+      if (route === "todos.create") {
+        createdPayload = payload;
+        return {
+          id: "todo_capsule_payload",
+          title: payload.text,
+          status: "open",
+          priority: 3,
+          labels: [],
+          context_links: payload.context_links,
+          provenance: payload.provenance,
+          created_at: "2026-06-21T00:00:01Z",
+          updated_at: "2026-06-21T00:00:01Z"
+        };
+      }
+      return [];
+    });
+    window.vault = { request, selectFiles: vi.fn(async () => []) };
+    useUIStore.setState({ surface: "capsules", selectedCapsuleId: capsule.id });
+    renderApp();
+
+    expect(await screen.findByRole("heading", { name: "Focused Research Capsule" })).toBeTruthy();
+    fireEvent.click(await screen.findByRole("button", { name: "More capsule actions" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Create task" }));
+    fireEvent.click(within(await screen.findByRole("dialog", { name: "New task" })).getByRole("button", { name: "Save" }));
+
+    await waitFor(() => expect(createdPayload).toBeTruthy());
+    expect(createdPayload).toEqual({
+      text: "Follow up: Focused Research Capsule",
+      provenance: { created_from: "capsule" },
+      context_links: [
+        {
+          target_type: "capsule",
+          target_id: capsule.id,
+          target_title: capsule.name,
+          relation: "follow_up",
+          exact_quote: undefined,
+          locator: undefined,
+          metadata: {
+            created_from: "capsule",
+            capsule_type: "project",
+            version: "0.3.0",
+            health_status: "healthy",
+            health_score: 0.82,
+            counts: { sources: 2, notes: 1, claims: 3, concepts: 0, tools: 0 }
+          }
+        }
+      ]
+    });
   });
 
   it("shows invalid capsule import diagnostics without review handoff", async () => {
@@ -3692,6 +3998,106 @@ describe("App", () => {
       })
     );
     expect((await screen.findAllByText("Review is clear.")).length).toBeGreaterThan(0);
+  });
+
+  it("creates contextual tasks from whole Assistant answers with answer metadata", async () => {
+    let createdPayload: any;
+    const request = vi.fn(async (route: string, payload?: any) => {
+      if (route === "health.get") return { ok: true, version: "0.1.0", db_ready: true, workspace_id: "wrk_default" };
+      if (route === "jobs.list" || route === "events.list") return [];
+      if (route === "stats.get") {
+        return {
+          sources: 1,
+          source_blocks: 1,
+          notes: 0,
+          claims: 0,
+          claims_without_evidence: 0,
+          contradicted_claims: 0,
+          pending_review_items: 1,
+          generated_notes_pending_review: 0,
+          installed_tools: 0,
+          failed_jobs: 0,
+          learning_items: 0
+        };
+      }
+      if (route === "capsules.list") return { items: [], total: 0 };
+      if (route === "ai.capabilities" || route === "ai.providers") return [];
+      if (route === "assistant.ask") {
+        expect(payload).toEqual(
+          expect.objectContaining({
+            question: "What should I verify next?",
+            answer_style: "concise_research_memo",
+            require_citations: true
+          })
+        );
+        return {
+          ai_run_id: "run_answer_payload",
+          answer_markdown: "Verify the claim against primary Storage before using it.",
+          evidence_quality: "missing",
+          provider: "mock_llm",
+          model_id: "mock-local-llm",
+          capability: "grounded_answer",
+          sent_off_device: false,
+          review_item_id: "rev_answer_payload",
+          citations: [],
+          uncertainties: ["No approved evidence matched the question."]
+        };
+      }
+      if (route === "todos.create") {
+        createdPayload = payload;
+        return {
+          id: "todo_answer_payload",
+          title: payload.text,
+          status: "open",
+          priority: 3,
+          labels: [],
+          context_links: payload.context_links,
+          provenance: payload.provenance,
+          created_at: "2026-06-21T00:00:01Z",
+          updated_at: "2026-06-21T00:00:01Z"
+        };
+      }
+      return [];
+    });
+    window.vault = { request, selectFiles: vi.fn(async () => []) };
+    useUIStore.setState({ surface: "assistant" });
+    renderApp();
+
+    fireEvent.change(await screen.findByLabelText("Assistant question"), {
+      target: { value: "What should I verify next?" }
+    });
+    fireEvent.click(await screen.findByRole("button", { name: /^ask$/i }));
+    expect(await screen.findByText("Verify the claim against primary Storage before using it.")).toBeTruthy();
+    fireEvent.click(await screen.findByRole("button", { name: "Task" }));
+    fireEvent.click(within(await screen.findByRole("dialog", { name: "New task" })).getByRole("button", { name: "Save" }));
+
+    await waitFor(() => expect(createdPayload).toBeTruthy());
+    expect(createdPayload).toEqual({
+      text: "Follow up on Assistant answer: What should I verify next?",
+      provenance: { created_from: "assistant_answer" },
+      context_links: [
+        {
+          target_type: "assistant_answer",
+          target_id: "run_answer_payload",
+          target_title: "What should I verify next?",
+          relation: "follow_up_answer",
+          exact_quote: undefined,
+          locator: undefined,
+          metadata: {
+            created_from: "assistant_answer",
+            question: "What should I verify next?",
+            evidence_quality: "missing",
+            provider: "mock_llm",
+            model_id: "mock-local-llm",
+            capability: "grounded_answer",
+            review_item_id: "rev_answer_payload",
+            citation_count: 0,
+            sent_off_device: false,
+            answer_hash: expect.any(String)
+          }
+        }
+      ]
+    });
   });
 
   it("filters graph claims and opens claim evidence in Storage", async () => {

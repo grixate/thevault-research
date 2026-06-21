@@ -5944,7 +5944,17 @@ async function copyBlock(block: SourceBlock) {
                   Open note
                 </Button>
               )}
-              <TaskCreateButton targetType="source" targetId={selected.id} targetTitle={selected.title} />
+              <TaskCreateButton
+                targetType="source"
+                targetId={selected.id}
+                targetTitle={selected.title}
+                metadata={{
+                  created_from: "storage_source",
+                  source_type: selected.type,
+                  content_hash: selected.content_hash,
+                  block_count: blockCount
+                }}
+              />
               <CapsuleAttachButton targetType="source" targetId={selected.id} targetTitle={selected.title} defaultRole="primary_source" showExportPolicy />
               <Button icon={<Sparkles size={16} />} disabled={!selected} onClick={() => extract.mutate()}>
                 Find claims
@@ -6050,6 +6060,15 @@ async function copyBlock(block: SourceBlock) {
                         targetTitle={`${selected.title} ${sourceBlockLocator(selectedBlock)}`}
                         exactQuote={selectedBlock.text}
                         locator={sourceBlockLocator(selectedBlock)}
+                        metadata={{
+                          created_from: "storage_block",
+                          source_id: selected.id,
+                          source_title: selected.title,
+                          source_type: selected.type,
+                          block_index: selectedBlock.block_index,
+                          heading_path: selectedBlock.heading_path,
+                          exact_quote_hash: stableTextHash(selectedBlock.text)
+                        }}
                       />
                       <CapsuleAttachButton
                         targetType="source_block"
@@ -6864,7 +6883,21 @@ function ReviewView() {
                         Open evidence
                       </Button>
                     )}
-                    <TaskCreateButton targetType="review_item" targetId={item.id} targetTitle={item.title} />
+                    <TaskCreateButton
+                      targetType="review_item"
+                      targetId={item.id}
+                      targetTitle={item.title}
+                      metadata={{
+                        created_from: "review_item",
+                        item_type: item.item_type,
+                        status: item.status,
+                        created_by_job_id: item.created_by_job_id,
+                        model_id: item.payload?.model_id,
+                        source_id: target.sourceId,
+                        source_block_id: target.sourceBlockId,
+                        claim_id: target.claimId
+                      }}
+                    />
                     {item.status === "pending" && (
                       <>
                         <Button icon={<Check size={16} />} variant="primary" disabled={approve.isPending || reject.isPending} onClick={() => approve.mutate(item)}>
@@ -6965,6 +6998,10 @@ type TaskCreateButtonProps = {
   buttonVariant?: "primary" | "secondary" | "quiet" | "danger";
 };
 
+function compactTaskMetadata(metadata?: Record<string, unknown>): Record<string, unknown> {
+  return Object.fromEntries(Object.entries(metadata ?? {}).filter(([, value]) => value !== undefined && value !== ""));
+}
+
 function TaskCreateButton({
   targetType,
   targetId,
@@ -6999,7 +7036,7 @@ function TaskCreateButton({
             relation,
             exact_quote: exactQuote || undefined,
             locator: locator || undefined,
-            metadata: metadata ?? {}
+            metadata: compactTaskMetadata(metadata)
           }
         ]
       }),
@@ -7959,7 +7996,21 @@ function CapsuleDetail({ capsule, onOpenTarget }: { capsule: Capsule; onOpenTarg
                     >
                       Fork
                     </Button>
-                    <TaskCreateButton targetType="capsule" targetId={capsule.id} targetTitle={capsule.name} buttonLabel="Create task" buttonVariant="quiet" />
+                    <TaskCreateButton
+                      targetType="capsule"
+                      targetId={capsule.id}
+                      targetTitle={capsule.name}
+                      metadata={{
+                        created_from: "capsule",
+                        capsule_type: capsule.capsule_type,
+                        version: capsule.version,
+                        health_status: capsule.health?.status,
+                        health_score: capsule.health?.score,
+                        counts: capsule.counts
+                      }}
+                      buttonLabel="Create task"
+                      buttonVariant="quiet"
+                    />
                   </div>
                 )}
               </div>
@@ -8828,6 +8879,8 @@ function AssistantView() {
                         targetId={String(answer.ai_run_id)}
                         targetTitle={question.trim() || "Assistant answer"}
                         defaultTitle={`Follow up on ${assistantAnswerNoteTitle(question.trim() || "Assistant answer")}`}
+                        relation="follow_up_answer"
+                        metadata={assistantAnswerTaskMetadata(answer, question.trim())}
                       />
                     )}
                     {answer?.answer_markdown && (
@@ -9127,6 +9180,25 @@ function assistantAnswerNoteContent(questionText: string, answer: any, mode: Ass
     editor_engine: "tiptap",
     editor_doc: plainTextToTiptapDoc(markdown)
   };
+}
+
+function assistantAnswerTaskMetadata(answer: any, questionText: string): Record<string, unknown> {
+  const markdown = typeof answer?.answer_markdown === "string" ? answer.answer_markdown : "";
+  const citations = Array.isArray(answer?.citations) ? answer.citations : [];
+  return Object.fromEntries(
+    Object.entries({
+      created_from: "assistant_answer",
+      question: questionText || undefined,
+      evidence_quality: answer?.evidence_quality,
+      provider: answer?.provider,
+      model_id: answer?.model_id,
+      capability: answer?.capability,
+      review_item_id: answer?.review_item_id,
+      citation_count: citations.length,
+      sent_off_device: answer?.sent_off_device,
+      answer_hash: markdown ? stableTextHash(markdown) : undefined
+    }).filter(([, value]) => value !== undefined && value !== "")
+  );
 }
 
 function assistantCitationLines(citations: any[]): string[] {
