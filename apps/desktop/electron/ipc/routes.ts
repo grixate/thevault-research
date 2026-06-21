@@ -5,8 +5,12 @@ export type VaultRoute =
   | "todos.list"
   | "todos.create"
   | "todos.update"
+  | "todos.context.update"
+  | "todos.context.delete"
   | "todos.complete"
   | "todoLists.list"
+  | "todoLists.create"
+  | "todoLists.update"
   | "capsules.list"
   | "capsules.create"
   | "capsules.fork"
@@ -155,8 +159,12 @@ export const allowedRoutes: Record<VaultRoute, RouteSpec> = {
   },
   "todos.create": { method: "POST", path: () => "/todos", body: (p) => p ?? {} },
   "todos.update": { method: "PUT", path: (p) => `/todos/${p.todoId}`, body: (p) => p.data ?? {} },
+  "todos.context.update": { method: "PUT", path: (p) => `/todos/${p.todoId}/context-links/${p.linkId}`, body: (p) => p.data ?? {} },
+  "todos.context.delete": { method: "DELETE", path: (p) => `/todos/${p.todoId}/context-links/${p.linkId}` },
   "todos.complete": { method: "POST", path: (p) => `/todos/${p.todoId}/complete` },
   "todoLists.list": { method: "GET", path: () => "/todo-lists" },
+  "todoLists.create": { method: "POST", path: () => "/todo-lists", body: (p) => p ?? {} },
+  "todoLists.update": { method: "PUT", path: (p) => `/todo-lists/${p.listId}`, body: (p) => p.data ?? {} },
   "capsules.list": {
     method: "GET",
     path: (p) =>

@@ -7034,6 +7034,66 @@ function TaskCreateButton({
   );
 }
 
+function AssistantCitationTaskButton({ citation, answer, questionText }: { citation: any; answer: any; questionText: string }) {
+  const target = assistantCitationTaskTarget(citation);
+  if (!target) return null;
+  const label = citation?.marker ? `Create task from citation ${citation.marker}` : "Create task from citation";
+  return (
+    <TaskCreateButton
+      targetType={target.targetType}
+      targetId={target.targetId}
+      targetTitle={target.targetTitle}
+      defaultTitle={assistantCitationTaskTitle(citation)}
+      relation="follow_up_citation"
+      exactQuote={citation?.exact_quote || undefined}
+      locator={citation?.locator || undefined}
+      metadata={assistantCitationTaskMetadata(citation, answer, questionText)}
+      buttonLabel="Task"
+      buttonAriaLabel={label}
+      buttonTitle="Create task from citation"
+      buttonSize="icon"
+      buttonVariant="quiet"
+    />
+  );
+}
+
+function assistantCitationTaskTarget(citation: any): { targetType: TaskContextTargetType; targetId: string; targetTitle: string } | null {
+  const title = String(citation?.title || citation?.source_block_id || citation?.claim_id || citation?.source_id || "Citation");
+  if (citation?.claim_id) {
+    return { targetType: "claim", targetId: String(citation.claim_id), targetTitle: title };
+  }
+  if (citation?.source_block_id) {
+    return { targetType: "source_block", targetId: String(citation.source_block_id), targetTitle: title };
+  }
+  if (citation?.source_id) {
+    return { targetType: "source", targetId: String(citation.source_id), targetTitle: title };
+  }
+  return null;
+}
+
+function assistantCitationTaskTitle(citation: any): string {
+  const marker = citation?.marker ? `${citation.marker} ` : "";
+  const title = String(citation?.title || citation?.source_block_id || citation?.claim_id || "citation");
+  return `Check ${marker}${middleTruncate(title, 64)}`;
+}
+
+function assistantCitationTaskMetadata(citation: any, answer: any, questionText: string): Record<string, unknown> {
+  return Object.fromEntries(
+    Object.entries({
+      created_from: "assistant_citation",
+      ai_run_id: answer?.ai_run_id,
+      question: questionText || undefined,
+      marker: citation?.marker,
+      evidence_kind: citation?.evidence_kind,
+      source_id: citation?.source_id,
+      source_block_id: citation?.source_block_id,
+      claim_id: citation?.claim_id,
+      citation_title: citation?.title,
+      exact_quote_hash: citation?.exact_quote ? stableTextHash(String(citation.exact_quote)) : undefined
+    }).filter(([, value]) => value !== undefined && value !== "")
+  );
+}
+
 function taskDefaultTitle(targetType: TaskContextTargetType, targetTitle: string): string {
   const title = targetTitle.trim();
   if (targetType === "review_item") return `Review ${title}`;
@@ -8793,6 +8853,7 @@ function AssistantView() {
                             {citation.claim_id ? `claim ${citation.claim_id}` : citation.source_block_id}
                           </small>
                           <div className="assistant-citation-actions">
+                            <AssistantCitationTaskButton citation={citation} answer={answer} questionText={question.trim()} />
                             <Button icon={<Network size={14} />} variant="quiet" disabled={!citation.claim_id} onClick={() => openCitationClaim(citation)}>
                               Open claim
                             </Button>

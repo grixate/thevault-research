@@ -741,7 +741,10 @@ describe("App", () => {
           title: "Email Anna about quote mismatch",
           description: "",
           due_date: "2026-06-18",
-          priority: 2
+          priority: 2,
+          list_id: "tdl_paper",
+          labels: ["waiting"],
+          recurrence_rule: null
         }
       })
     );
@@ -5587,6 +5590,41 @@ describe("App", () => {
           ]
         };
       }
+      if (route === "todos.create") {
+        expect(payload.text).toMatch(/^Check \[1\] Typed Claim Source/);
+        expect(payload.provenance).toEqual({ created_from: "source_block" });
+        expect(payload.context_links).toEqual([
+          expect.objectContaining({
+            target_type: "source_block",
+            target_id: "blk_alpha",
+            target_title: longCitationTitle,
+            relation: "follow_up_citation",
+            exact_quote: longCitationQuote,
+            locator: "block 1",
+            metadata: expect.objectContaining({
+              created_from: "assistant_citation",
+              question: "How do typed claims help?",
+              marker: "[1]",
+              evidence_kind: "source_block",
+              source_id: "src_alpha",
+              source_block_id: "blk_alpha",
+              citation_title: longCitationTitle,
+              exact_quote_hash: "a4c47683"
+            })
+          })
+        ]);
+        return {
+          id: "todo_assistant_citation",
+          title: payload.text,
+          status: "open",
+          priority: 3,
+          list_id: "list_inbox",
+          labels: [],
+          context_links: payload.context_links,
+          created_at: "2026-06-21T00:00:00Z",
+          updated_at: "2026-06-21T00:00:00Z"
+        };
+      }
       return [];
     });
     window.vault = { request, selectFiles: vi.fn(async () => []) };
@@ -5611,6 +5649,18 @@ describe("App", () => {
     expect(await screen.findByTitle(longCitationTitle)).toBeTruthy();
     expect(await screen.findByTitle(longCitationQuote)).toBeTruthy();
     expect(await screen.findByText(longCitationQuote)).toBeTruthy();
+    fireEvent.click(await screen.findByRole("button", { name: /create task from citation \[1\]/i }));
+    const taskDialog = await screen.findByRole("dialog", { name: /new task/i });
+    fireEvent.click(within(taskDialog).getByRole("button", { name: /^save$/i }));
+    await waitFor(() =>
+      expect(request).toHaveBeenCalledWith(
+        "todos.create",
+        expect.objectContaining({
+          context_links: [expect.objectContaining({ relation: "follow_up_citation", target_id: "blk_alpha" })]
+        })
+      )
+    );
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: /new task/i })).toBeNull());
     expect(await screen.findByText(/no approved claim evidence matched/i)).toBeTruthy();
     fireEvent.click(await screen.findByRole("button", { name: /review follow-up/i }));
     expect((await screen.findAllByText("Assistant answer needs approved claim evidence")).length).toBeGreaterThan(0);

@@ -436,6 +436,15 @@ Latest selected-note task verification on 2026-06-21:
 - Desktop production build and diff whitespace check passed.
 - Playwright desktop smoke at 1440x950 selected note text, created a task, and verified the resulting context link carried quote, relation, locator, and selected-text metadata. Screenshot captured at `/tmp/vault-note-selection-task.png`.
 
+Latest Assistant citation task verification on 2026-06-21:
+
+- Individual Assistant citation cards now expose a compact icon-only task action rather than adding visible caption clutter.
+- Citation-created tasks target the most precise available object in order: approved claim, source block, then source.
+- The task context link preserves `follow_up_citation`, exact quote, locator, citation marker, evidence kind, source/block/claim ids, citation title, question text, and stable quote hash metadata.
+- The existing answer-level Task action remains unchanged for whole-answer follow-up.
+- Electron IPC route coverage now includes newer Tasks list and context-link management routes, so the desktop shell matches the browser fallback route map.
+- Full desktop test suite, desktop production build, and diff whitespace check passed.
+
 Latest focused verification on 2026-06-11 before the current claim-grammar slice:
 
 - Python core tests: 125 passed.
@@ -2836,14 +2845,14 @@ Current good state:
 - Global quick-task capture is live from `Cmd/Ctrl+Shift+T`, the native app menu, and the command palette, using the same minimal Spotlight-style panel as Quick note.
 - Contextual task creation now exists from current Note, selected Storage source/source block, Review item, Graph claim, Capsule detail, and Assistant answer.
 - Selecting text in a Note before using the Task action preserves the selected quote, locator, and hash metadata.
+- Individual Assistant citation tasks now preserve the cited quote, locator, marker, evidence kind, and source/block/claim metadata while keeping the citation row visually quiet.
 - Existing task context links can be edited or removed from the quiet task detail rail.
 - Workspace backup preserves todo lists, tasks, labels, label links, and task context links as readable JSONL records plus the full SQLite backup.
-- Focused backend and desktop tests cover quick add, parsed list/label/priority/due date, list filtering, context links, task list counts, list management, detail metadata editing, context-link editing/removal, recurrence completion, global quick-task capture, completion, stats, the desktop create/complete flow, and note-origin contextual task creation.
+- Focused backend and desktop tests cover quick add, parsed list/label/priority/due date, list filtering, context links, task list counts, list management, detail metadata editing, context-link editing/removal, recurrence completion, global quick-task capture, completion, stats, the desktop create/complete flow, note-origin contextual task creation, and Assistant citation task payloads.
 
 Remaining tasks:
 
 - Finish contextual task creation:
-  - individual Assistant citations,
   - Night Lab brief,
   - Learning item/tool result surfaces,
   - richer tests for Storage/Review/Capsule/Assistant task payloads.
