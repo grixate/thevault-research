@@ -830,6 +830,106 @@ describe("App", () => {
     );
   });
 
+  it("creates linked tasks from unchecked Markdown checkboxes in a note", async () => {
+    const note = {
+      id: "note_checkbox_tasks",
+      title: "Experiment checklist",
+      content: {
+        editor_doc: {
+          type: "doc",
+          content: [
+            { type: "paragraph", content: [{ type: "text", text: "- [ ] Verify the quoted method tomorrow @review" }] },
+            { type: "paragraph", content: [{ type: "text", text: "- [x] Already checked" }] },
+            { type: "paragraph", content: [{ type: "text", text: "- [ ] Email collaborator #Paper review" }] }
+          ]
+        }
+      },
+      content_markdown: "- [ ] Verify the quoted method tomorrow @review\n- [x] Already checked\n- [ ] Email collaborator #Paper review\n",
+      origin: "user_written",
+      status: "draft",
+      version: 1,
+      source_id: "src_note_checkbox",
+      updated_at: "2026-06-21T00:00:00Z"
+    };
+    const createdPayloads: any[] = [];
+    let updatedContent: any;
+    const request = vi.fn(async (route: string, payload?: any) => {
+      if (route === "health.get") return { ok: true, version: "0.1.0", db_ready: true, workspace_id: "wrk_default" };
+      if (route === "jobs.list") return [];
+      if (route === "notes.list") return [note];
+      if (route === "ai.capabilities") return [];
+      if (route === "ai.providers") return [];
+      if (route === "todos.create") {
+        createdPayloads.push(payload);
+        return {
+          id: `todo_checkbox_${createdPayloads.length}`,
+          title: payload.text,
+          description: "",
+          status: "open",
+          priority: 4,
+          labels: [],
+          context_links: payload.context_links,
+          source_kind: payload.source_kind,
+          source_ref: payload.source_ref,
+          provenance: payload.provenance,
+          created_at: `2026-06-21T00:00:0${createdPayloads.length}Z`,
+          updated_at: `2026-06-21T00:00:0${createdPayloads.length}Z`
+        };
+      }
+      if (route === "notes.update") {
+        updatedContent = payload.data.content_json;
+        return { ...note, ...payload.data, content: payload.data.content_json, version: 2 };
+      }
+      return [];
+    });
+    window.vault = { request, selectFiles: vi.fn(async () => []) };
+
+    renderApp();
+    fireEvent.click(await screen.findByRole("button", { name: "Notes" }));
+    await screen.findByDisplayValue("Experiment checklist");
+    await openNoteTools();
+    fireEvent.click(await screen.findByRole("button", { name: "Create 2 tasks" }));
+
+    await waitFor(() => expect(createdPayloads).toHaveLength(2));
+    expect(createdPayloads[0]).toEqual(
+      expect.objectContaining({
+        text: "Verify the quoted method tomorrow @review",
+        source_kind: "note_checkbox",
+        source_ref: expect.objectContaining({ note_id: "note_checkbox_tasks", line_number: 1, checkbox_hash: expect.any(String) }),
+        provenance: expect.objectContaining({ created_from: "note_checkbox", note_id: "note_checkbox_tasks", checkbox_hash: expect.any(String) }),
+        context_links: [
+          expect.objectContaining({
+            target_type: "note",
+            target_id: "note_checkbox_tasks",
+            target_title: "Experiment checklist",
+            relation: "follow_up_checkbox",
+            exact_quote: "- [ ] Verify the quoted method tomorrow @review",
+            locator: "line 1",
+            metadata: expect.objectContaining({
+              created_from: "note_checkbox",
+              checkbox_hash: expect.any(String),
+              checkbox_line: 1,
+              checkbox_index: 1
+            })
+          })
+        ]
+      })
+    );
+    expect(createdPayloads[1]).toEqual(
+      expect.objectContaining({
+        text: "Email collaborator #Paper review",
+        source_kind: "note_checkbox",
+        source_ref: expect.objectContaining({ note_id: "note_checkbox_tasks", line_number: 3 }),
+        context_links: [expect.objectContaining({ relation: "follow_up_checkbox", exact_quote: "- [ ] Email collaborator #Paper review", locator: "line 3" })]
+      })
+    );
+    expect(createdPayloads.some((payload) => payload.text === "Already checked")).toBe(false);
+    await waitFor(() => expect(request).toHaveBeenCalledWith("notes.update", expect.objectContaining({ noteId: "note_checkbox_tasks" })));
+    expect(updatedContent.task_checkbox_links).toHaveLength(2);
+    expect(updatedContent.task_checkbox_links[0]).toEqual(expect.objectContaining({ todo_id: "todo_checkbox_1", title: "Verify the quoted method tomorrow @review", line_number: 1 }));
+    await waitFor(() => expect(screen.queryByRole("button", { name: "Create 2 tasks" })).toBeNull());
+  });
+
   it("creates contextual tasks from Storage sources and exact source blocks", async () => {
     const source = {
       id: "src_task_payload",

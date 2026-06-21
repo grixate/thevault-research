@@ -471,6 +471,14 @@ Latest contextual task payload verification on 2026-06-21:
 - Whole Assistant-answer task creation now uses `follow_up_answer` and preserves question, evidence quality, provider/model/capability, review follow-up id, citation count, locality, and answer hash metadata.
 - Focused desktop contextual task tests, full desktop tests, and diff whitespace check passed.
 
+Latest Markdown checkbox task verification on 2026-06-21:
+
+- Notes now detect unchecked Markdown checkboxes in the existing Note tools area and show a single quiet `Create N tasks` action only when there is work to extract.
+- Creating checkbox tasks ignores checked items and already-linked checkbox hashes, so repeated syncs do not silently duplicate tasks.
+- Checkbox-created tasks use `source_kind: note_checkbox`, preserve note source refs, and attach a `follow_up_checkbox` note context link with exact line text, line locator, checkbox hash, line number, and occurrence index metadata.
+- The note content records `task_checkbox_links` after creation so the note remains the source of the checkbox-to-task mapping without adding visible clutter.
+- Focused desktop checkbox extraction test, full desktop tests, and diff whitespace check passed.
+
 Latest focused verification on 2026-06-11 before the current claim-grammar slice:
 
 - Python core tests: 125 passed.
@@ -2874,15 +2882,15 @@ Current good state:
 - Individual Assistant citation tasks now preserve the cited quote, locator, marker, evidence kind, and source/block/claim metadata while keeping the citation row visually quiet.
 - Night Lab brief, selected Practice card, and selected Local helper result task origins now preserve source-specific metadata without adding explanatory panels.
 - Storage source/block, Review item, Capsule detail, and whole Assistant answer task origins now preserve richer audit metadata without adding visible UI clutter.
+- Unchecked Markdown checkboxes in Notes can be extracted into linked native tasks while checked and already-linked boxes are skipped.
 - AI-suggested tasks are review-gated through `suggested_todo` items and only become native tasks after explicit approval.
 - Existing task context links can be edited or removed from the quiet task detail rail.
 - Workspace backup preserves todo lists, tasks, labels, label links, and task context links as readable JSONL records plus the full SQLite backup.
-- Focused backend and desktop tests cover quick add, parsed list/label/priority/due date, list filtering, context links, task list counts, list management, detail metadata editing, context-link editing/removal, recurrence completion, global quick-task capture, completion, stats, the desktop create/complete flow, note-origin contextual task creation, Storage source/block tasks, Review item tasks, Capsule detail tasks, Assistant answer/citation task payloads, Night Lab brief tasks, Practice card tasks, helper-result tasks, and review-gated AI task suggestions.
+- Focused backend and desktop tests cover quick add, parsed list/label/priority/due date, list filtering, context links, task list counts, list management, detail metadata editing, context-link editing/removal, recurrence completion, global quick-task capture, completion, stats, the desktop create/complete flow, note-origin contextual task creation, Markdown checkbox task extraction, Storage source/block tasks, Review item tasks, Capsule detail tasks, Assistant answer/citation task payloads, Night Lab brief tasks, Practice card tasks, helper-result tasks, and review-gated AI task suggestions.
 
 Remaining tasks:
 
 - Add subtasks only after detail drawer and list management are stable.
-- Integrate Markdown checkbox extraction/linking from Notes after the editor UX is stable.
 - Add standalone task import/export only if it proves useful beyond full workspace backup.
 - Add mobile layout repair later with the broader mobile pass; current mobile remains explicitly not clean.
 
@@ -2900,7 +2908,7 @@ Acceptance evidence:
 
 1. If continuing UX, keep the Notion/Obsidian/Apple Notes reset active: inspect Notes, Storage, Quick Note, Review, Assistant, Capsules, and Settings screenshots, then simplify the most overloaded flow first.
 2. If continuing Capsules, polish the alpha surface and attach dialog first, then continue from import review items into conflict-aware merge decisions or package contract docs.
-3. If continuing Tasks, continue Markdown checkbox extraction/linking before considering subtasks or standalone task import/export.
+3. If continuing Tasks, consider subtasks next, then standalone task import/export only if it proves useful beyond full workspace backup.
 4. If continuing local AI production, pick the first real approved runtime/model candidate set and run the release-packet tooling.
 5. If stabilizing before bigger registry edits, stage or commit the current v1 state.
 6. After any slice:

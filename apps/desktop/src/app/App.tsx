@@ -1498,6 +1498,56 @@ function noteSelectedTaskContext(editor: Editor | null): { defaultTitle: string;
   };
 }
 
+type NoteCheckboxTaskCandidate = {
+  title: string;
+  exactQuote: string;
+  locator: string;
+  lineNumber: number;
+  checkboxIndex: number;
+  checkboxHash: string;
+};
+
+function noteCheckboxTaskCandidates(markdown: string, content?: Record<string, unknown>): NoteCheckboxTaskCandidate[] {
+  const linked = new Set(noteCheckboxTaskLinks(content).map((link) => String(link.checkbox_hash ?? "")));
+  const seen = new Map<string, number>();
+  return markdown
+    .split(/\r?\n/)
+    .map((line, lineIndex) => {
+      const match = line.match(/^\s*(?:[-*+]|\d+[.)])\s+\[([ xX])\]\s+(.+?)\s*$/);
+      if (!match || match[1].toLowerCase() === "x") return null;
+      const title = match[2].replace(/\s+/g, " ").trim();
+      if (!title) return null;
+      const normalized = title.toLowerCase();
+      const checkboxIndex = (seen.get(normalized) ?? 0) + 1;
+      seen.set(normalized, checkboxIndex);
+      const checkboxHash = stableTextHash(`${normalized}|${checkboxIndex}`);
+      if (linked.has(checkboxHash)) return null;
+      return {
+        title,
+        exactQuote: line.trim(),
+        locator: `line ${lineIndex + 1}`,
+        lineNumber: lineIndex + 1,
+        checkboxIndex,
+        checkboxHash
+      };
+    })
+    .filter((item): item is NoteCheckboxTaskCandidate => Boolean(item));
+}
+
+function noteCheckboxTaskLinks(content?: Record<string, unknown>): Array<Record<string, unknown>> {
+  const links = content?.task_checkbox_links;
+  return Array.isArray(links) ? links.filter((link): link is Record<string, unknown> => Boolean(link && typeof link === "object")) : [];
+}
+
+function noteContentWithCheckboxTaskLinks(content: Record<string, unknown>, links: Array<Record<string, unknown>>): Record<string, unknown> {
+  const base: Record<string, unknown> = isTiptapDoc(content) ? { editor_doc: content } : Object.assign({}, content);
+  const current = noteCheckboxTaskLinks(base);
+  const byHash = new Map<string, Record<string, unknown>>();
+  for (const link of current) byHash.set(String(link.checkbox_hash ?? ""), link);
+  for (const link of links) byHash.set(String(link.checkbox_hash ?? ""), link);
+  return { ...base, task_checkbox_links: Array.from(byHash.values()) };
+}
+
 function stableTextHash(value: string): string {
   let hash = 0x811c9dc5;
   for (let index = 0; index < value.length; index += 1) {
@@ -4953,6 +5003,7 @@ function NoteEditor({ note }: { note?: Note }) {
   const [recordingError, setRecordingError] = useState("");
   const [versionsOpen, setVersionsOpen] = useState(false);
   const [selectedVersionNumber, setSelectedVersionNumber] = useState<number | null>(null);
+  const [syncedCheckboxHashes, setSyncedCheckboxHashes] = useState<string[]>([]);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const recordingStreamRef = useRef<MediaStream | null>(null);
   const recordingChunksRef = useRef<BlobPart[]>([]);
@@ -5010,6 +5061,7 @@ function NoteEditor({ note }: { note?: Note }) {
     setTitle(note?.title ?? "");
     setSaveError("");
     setSaveState("saved");
+    setSyncedCheckboxHashes([]);
     lastSavedSnapshotRef.current = note ? noteSnapshotFromPersisted(note) : "";
     if (editor && note) {
       editor.commands.setContent(editorDocFromNote(note), false);
@@ -5133,6 +5185,80 @@ function NoteEditor({ note }: { note?: Note }) {
       const filename = noteExportFilename({ id: note.id, title });
       const saved = await saveTextFile(filename, noteMarkdownExport(note, markdown, title), "text/markdown");
       return { filename, saved };
+    }
+  });
+  const createCheckboxTasks = useMutation({
+    mutationFn: async () => {
+      if (!editor || !note) return [];
+      const checkboxText = editor.getText({ blockSeparator: "\n" }) || note.content_markdown;
+      const markdown = editorMarkdownForSave(editor);
+      const editorDoc = editor.getJSON();
+      const contentJson = noteContentForSave(note, editorDoc, markdown !== note.content_markdown);
+      const candidateContent = noteContentWithCheckboxTaskLinks(contentJson, syncedCheckboxHashes.map((checkboxHash) => ({ checkbox_hash: checkboxHash })));
+      const candidates = noteCheckboxTaskCandidates(checkboxText, candidateContent);
+      const createdLinks: Array<Record<string, unknown>> = [];
+      for (const candidate of candidates) {
+        const todo = await vaultRequest<TodoItem>("todos.create", {
+          text: candidate.title,
+          source_kind: "note_checkbox",
+          source_ref: {
+            note_id: note.id,
+            checkbox_hash: candidate.checkboxHash,
+            line_number: candidate.lineNumber
+          },
+          provenance: {
+            created_from: "note_checkbox",
+            note_id: note.id,
+            checkbox_hash: candidate.checkboxHash
+          },
+          context_links: [
+            {
+              target_type: "note",
+              target_id: note.id,
+              target_title: title || note.title,
+              relation: "follow_up_checkbox",
+              exact_quote: candidate.exactQuote,
+              locator: candidate.locator,
+              metadata: {
+                created_from: "note_checkbox",
+                checkbox_hash: candidate.checkboxHash,
+                checkbox_line: candidate.lineNumber,
+                checkbox_index: candidate.checkboxIndex
+              }
+            }
+          ]
+        });
+        createdLinks.push({
+          checkbox_hash: candidate.checkboxHash,
+          todo_id: todo.id,
+          title: candidate.title,
+          line_number: candidate.lineNumber,
+          created_at: todo.created_at
+        });
+      }
+      if (createdLinks.length === 0) return [];
+      const nextContentJson = noteContentWithCheckboxTaskLinks(contentJson, createdLinks);
+      await vaultRequest("notes.update", {
+        noteId: note.id,
+        data: {
+          title,
+          content_json: nextContentJson,
+          content_markdown: markdown
+        }
+      });
+      lastSavedSnapshotRef.current = stableSnapshot({ title, content_markdown: markdown, content_json: nextContentJson });
+      setSaveState("saved");
+      return createdLinks;
+    },
+    onSuccess: (createdLinks) => {
+      if (createdLinks.length > 0) {
+        setSyncedCheckboxHashes((current) => Array.from(new Set([...current, ...createdLinks.map((link) => String(link.checkbox_hash ?? ""))])));
+      }
+      queryClient.invalidateQueries({ queryKey: ["notes"] });
+      queryClient.invalidateQueries({ queryKey: ["todos"] });
+      queryClient.invalidateQueries({ queryKey: ["todo-lists"] });
+      queryClient.invalidateQueries({ queryKey: ["stats"] });
+      queryClient.invalidateQueries({ queryKey: ["events"] });
     }
   });
 
@@ -5358,6 +5484,8 @@ function NoteEditor({ note }: { note?: Note }) {
   const selectedVersion = versionRows.find((version) => version.version === selectedVersionNumber) ?? versionRows[0];
   const canRestoreSelectedVersion = Boolean(selectedVersion && selectedVersion.version !== note.version);
   const selectedTaskContext = noteSelectedTaskContext(editor);
+  const checkboxContent = noteContentWithCheckboxTaskLinks(note.content ?? {}, syncedCheckboxHashes.map((checkboxHash) => ({ checkbox_hash: checkboxHash })));
+  const checkboxTaskCandidates = noteCheckboxTaskCandidates(editor?.getText({ blockSeparator: "\n" }) || note.content_markdown, checkboxContent);
 
   return (
     <Panel className="editor-pane">
@@ -5414,8 +5542,14 @@ function NoteEditor({ note }: { note?: Note }) {
                   metadata={selectedTaskContext?.metadata}
                   buttonTitle={selectedTaskContext ? "Create task from selected text" : "Create task from this note"}
                 />
+                {checkboxTaskCandidates.length > 0 && (
+                  <Button icon={<Check size={16} />} variant="quiet" disabled={createCheckboxTasks.isPending} onClick={() => createCheckboxTasks.mutate()}>
+                    {createCheckboxTasks.isPending ? "Creating" : `Create ${checkboxTaskCandidates.length} task${checkboxTaskCandidates.length === 1 ? "" : "s"}`}
+                  </Button>
+                )}
                 <CapsuleAttachButton targetType="note" targetId={note.id} targetTitle={title || note.title} defaultRole="core" />
               </div>
+              {createCheckboxTasks.error && <small className="model-test-error">{createCheckboxTasks.error.message}</small>}
             </section>
             <section>
               <h4>Voice</h4>
