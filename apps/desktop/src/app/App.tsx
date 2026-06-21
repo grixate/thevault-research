@@ -4108,7 +4108,17 @@ function Dashboard() {
   const latestNightLabOutput = latestNightLabJob?.output ?? {};
   const taskResults = (latestNightLabOutput as any).task_results ?? {};
   const briefNoteId = String((nightLab.data as any)?.brief_note_id ?? latestBrief.data?.id ?? (latestNightLabOutput as any).brief_note_id ?? "");
+  const briefNoteTitle = latestBrief.data?.title ?? "Night Lab brief";
   const reviewCount = Number((nightLab.data as any)?.created_review_items ?? (latestNightLabOutput as any).created_review_items ?? 0);
+  const briefTaskMetadata = Object.fromEntries(
+    Object.entries({
+      created_from: "night_lab_brief",
+      lab_job_id: latestNightLabJob?.id,
+      review_count: reviewCount,
+      selected_tasks: selectedNightLabTasks,
+      finished_at: latestNightLabJob?.finished_at
+    }).filter(([, value]) => value !== undefined && value !== "")
+  );
   const recentEvents = events.data ?? [];
   return (
     <div className="surface dashboard-grid">
@@ -4141,6 +4151,19 @@ function Dashboard() {
             }}>
               Open brief
             </Button>
+            {briefNoteId && (
+              <TaskCreateButton
+                targetType="note"
+                targetId={briefNoteId}
+                targetTitle={briefNoteTitle}
+                defaultTitle={`Follow up on ${briefNoteTitle}`}
+                relation="follow_up_brief"
+                metadata={briefTaskMetadata}
+                buttonAriaLabel="Create task from Night Lab brief"
+                buttonTitle="Create task from Night Lab brief"
+                buttonSize="icon"
+              />
+            )}
             <Button icon={<Check size={15} />} variant="quiet" onClick={() => setSurface("review")}>
               Review proposals
             </Button>
@@ -9402,14 +9425,27 @@ function LearningView() {
           description="Practice one card at a time. Voice answers stay local."
           actions={
             selectedLearningItem ? (
-              <Button
-                icon={learningAnswerRecordingState === "recording" ? <Pause size={16} /> : <Mic size={16} />}
-                variant={learningAnswerRecordingState === "recording" ? "primary" : "quiet"}
-                disabled={learningAnswerRecordingState === "processing"}
-                onClick={() => (learningAnswerRecordingState === "recording" ? stopLearningAnswerRecording() : void startLearningAnswerRecording())}
-              >
-                {learningAnswerRecordingState === "recording" ? "Stop answer" : learningAnswerRecordingState === "processing" ? "Saving" : "Answer by voice"}
-              </Button>
+              <>
+                <TaskCreateButton
+                  targetType="learning_item"
+                  targetId={selectedLearningItem.id}
+                  targetTitle={selectedLearningItem.title}
+                  defaultTitle={`Follow up on ${selectedLearningItem.title}`}
+                  relation="follow_up_practice"
+                  metadata={learningItemTaskMetadata(selectedLearningItem)}
+                  buttonAriaLabel="Create task from practice card"
+                  buttonTitle="Create task from practice card"
+                  buttonSize="icon"
+                />
+                <Button
+                  icon={learningAnswerRecordingState === "recording" ? <Pause size={16} /> : <Mic size={16} />}
+                  variant={learningAnswerRecordingState === "recording" ? "primary" : "quiet"}
+                  disabled={learningAnswerRecordingState === "processing"}
+                  onClick={() => (learningAnswerRecordingState === "recording" ? stopLearningAnswerRecording() : void startLearningAnswerRecording())}
+                >
+                  {learningAnswerRecordingState === "recording" ? "Stop answer" : learningAnswerRecordingState === "processing" ? "Saving" : "Answer by voice"}
+                </Button>
+              </>
             ) : undefined
           }
         />
@@ -9486,6 +9522,22 @@ function learningItemSpeechText(item: LearningItem): string {
   const prompt = learningItemPrompt(item);
   const answer = learningItemAnswer(item);
   return [prompt && `Prompt: ${prompt}`, answer && `Answer: ${answer}`].filter(Boolean).join("\n\n");
+}
+
+function learningItemTaskMetadata(item: LearningItem): Record<string, unknown> {
+  const prompt = learningItemPrompt(item);
+  const answer = learningItemAnswer(item);
+  return Object.fromEntries(
+    Object.entries({
+      created_from: "learning_item",
+      learning_type: item.type,
+      status: item.status,
+      phase: learningItemPhaseLabel(item) || undefined,
+      score: learningItemScoreLabel(item) || undefined,
+      prompt_hash: prompt ? stableTextHash(prompt) : undefined,
+      answer_hash: answer ? stableTextHash(answer) : undefined
+    }).filter(([, value]) => value !== undefined && value !== "")
+  );
 }
 
 function ToolsView() {
@@ -9625,6 +9677,20 @@ function ToolsView() {
             <section className="tool-run-history">
               <div className="tool-run-history-header">
                 <h3>History</h3>
+                {selected && selectedRun && (
+                  <TaskCreateButton
+                    targetType="tool"
+                    targetId={selected.id}
+                    targetTitle={`${selected.name} result`}
+                    defaultTitle={`Follow up on ${selected.name} result`}
+                    relation="follow_up_tool_run"
+                    locator={`tool run ${selectedRun.id}`}
+                    metadata={toolRunTaskMetadata(selected, selectedRun)}
+                    buttonAriaLabel="Create task from helper result"
+                    buttonTitle="Create task from helper result"
+                    buttonSize="icon"
+                  />
+                )}
                 <Button icon={<Check size={15} />} variant="quiet" disabled={!toolRunReviewCount(selectedRun)} onClick={() => setSurface("review")}>
                   Review output
                 </Button>
@@ -9702,6 +9768,23 @@ function toolRunFindingLabel(run?: ToolRunRecord): string {
 
 function toolRunReviewLabel(run?: ToolRunRecord): string {
   return countLabel(toolRunReviewCount(run), "review item");
+}
+
+function toolRunTaskMetadata(tool: Tool, run: ToolRunRecord): Record<string, unknown> {
+  return Object.fromEntries(
+    Object.entries({
+      created_from: "tool_run",
+      tool_id: tool.id,
+      tool_name: tool.name,
+      run_id: run.id,
+      status: run.status,
+      finding_count: toolRunFindingCount(run),
+      review_count: toolRunReviewCount(run),
+      started_at: run.started_at,
+      finished_at: run.finished_at,
+      output_hash: run.output ? stableTextHash(stableSnapshot(run.output)) : undefined
+    }).filter(([, value]) => value !== undefined && value !== "")
+  );
 }
 
 function toolRunStatusLabel(status?: string): string {

@@ -445,6 +445,15 @@ Latest Assistant citation task verification on 2026-06-21:
 - Electron IPC route coverage now includes newer Tasks list and context-link management routes, so the desktop shell matches the browser fallback route map.
 - Full desktop test suite, desktop production build, and diff whitespace check passed.
 
+Latest contextual task-origin verification on 2026-06-21:
+
+- Night Lab briefs now expose a compact icon-only task action after a brief exists, linked to the generated brief note rather than duplicating the brief text.
+- Night Lab brief task links preserve `follow_up_brief`, the brief note id/title, lab job id, review count, selected Night Lab tasks, and finish timestamp metadata.
+- Practice cards now expose task creation from the selected card header, linked as `learning_item` with `follow_up_practice` and hashed prompt/answer metadata.
+- Local helper results now expose task creation from the selected result, linked to the helper tool with a run locator and result metadata including run id/status, finding count, review count, and output hash.
+- Focused desktop tests cover Night Lab brief, Practice card, and helper result task payloads.
+- Full desktop test suite, desktop production build, and diff whitespace check passed.
+
 Latest focused verification on 2026-06-11 before the current claim-grammar slice:
 
 - Python core tests: 125 passed.
@@ -2846,16 +2855,14 @@ Current good state:
 - Contextual task creation now exists from current Note, selected Storage source/source block, Review item, Graph claim, Capsule detail, and Assistant answer.
 - Selecting text in a Note before using the Task action preserves the selected quote, locator, and hash metadata.
 - Individual Assistant citation tasks now preserve the cited quote, locator, marker, evidence kind, and source/block/claim metadata while keeping the citation row visually quiet.
+- Night Lab brief, selected Practice card, and selected Local helper result task origins now preserve source-specific metadata without adding explanatory panels.
 - Existing task context links can be edited or removed from the quiet task detail rail.
 - Workspace backup preserves todo lists, tasks, labels, label links, and task context links as readable JSONL records plus the full SQLite backup.
-- Focused backend and desktop tests cover quick add, parsed list/label/priority/due date, list filtering, context links, task list counts, list management, detail metadata editing, context-link editing/removal, recurrence completion, global quick-task capture, completion, stats, the desktop create/complete flow, note-origin contextual task creation, and Assistant citation task payloads.
+- Focused backend and desktop tests cover quick add, parsed list/label/priority/due date, list filtering, context links, task list counts, list management, detail metadata editing, context-link editing/removal, recurrence completion, global quick-task capture, completion, stats, the desktop create/complete flow, note-origin contextual task creation, Assistant citation task payloads, Night Lab brief tasks, Practice card tasks, and helper-result tasks.
 
 Remaining tasks:
 
-- Finish contextual task creation:
-  - Night Lab brief,
-  - Learning item/tool result surfaces,
-  - richer tests for Storage/Review/Capsule/Assistant task payloads.
+- Harden contextual task creation with richer payload tests for Storage, Review, Capsule, and Assistant answer entry points.
 - Add subtasks only after detail drawer and list management are stable.
 - Integrate AI-suggested todos as reviewable suggestions, not silent canonical tasks.
 - Integrate Markdown checkbox extraction/linking from Notes after the editor UX is stable.

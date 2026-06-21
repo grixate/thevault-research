@@ -1690,6 +1690,37 @@ describe("App", () => {
         nightLabRun = { ...payload, brief_note_id: "note_morning", created_review_items: 2 };
         return { job_id: "job_night", status: "completed", brief_note_id: "note_morning", created_review_items: 2, tasks: payload.tasks };
       }
+      if (route === "todos.create") {
+        expect(payload.text).toBe("Follow up on Morning Lab Brief");
+        expect(payload.provenance).toEqual({ created_from: "note" });
+        expect(payload.context_links).toEqual([
+          expect.objectContaining({
+            target_type: "note",
+            target_id: "note_morning",
+            target_title: "Morning Lab Brief",
+            relation: "follow_up_brief",
+            metadata: expect.objectContaining({
+              created_from: "night_lab_brief",
+              lab_job_id: "job_night",
+              review_count: 2,
+              finished_at: "2026-06-05T00:00:02Z"
+            })
+          })
+        ]);
+        expect(payload.context_links[0].metadata.selected_tasks).toEqual(expect.arrayContaining(["extract_new_objects", "find_unsupported_claims"]));
+        expect(payload.context_links[0].metadata.selected_tasks).not.toContain("suggest_tools");
+        return {
+          id: "todo_night_brief",
+          title: payload.text,
+          status: "open",
+          priority: 3,
+          list_id: "list_inbox",
+          labels: [],
+          context_links: payload.context_links,
+          created_at: "2026-06-05T00:00:03Z",
+          updated_at: "2026-06-05T00:00:03Z"
+        };
+      }
       if (route === "review.list") return [reviewItem];
       if (route === "notes.list") return [briefNote];
       if (route === "sources.list") return [];
@@ -1721,6 +1752,18 @@ describe("App", () => {
     expect(await screen.findByText("Recent activity")).toBeTruthy();
     expect(await screen.findByText("Night Lab Completed")).toBeTruthy();
     expect(screen.queryByText(/recent mutations/i)).toBeNull();
+    fireEvent.click(await screen.findByRole("button", { name: /create task from night lab brief/i }));
+    const taskDialog = await screen.findByRole("dialog", { name: /new task/i });
+    fireEvent.click(within(taskDialog).getByRole("button", { name: /^save$/i }));
+    await waitFor(() =>
+      expect(request).toHaveBeenCalledWith(
+        "todos.create",
+        expect.objectContaining({
+          context_links: [expect.objectContaining({ target_type: "note", target_id: "note_morning", relation: "follow_up_brief" })]
+        })
+      )
+    );
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: /new task/i })).toBeNull());
 
     fireEvent.click(await screen.findByRole("button", { name: /review proposals/i }));
     expect((await screen.findAllByText("Unsupported claim: Claim needs evidence")).length).toBeGreaterThan(0);
@@ -1841,6 +1884,39 @@ describe("App", () => {
         };
         return { run_id: "run_tool", status: "completed", output: lastRun.output, stdout: "checked 1 claim", stderr: "" };
       }
+      if (route === "todos.create") {
+        expect(payload.text).toBe("Follow up on Claim Citation Checker result");
+        expect(payload.provenance).toEqual({ created_from: "tool" });
+        expect(payload.context_links).toEqual([
+          expect.objectContaining({
+            target_type: "tool",
+            target_id: "tool_claim_citation_checker",
+            target_title: "Claim Citation Checker result",
+            relation: "follow_up_tool_run",
+            locator: "tool run run_tool",
+            metadata: expect.objectContaining({
+              created_from: "tool_run",
+              tool_id: "tool_claim_citation_checker",
+              tool_name: "Claim Citation Checker",
+              run_id: "run_tool",
+              status: "completed",
+              finding_count: 1,
+              review_count: 1,
+              output_hash: expect.any(String)
+            })
+          })
+        ]);
+        return {
+          id: "todo_tool_run",
+          title: payload.text,
+          status: "open",
+          priority: 3,
+          labels: [],
+          context_links: payload.context_links,
+          created_at: "2026-06-05T00:00:02Z",
+          updated_at: "2026-06-05T00:00:02Z"
+        };
+      }
       if (route === "review.list") return [reviewItem];
       return [];
     });
@@ -1874,6 +1950,18 @@ describe("App", () => {
     expect(await screen.findByText("Result JSON")).toBeTruthy();
     expect(await screen.findByText("checked 1 claim")).toBeTruthy();
     expect(await screen.findByText(/missing_evidence/)).toBeTruthy();
+    fireEvent.click(await screen.findByRole("button", { name: /create task from helper result/i }));
+    const taskDialog = await screen.findByRole("dialog", { name: /new task/i });
+    fireEvent.click(within(taskDialog).getByRole("button", { name: /^save$/i }));
+    await waitFor(() =>
+      expect(request).toHaveBeenCalledWith(
+        "todos.create",
+        expect.objectContaining({
+          context_links: [expect.objectContaining({ target_type: "tool", target_id: "tool_claim_citation_checker", relation: "follow_up_tool_run" })]
+        })
+      )
+    );
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: /new task/i })).toBeNull());
     fireEvent.click(await screen.findByRole("button", { name: /review output/i }));
     expect((await screen.findAllByText("Claim needs evidence: Tool finding")).length).toBeGreaterThan(0);
   });
@@ -3703,6 +3791,35 @@ describe("App", () => {
           size_bytes: 4
         };
       }
+      if (route === "todos.create") {
+        expect(payload.text).toBe("Follow up on Claim provenance");
+        expect(payload.provenance).toEqual({ created_from: "learning_item" });
+        expect(payload.context_links).toEqual([
+          expect.objectContaining({
+            target_type: "learning_item",
+            target_id: "learn_claims",
+            target_title: "Claim provenance",
+            relation: "follow_up_practice",
+            metadata: expect.objectContaining({
+              created_from: "learning_item",
+              learning_type: "flashcard",
+              status: "active",
+              prompt_hash: expect.any(String),
+              answer_hash: expect.any(String)
+            })
+          })
+        ]);
+        return {
+          id: "todo_learning_item",
+          title: payload.text,
+          status: "open",
+          priority: 3,
+          labels: [],
+          context_links: payload.context_links,
+          created_at: "2026-06-05T00:00:00Z",
+          updated_at: "2026-06-05T00:00:00Z"
+        };
+      }
       return [];
     });
     window.vault = { request, selectFiles: vi.fn(async () => []) };
@@ -3715,6 +3832,18 @@ describe("App", () => {
     expect(await screen.findByLabelText("Practice voice privacy")).toBeTruthy();
     expect((await screen.findAllByText("What is claim provenance?")).length).toBeGreaterThan(0);
     expect((await screen.findAllByText("Evidence links a claim to a source block.")).length).toBeGreaterThan(0);
+    fireEvent.click(await screen.findByRole("button", { name: /create task from practice card/i }));
+    const taskDialog = await screen.findByRole("dialog", { name: /new task/i });
+    fireEvent.click(within(taskDialog).getByRole("button", { name: /^save$/i }));
+    await waitFor(() =>
+      expect(request).toHaveBeenCalledWith(
+        "todos.create",
+        expect.objectContaining({
+          context_links: [expect.objectContaining({ target_type: "learning_item", target_id: "learn_claims", relation: "follow_up_practice" })]
+        })
+      )
+    );
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: /new task/i })).toBeNull());
     fireEvent.click(await screen.findByRole("button", { name: /read aloud/i }));
 
     await waitFor(() =>
