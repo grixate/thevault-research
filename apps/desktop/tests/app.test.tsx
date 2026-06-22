@@ -5099,12 +5099,40 @@ describe("App", () => {
       }
       if (route === "ai.modelPacks.download") return { pack_id: payload.packId, downloads: [], skipped: [] };
       if (route === "ai.setup.run") {
+        if (payload.dry_run) {
+          return {
+            mode: payload.mode,
+            pack_id: payload.pack_id,
+            release_channel: "production",
+            status: "partial",
+            dry_run: true,
+            selected_capabilities: [],
+            downloads: [],
+            steps: [
+              {
+                id: "runtime-llama_cpp",
+                title: "llama_cpp runtime",
+                status: "queued",
+                detail: "Would install and verify Managed llama.cpp Runtime."
+              },
+              {
+                id: "model-tiny-gguf-placeholder",
+                title: "Tiny GGUF Local Model",
+                status: "queued",
+                detail: "Would download and verify Tiny GGUF Local Model.",
+                model_id: "tiny-gguf-placeholder"
+              }
+            ],
+            setup: {}
+          };
+        }
         if (payload.mode === "recommended") {
           return {
             mode: "recommended",
             pack_id: payload.pack_id,
             release_channel: "production",
             status: "blocked",
+            dry_run: false,
             selected_capabilities: [],
             downloads: [],
             steps: [
@@ -5129,6 +5157,7 @@ describe("App", () => {
           pack_id: payload.pack_id,
           release_channel: "demo",
           status: "partial",
+          dry_run: false,
           selected_capabilities: ["embed_text", "synthesize_speech"],
           downloads: [{ model_id: "tiny-fixture-llm", state: "installed" }],
           steps: [
@@ -5904,6 +5933,15 @@ describe("App", () => {
     expect(within(currentSetupStep).getByText("Runtime repair needed")).toBeTruthy();
     expect(within(setupProgress).getByText("Privacy mode")).toBeTruthy();
     expect(within(setupProgress).getByText("Starter setup")).toBeTruthy();
+    const setupRunCallsBeforeGuideCheck = request.mock.calls.filter(([route]) => route === "ai.setup.run").length;
+    fireEvent.click(within(setupGuide as HTMLElement).getByRole("button", { name: /^check$/i }));
+    await waitFor(() => {
+      const setupRunCalls = request.mock.calls.filter(([route]) => route === "ai.setup.run");
+      expect(setupRunCalls.length).toBeGreaterThan(setupRunCallsBeforeGuideCheck);
+      expect(setupRunCalls.at(-1)?.[1]).toEqual(expect.objectContaining({ mode: "recommended", pack_id: "tiny-production-pack", dry_run: true }));
+    });
+    const setupCheck = await screen.findByLabelText("Setup check");
+    expect(within(setupCheck).getByText("1 downloads planned")).toBeTruthy();
     fireEvent.click(within(setupGuide as HTMLElement).getByRole("button", { name: /^setup$/i }));
     const wizard = await screen.findByRole("dialog", { name: /model setup/i });
     expect(within(wizard).getByText("Model setup")).toBeTruthy();
@@ -5919,8 +5957,19 @@ describe("App", () => {
     expect(within(wizard).getByText("Needs approval")).toBeTruthy();
     expect(within(wizard).queryByText("blocked")).toBeNull();
     expect(within(wizard).getAllByText(/Missing approved downloads/i).length).toBeGreaterThan(0);
+    const setupRunCallsBeforeWizardCheck = request.mock.calls.filter(([route]) => route === "ai.setup.run").length;
+    fireEvent.click(within(wizard).getByRole("button", { name: /check setup/i }));
+    await waitFor(() => {
+      const setupRunCalls = request.mock.calls.filter(([route]) => route === "ai.setup.run");
+      expect(setupRunCalls.length).toBeGreaterThan(setupRunCallsBeforeWizardCheck);
+      expect(setupRunCalls.at(-1)?.[1]).toEqual(expect.objectContaining({ mode: "recommended", pack_id: "tiny-production-pack", dry_run: true }));
+    });
     fireEvent.click(within(wizard).getAllByRole("button", { name: /review setup/i })[0]);
-    await waitFor(() => expect(request).toHaveBeenCalledWith("ai.setup.run", expect.objectContaining({ mode: "recommended", pack_id: "tiny-production-pack" })));
+    await waitFor(() => {
+      const setupRunCalls = request.mock.calls.filter(([route]) => route === "ai.setup.run");
+      expect(setupRunCalls.at(-1)?.[1]).toEqual(expect.objectContaining({ mode: "recommended", pack_id: "tiny-production-pack" }));
+      expect(setupRunCalls.at(-1)?.[1]?.dry_run).not.toBe(true);
+    });
     await waitFor(() => expect(within(wizard).getAllByText("Required downloads").length).toBeGreaterThan(1));
     expect(within(wizard).getAllByText(/Pin the SHA-256 checksum before use/i).length).toBeGreaterThan(1);
     fireEvent.click(within(wizard).getByRole("button", { name: /use starter setup/i }));

@@ -2005,12 +2005,14 @@ function AISetupGuide({
   setup,
   busy,
   onAction,
+  onPreflightRecommended,
   onPrepareDemo,
   onOpenWizard
 }: {
   setup?: AISetupStatus;
   busy: boolean;
   onAction: (step: AISetupStepInfo) => void;
+  onPreflightRecommended: () => void;
   onPrepareDemo: () => void;
   onOpenWizard: () => void;
 }) {
@@ -2038,6 +2040,11 @@ function AISetupGuide({
           <Button icon={<Sparkles size={14} />} variant="primary" disabled={busy} onClick={onOpenWizard}>
             Setup
           </Button>
+          {setup.recommended_pack_id && (
+            <Button icon={<Search size={14} />} variant="secondary" disabled={busy} onClick={onPreflightRecommended}>
+              Check
+            </Button>
+          )}
           {setup.can_use_demo && (
             <Button icon={<Beaker size={14} />} variant="secondary" disabled={busy} onClick={onPrepareDemo}>
               Use starter setup
@@ -3469,6 +3476,7 @@ function AISetupWizard({
   setupError,
   onClose,
   onStepAction,
+  onPreflightRecommended,
   onRunDemo,
   onRunRecommended,
   onInstallRuntime,
@@ -3486,6 +3494,7 @@ function AISetupWizard({
   setupError?: Error | null;
   onClose: () => void;
   onStepAction: (step: AISetupStepInfo) => void;
+  onPreflightRecommended: () => void;
   onRunDemo: () => void;
   onRunRecommended: () => void;
   onInstallRuntime: (runtimeId: string) => void;
@@ -3770,6 +3779,9 @@ function AISetupWizard({
             Back
           </Button>
           <div>
+            <Button icon={<Search size={14} />} variant="secondary" disabled={!productionPack || busy} onClick={onPreflightRecommended}>
+              Check setup
+            </Button>
             {setupState.can_use_demo && (
               <Button icon={<Beaker size={14} />} variant="secondary" disabled={busy} onClick={onRunDemo}>
                 Use starter setup
@@ -3790,19 +3802,22 @@ function AISetupWizard({
 
 function AISetupRunReport({ result }: { result?: AISetupRunResult }) {
   if (!result) return null;
+  const resultTitle = result.dry_run ? "Setup check" : "Setup result";
+  const routeLabel = result.dry_run ? "routes planned" : "routes activated";
+  const downloadLabel = result.dry_run ? "downloads planned" : "downloads checked";
   return (
-    <section className="setup-run-report" aria-label="Setup result">
+    <section className="setup-run-report" aria-label={resultTitle}>
       <div className="setup-run-header">
         <div>
           <Badge tone={setupRunTone(result.status)} title={result.status}>
             {setupStatusLabel(result.status)}
           </Badge>
-          <h3>Setup result</h3>
+          <h3>{resultTitle}</h3>
           <p title={[result.pack_id, result.release_channel].filter(Boolean).join(" / ")}>{setupRunPackLabel(result)}</p>
         </div>
         <div>
-          <Badge tone="good">{result.selected_capabilities.length} routes activated</Badge>
-          <span>{result.downloads.length} downloads checked</span>
+          <Badge tone={result.dry_run ? "neutral" : "good"}>{result.selected_capabilities.length} {routeLabel}</Badge>
+          <span>{result.dry_run ? result.steps.filter((step) => step.id.startsWith("model-") && step.status === "queued").length : result.downloads.length} {downloadLabel}</span>
         </div>
       </div>
       <div className="setup-run-steps">
@@ -11367,6 +11382,13 @@ function SettingsView() {
               setup={setupStatus.data}
               busy={setupWizardBusy}
               onAction={runSetupAction}
+              onPreflightRecommended={() =>
+                runSetup.mutate({
+                  mode: "recommended",
+                  pack_id: setupStatus.data?.recommended_pack_id ?? recommendedProductionPack?.id,
+                  dry_run: true
+                })
+              }
               onPrepareDemo={() => runSetup.mutate({ mode: "demo", pack_id: setupStatus.data?.demo_pack_id ?? undefined })}
               onOpenWizard={() => setSetupWizardOpen(true)}
             />
@@ -11461,6 +11483,13 @@ function SettingsView() {
               setupError={runSetup.error}
               onClose={() => setSetupWizardOpen(false)}
               onStepAction={runSetupAction}
+              onPreflightRecommended={() =>
+                runSetup.mutate({
+                  mode: "recommended",
+                  pack_id: setupStatus.data?.recommended_pack_id ?? recommendedProductionPack?.id,
+                  dry_run: true
+                })
+              }
               onRunDemo={() => runSetup.mutate({ mode: "demo", pack_id: setupStatus.data?.demo_pack_id ?? undefined })}
               onRunRecommended={() => runSetup.mutate({ mode: "recommended", pack_id: setupStatus.data?.recommended_pack_id ?? undefined })}
               onInstallRuntime={(runtimeId) => installRuntime.mutate(runtimeId)}
