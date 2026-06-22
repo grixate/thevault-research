@@ -1,8 +1,4 @@
 #!/usr/bin/env bash
 set -euo pipefail
-cd "$(dirname "$0")/../services/core"
-if command -v uv >/dev/null 2>&1; then
-  uv run python -m vault_core.scripts.plan_ai_candidate_shortlist "$@"
-else
-  python -m vault_core.scripts.plan_ai_candidate_shortlist "$@"
-fi
+source "$(dirname "$0")/lib/core_python.sh"
+core_python vault_core.scripts.plan_ai_candidate_shortlist "$@"

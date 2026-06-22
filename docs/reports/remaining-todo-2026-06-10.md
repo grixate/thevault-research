@@ -154,9 +154,32 @@ Latest Whisper runtime publication slice on 2026-06-21:
 - `./scripts/validate_ai_registries.sh`: passed with 0 errors and the expected 75 production-placeholder warnings.
 - `./scripts/plan_ai_candidate_shortlist.sh --format json --output /tmp/vault-candidate-shortlist.published-whisper-plan.json`: passed.
 
-Recommended next slice: apply the published Whisper runtime byte evidence to candidate runtime registries, regenerate the release packet, and continue the approval-evidence overlay path. Do not mark production local AI ready until approval evidence, dry-run pinning, final pinning, setup-run smoke, and capability-route activation are complete.
+Latest Whisper runtime evidence-application slice on 2026-06-22:
 
-Note: strict production is still blocked by design. Merged byte evidence covers all 10 production model candidate IDs plus selected llama.cpp/Piper runtime archives, and the Whisper runtime package now has a commit-pinned HTTP(S) URL with source probe and byte verification passing. None of this pins production registries or marks approval complete. The candidate set still lacks release approval evidence, applied final runtime evidence overlays, full setup-run smoke verification with approved manifests, and capability-route activation.
+- Added `scripts/lib/core_python.sh` and moved the local-AI shell wrappers to prefer `services/core/.venv/bin/python` before falling back to `uv run`; this avoids the repeated `~/.cache/uv` sandbox permission prompt for routine registry work.
+- Regenerated fresh candidate registries from the bundled shortlist:
+  - `/tmp/vault-candidate-model-registry.published-whisper.json`: 10 model candidates applied / 0 skipped / 0 errors.
+  - `/tmp/vault-candidate-runtime-registry.published-whisper.json`: 3 runtime candidates applied / 0 skipped / 0 errors.
+- Applied `release-artifacts/whisper.cpp-v1.8.6-macos-arm64/published-url-byte-evidence.json` through the existing evidence overlay:
+  - status: `applied`
+  - applied fields: 3
+  - patched model registry SHA-256: `0f55aa716a357815daf6613f58394abb795028585d4e48da27c9eeb7518f1637`
+  - patched runtime registry SHA-256: `09ad85bd412f1dccb853dfdd2577f6a704d8af50064c3abe0d3ec6f8c2d69a9e`
+- Regenerated `/tmp/vault-published-whisper-release-packet` with source probing outside the restricted shell:
+  - packet status: `blocked`
+  - applied evidence fields: 3
+  - source probe: 22 pass / 0 warn / 0 pending / 11 blocked
+  - the three managed runtime probes now pass: llama.cpp, whisper.cpp, and Piper all return HTTP 200 with matching `Content-Length`, pinned SHA metadata, and reachable license URLs.
+  - remaining source-probe blockers are model artifact sources only: the 10 production model placeholders plus the Piper JSON sidecar still need concrete approved remote artifact URLs/revisions.
+- Verified wrapper behavior without `uv` cache prompts:
+  - `./scripts/generate_ai_candidate_model_registry.sh --output /tmp/vault-candidate-model-registry.direct-smoke.json --format json`: passed.
+  - `./scripts/plan_ai_candidate_shortlist.sh --format json --output /tmp/vault-candidate-shortlist.direct-smoke.json`: passed.
+  - `./scripts/validate_ai_registries.sh`: passed with 0 errors and the expected 75 production-placeholder warnings.
+  - note: avoid running several Python registry CLIs in parallel in this constrained shell; sequential runs are stable.
+
+Recommended next slice: pin concrete approved model artifact sources/revisions for the production model placeholders, then rerun source probe, byte verification, approval evidence overlay, release packet creation, dry-run pinning, final pinning, setup-run smoke, and capability-route activation. Do not mark production local AI ready until those gates are complete.
+
+Note: strict production is still blocked by design. Merged byte evidence covers all 10 production model candidate IDs plus selected llama.cpp/Piper runtime archives, and the Whisper runtime package now has a commit-pinned HTTP(S) URL with source probe and byte verification passing. The published Whisper byte evidence has now been applied through the candidate overlay path, but none of this pins production registries or marks approval complete. The candidate set still lacks concrete model artifact source pins, release approval evidence, full setup-run smoke verification with approved manifests, and capability-route activation.
 
 ## Current State
 
@@ -196,7 +219,7 @@ Latest local-AI production candidate verification on 2026-06-12:
 - Scoped Whisper/runtime byte verification: passed, verified `ggml-tiny.en.bin`, `ggml-base.en.bin`, `llama-b9596-bin-macos-arm64.tar.gz`, and `piper_macos_aarch64.tar.gz`; 4/4 files verified and 20/20 byte checks passed.
 - Evidence overlay: passed after multi-file overlay fix, patched the Piper sidecar SHA into `/tmp/vault-candidate-model-registry.piper-byte-patched.json`.
 - Whisper runtime distribution decision: checked latest `ggml-org/whisper.cpp` `v1.8.6` release on 2026-06-12, rejected the xcframework/Windows assets for managed CLI use, and recorded `package-approved-macos-arm64-cli-from-source` as the recommended path.
-- Source/license probe: expected warn result after checksum-header fix; latest all-model candidate probe has 53 checks, 52 pass, 0 blocked, and 1 pending for the unpublished `whisper-cpp-managed-runtime` package source URL.
+- Source/license probe after the 2026-06-12 byte-evidence slice: expected warn result after checksum-header fix; that historical all-model candidate probe had 53 checks, 52 pass, 0 blocked, and 1 pending for the then-unpublished `whisper-cpp-managed-runtime` package source URL. Superseded on 2026-06-22 by the published Whisper evidence-application slice; managed runtime source probes now pass.
 - Runtime archive inspection: passed, pinned `llama-b9596/llama-cli` and `piper/piper` archive members.
 - Runtime archive byte metadata: passed, pinned sizes and SHA-256 values for selected llama.cpp and Piper archives.
 - Runtime license artifacts: passed, pinned release-tag license URLs for selected llama.cpp and Piper candidates.
@@ -932,10 +955,11 @@ Latest backend/local-AI verification on 2026-06-12 after the current whisper-run
 - Merged evidence overlay with standard Qwen: passed, 36 fields applied; patched model registry SHA-256 `065f12df5f63346a7a246ae47378ce993a85281084629a5aeb5187e7c4c4fd66`, patched runtime registry SHA-256 `a92c8910d62ad78dab0f9fe7f8564c35284a2c93bd85948a84d98f396d5127a1`.
 - Full byte-evidence merge with strong Qwen: passed; `/tmp/vault-merged-byte-evidence.all-models.json` covers all 10 model IDs and 2 runtime IDs.
 - Merged evidence overlay with all model bytes: passed, 39 fields applied; patched model registry SHA-256 `065f12df5f63346a7a246ae47378ce993a85281084629a5aeb5187e7c4c4fd66`, patched runtime registry SHA-256 `a92c8910d62ad78dab0f9fe7f8564c35284a2c93bd85948a84d98f396d5127a1`.
-- Source/license probe after all model byte evidence: expected warn result; 53 checks, 52 pass, 0 blocked, 1 pending for unpublished `whisper-cpp-managed-runtime` package URL.
+- Source/license probe after all model byte evidence: historical expected warn result; 53 checks, 52 pass, 0 blocked, 1 pending for the then-unpublished `whisper-cpp-managed-runtime` package URL. Superseded on 2026-06-22 by the published Whisper evidence-application slice; remaining source-probe blockers are model artifact sources.
 - Combined candidate release plan after all model byte evidence: expected blocked exit; structural validation passed with 0 errors and 14 warnings; 142 checks, 20 blocked, 0 check warnings.
 - Release packet after all model byte evidence: expected blocked result; `/tmp/vault-all-models-release-packet/candidate-ai-registry-release-packet.md` now includes a `Blocking Details` section naming `source_probe` / `whisper-cpp-managed-runtime:files[0]:source` as the remaining source-probe finding.
 - Whisper runtime package URL publication: passed on 2026-06-21. The candidate shortlist now points at a commit-pinned raw GitHub URL under `release-artifacts/whisper.cpp-v1.8.6-macos-arm64/`, and the generated candidate runtime registry verifies that URL for source, size, license, and bytes.
+- Whisper runtime published byte evidence application: passed on 2026-06-22. The candidate overlay applies 3 runtime byte fields, regenerates a blocked release packet, and source probing now passes for all three managed runtime URLs; remaining source-probe blockers are production model artifact sources only.
 - Focused/adjacent registry/readiness/overlay tests: 24 passed.
 - Focused shortlist/runtime candidate tests after the whisper-runtime package update: 6 passed.
 - Focused evidence merge/artifact verification/evidence overlay tests: 11 passed.
@@ -1004,7 +1028,7 @@ Files touched:
 
 ## Completed In An Earlier Verified Slice
 
-Production local-AI byte evidence and whisper.cpp runtime package state are now explicit for all model candidates; the remaining source/byte gap is the unpublished whisper runtime URL:
+Production local-AI byte evidence and whisper.cpp runtime package state are now explicit for all model candidates. The earlier remaining source/byte gap was the unpublished Whisper runtime URL; that gap is now closed by the 2026-06-21 publication and 2026-06-22 evidence-application slices. Current source gaps are production model artifact sources/revisions:
 
 - Scoped byte verification for Whisper tiny/base model files and selected llama.cpp/Piper runtime archives passed.
 - Generated `/tmp/vault-small-ai-byte-evidence.json`.
@@ -2661,7 +2685,7 @@ Remaining tasks:
   - approver,
   - approval timestamp,
   - evidence reference.
-- Apply the published/probed whisper.cpp runtime package evidence, then run approval evidence overlay, release packet creation, dry-run pinning, and final pinning.
+- Pin concrete approved production model artifact sources/revisions, then rerun approval evidence overlay, release packet creation, dry-run pinning, and final pinning.
 
 Acceptance evidence:
 
@@ -2685,7 +2709,7 @@ Current good state:
 - The llama.cpp runtime candidate has an initial macOS arm64 release asset target.
 - `./scripts/generate_ai_candidate_runtime_registry.sh` turns selected runtime shortlist entries into a candidate runtime registry.
 - The generated candidate runtime registry currently patches `llama-cpp-managed-runtime`, `whisper-cpp-managed-runtime`, and `piper-managed-runtime`.
-- The generated candidate runtime registry no longer skips `whisper-cpp-managed-runtime`; it applies the package-built candidate and leaves only the final package URL as a placeholder.
+- The generated candidate runtime registry no longer skips `whisper-cpp-managed-runtime`; it applies the package-built candidate with the commit-pinned raw GitHub package URL.
 - The candidate shortlist report no longer has a runtime distribution decision gate.
 - The latest upstream whisper.cpp release asset audit is recorded in `candidate_shortlist.json`: checked `v1.8.6` on 2026-06-12, saw Windows CLI/CUDA zips, an Apple xcframework, and a Java wrapper zip, and rejected those for the managed macOS arm64 CLI runtime.
 - The selected v1 path for whisper.cpp is now executed locally: `scripts/package_whisper_cpp_runtime.sh` builds a static macOS arm64 `whisper-cli` from tagged source.
