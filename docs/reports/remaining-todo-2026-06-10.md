@@ -30,6 +30,7 @@ Latest completed slice:
 - `/ai/setup/run` now accepts `dry_run: true` to preflight recommended setup without installing runtimes, downloading model files, or changing routes.
 - Settings now exposes that dry-run as a quiet recommended setup check from both the compact setup guide and the setup wizard, with separate "Setup check" result language so users can inspect the plan before installing anything.
 - Setup preflight now reports the capabilities it plans to activate, so Settings can show real "routes planned" counts instead of `0 routes planned` while still making no route, runtime, or download changes.
+- Setup preflight and activation details now use readable task names such as "Concept suggestions", "Claim suggestions", "Assistant answers", and "Read aloud" instead of raw capability ids.
 - Added focused renderer coverage for a successful production setup run that activates approved local routes and shows a clean "Setup result" without mock/blocker language.
 - Updated focused backend coverage for the production-first setup contract.
 

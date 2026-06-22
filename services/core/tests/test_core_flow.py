@@ -6058,7 +6058,8 @@ def test_ai_setup_run_dry_run_preflights_recommended_pack_without_side_effects(c
     assert any(
         step["model_id"] == "standard-gguf-placeholder"
         and step["status"] == "queued"
-        and "activate extract_objects" in (step["detail"] or "")
+        and "activate Concept suggestions" in (step["detail"] or "")
+        and "local text runtime" in (step["detail"] or "")
         for step in preflight["steps"]
     )
     no_activation_preflight = client.post(
@@ -6305,7 +6306,7 @@ def test_approved_production_setup_run_installs_tests_and_activates_pack(tmp_pat
             assert any(
                 step["model_id"] == "approved-production-llm"
                 and step["status"] == "done"
-                and "Activated summarize" in (step["detail"] or "")
+                and "Activated Summaries" in (step["detail"] or "")
                 for step in run["steps"]
             )
             assert all(download["state"] == "installed" for download in run["downloads"])

@@ -5121,6 +5121,13 @@ describe("App", () => {
                 status: "queued",
                 detail: "Would download and verify Tiny GGUF Local Model.",
                 model_id: "tiny-gguf-placeholder"
+              },
+              {
+                id: "activate-tiny-gguf-placeholder",
+                title: "Tiny GGUF Local Model",
+                status: "queued",
+                detail: "Would test local text runtime and activate Claim suggestions.",
+                model_id: "tiny-gguf-placeholder"
               }
             ],
             setup: {}
@@ -5943,6 +5950,8 @@ describe("App", () => {
     const setupCheck = await screen.findByLabelText("Setup check");
     expect(within(setupCheck).getByText("1 routes planned")).toBeTruthy();
     expect(within(setupCheck).getByText("1 downloads planned")).toBeTruthy();
+    expect(within(setupCheck).getByText("Would test local text runtime and activate Claim suggestions.")).toBeTruthy();
+    expect(setupCheck.textContent).not.toContain("extract_claims");
     fireEvent.click(within(setupGuide as HTMLElement).getByRole("button", { name: /^setup$/i }));
     const wizard = await screen.findByRole("dialog", { name: /model setup/i });
     expect(within(wizard).getByText("Model setup")).toBeTruthy();

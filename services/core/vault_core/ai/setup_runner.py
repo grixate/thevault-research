@@ -570,13 +570,14 @@ def _plan_route_activation(
             continue
         selected_capabilities.extend(capabilities)
         provider_id = _provider_for_model(model)
+        capability_labels = _capability_labels(capabilities)
         steps.append(
             AISetupRunStep(
                 id=f"activate-{model_id}",
                 title=model.get("display_name", model_id),
                 status="queued",
                 model_id=model_id,
-                detail=f"Would smoke-test {provider_id} and activate {', '.join(capabilities)}.",
+                detail=f"Would test {_provider_label(provider_id)} and activate {capability_labels}.",
             )
         )
     return steps, sorted(set(selected_capabilities))
@@ -662,16 +663,51 @@ def _activate_ready_pack_routes(
                     )
                 )
         if activated:
+            capability_labels = _capability_labels(activated)
             steps.append(
                 AISetupRunStep(
                     id=f"activate-{model_id}",
                     title=model.get("display_name", model_id),
                     status="done",
                     model_id=model_id,
-                    detail=f"{detail} Activated {', '.join(activated)}.",
+                    detail=f"{detail} Activated {capability_labels}.",
                 )
             )
     return steps, sorted(set(selected_capabilities))
+
+
+def _capability_labels(capabilities: list[str]) -> str:
+    return ", ".join(_capability_label(capability) for capability in capabilities)
+
+
+def _capability_label(capability: str) -> str:
+    labels = {
+        "embed_text": "Search index",
+        "rerank_results": "Result ranking",
+        "extract_claims": "Claim suggestions",
+        "extract_objects": "Concept suggestions",
+        "summarize": "Summaries",
+        "generate_note": "Draft notes",
+        "grounded_answer": "Assistant answers",
+        "create_learning_item": "Learning cards",
+        "transcribe_audio": "Dictation",
+        "synthesize_speech": "Read aloud",
+    }
+    return labels.get(capability, capability.replace("_", " ").title())
+
+
+def _provider_label(provider_id: str) -> str:
+    labels = {
+        "llama_cpp_cli": "local text runtime",
+        "llama_cpp_server": "local text server",
+        "local_embedding": "local search model",
+        "local_cross_encoder": "local ranking model",
+        "whisper_cpp": "local dictation runtime",
+        "piper": "local voice runtime",
+    }
+    if provider_id.startswith("mock_"):
+        return "starter route"
+    return labels.get(provider_id, provider_id.replace("_", " "))
 
 
 def _model_ready_for_activation(
