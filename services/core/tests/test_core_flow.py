@@ -3199,6 +3199,36 @@ def test_ai_readiness_cli_writes_output_file(tmp_path):
     assert "## Next Release Gates" in content
 
 
+def test_ai_setup_cli_dry_run_reports_planned_production_setup_without_side_effects(tmp_path):
+    result = run_ai_setup_cli(tmp_path, "--format", "json")
+
+    assert result.returncode == 0
+    report = json.loads(result.stdout)
+    setup = report["setup"]
+    assert report["executed"] is False
+    assert setup["dry_run"] is True
+    assert setup["pack_id"] == "starter-local-pack"
+    assert setup["status"] == "partial"
+    assert setup["planned_download_count"] == 4
+    assert setup["planned_download_bytes"] == 3237085333
+    assert "grounded_answer" in setup["selected_capabilities"]
+    assert report["readiness"]["production_ready"] is False
+    assert report["readiness"]["summary"]["blocked_count"] == 9
+
+    model_files = [path for path in (tmp_path / "models").rglob("*") if path.is_file()]
+    assert model_files == []
+
+
+def test_ai_setup_cli_text_output_names_setup_cost(tmp_path):
+    result = run_ai_setup_cli(tmp_path)
+
+    assert result.returncode == 0
+    assert "Local AI setup check: partial" in result.stdout
+    assert "Pack: starter-local-pack (production)" in result.stdout
+    assert "Planned downloads: 4 / 3.0 GB" in result.stdout
+    assert "Readiness: blocked / production ready: no" in result.stdout
+
+
 def test_ai_candidate_shortlist_covers_current_production_placeholders():
     report = build_candidate_shortlist_report()
 
@@ -5448,6 +5478,18 @@ def run_ai_readiness_cli(tmp_path: Path, *args: str) -> subprocess.CompletedProc
     env = _cli_env(tmp_path)
     return subprocess.run(
         [sys.executable, "-m", "vault_core.scripts.check_ai_readiness", *args],
+        cwd=Path(__file__).resolve().parents[1],
+        env=env,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+
+def run_ai_setup_cli(tmp_path: Path, *args: str) -> subprocess.CompletedProcess[str]:
+    env = _cli_env(tmp_path)
+    return subprocess.run(
+        [sys.executable, "-m", "vault_core.scripts.run_ai_setup", *args],
         cwd=Path(__file__).resolve().parents[1],
         env=env,
         capture_output=True,

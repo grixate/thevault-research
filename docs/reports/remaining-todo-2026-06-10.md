@@ -38,6 +38,7 @@ Latest completed slice:
 - Recommended setup checks/results now report planned model download count and size, so the final local-model activation step shows the real disk/network cost before any multi-GB install begins.
 - Added focused renderer coverage for a successful production setup run that activates approved local routes and shows a clean "Setup result" without mock/blocker language.
 - Updated focused backend coverage for the production-first setup contract.
+- Added `./scripts/run_ai_setup.sh` as a repeatable dry-run-by-default setup runner for the final local AI activation path. Use it to inspect the approved runtimes/models/routes first, then pass `--execute` only when doing the real install, smoke test, and route activation run.
 
 Earlier implementation slice built a reproducible macOS arm64 `whisper-cli` package from `whisper.cpp` source, moved the whisper runtime from distribution-decision to release-evidence, verified all production model candidate bytes, and merged the current byte-evidence files into one candidate overlay.
 
@@ -328,7 +329,7 @@ Current local-AI gates after Piper restoration:
 - `./scripts/plan_ai_registry_release.sh --format text`: ready_to_pin, 146 checks, 0 blocked, 0 warnings; production packs 4/4, models 10/10, runtimes 3/3.
 - `./scripts/check_ai_readiness.sh --format text`: still blocked by capability routes only; production packs 4/4 ready and production runtimes 3/3 ready.
 
-Recommended next slice: route production capabilities to the approved local models/runtimes, then rerun production setup and capability-route activation. Do not mark strict production local AI ready until routes no longer point at mock providers and `./scripts/check_ai_readiness.sh` exits zero.
+Recommended next slice: route production capabilities to the approved local models/runtimes through the setup runner, then rerun production readiness. Start with `./scripts/run_ai_setup.sh --format text` to inspect the plan. The real activation path is `./scripts/run_ai_setup.sh --execute --timeout-seconds 1200 --strict-ready`, followed by `./scripts/check_ai_readiness.sh --format text`. Do not mark strict production local AI ready until routes no longer point at mock providers and `./scripts/check_ai_readiness.sh` exits zero.
 
 Note: strict production is still blocked by design, but Piper runtime packaging/approval is restored. The current blocker is production capability routing and setup activation, not runtime approval.
 
