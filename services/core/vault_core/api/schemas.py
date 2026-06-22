@@ -905,6 +905,8 @@ class AISetupRunResponse(BaseModel):
     status: Literal["ready", "demo_ready", "partial", "blocked", "failed"]
     dry_run: bool = False
     selected_capabilities: list[str] = Field(default_factory=list)
+    planned_download_count: int = 0
+    planned_download_bytes: int = 0
     downloads: list[dict[str, Any]] = Field(default_factory=list)
     steps: list[AISetupRunStep]
     setup: AISetupStatusResponse

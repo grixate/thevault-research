@@ -1164,6 +1164,19 @@ function setupRunPackLabel(result: AISetupRunResult): string {
   return "Local model setup";
 }
 
+function setupRunDownloadCount(result: AISetupRunResult): number {
+  if (typeof result.planned_download_count === "number") return result.planned_download_count;
+  if (!result.dry_run) return result.downloads.length;
+  return result.steps.filter((step) => step.id.startsWith("model-") && step.status === "queued").length;
+}
+
+function setupRunDownloadSummary(result: AISetupRunResult): string {
+  const count = setupRunDownloadCount(result);
+  const label = result.dry_run ? "downloads planned" : "downloads checked";
+  const bytes = result.planned_download_bytes;
+  return typeof bytes === "number" && bytes > 0 ? `${count} ${label} · ${formatBytes(bytes)}` : `${count} ${label}`;
+}
+
 function modelKindLabel(kind: AIModelInfo["kind"]) {
   if (kind === "llm") return "Writing model";
   if (kind === "embedding") return "Search index model";
@@ -3804,7 +3817,6 @@ function AISetupRunReport({ result }: { result?: AISetupRunResult }) {
   if (!result) return null;
   const resultTitle = result.dry_run ? "Setup check" : "Setup result";
   const routeLabel = result.dry_run ? "routes planned" : "routes activated";
-  const downloadLabel = result.dry_run ? "downloads planned" : "downloads checked";
   return (
     <section className="setup-run-report" aria-label={resultTitle}>
       <div className="setup-run-header">
@@ -3817,7 +3829,7 @@ function AISetupRunReport({ result }: { result?: AISetupRunResult }) {
         </div>
         <div>
           <Badge tone={result.dry_run ? "neutral" : "good"}>{result.selected_capabilities.length} {routeLabel}</Badge>
-          <span>{result.dry_run ? result.steps.filter((step) => step.id.startsWith("model-") && step.status === "queued").length : result.downloads.length} {downloadLabel}</span>
+          <span>{setupRunDownloadSummary(result)}</span>
         </div>
       </div>
       {result.selected_capabilities.length > 0 && (

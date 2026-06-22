@@ -5107,6 +5107,8 @@ describe("App", () => {
             status: "partial",
             dry_run: true,
             selected_capabilities: ["extract_claims"],
+            planned_download_count: 1,
+            planned_download_bytes: 639446688,
             downloads: [],
             steps: [
               {
@@ -5166,6 +5168,8 @@ describe("App", () => {
           status: "partial",
           dry_run: false,
           selected_capabilities: ["embed_text", "synthesize_speech"],
+          planned_download_count: 1,
+          planned_download_bytes: 188,
           downloads: [{ model_id: "tiny-fixture-llm", state: "installed" }],
           steps: [
             {
@@ -5468,7 +5472,7 @@ describe("App", () => {
     const setupResult = await screen.findByLabelText("Setup check");
     expect(within(setupResult).getByText("1 routes planned")).toBeTruthy();
     expect(within(setupResult).getByText("Trusted model setup")).toBeTruthy();
-    expect(within(setupResult).getByText("1 downloads planned")).toBeTruthy();
+    expect(within(setupResult).getByText("1 downloads planned · 609.8 MB")).toBeTruthy();
     expect(setupResult.textContent).not.toContain("tiny-production-pack / production");
     expect(setupResult.textContent).not.toContain("blocked");
     const demoPack = (await screen.findAllByText("Demo Fixture Pack"))
@@ -5949,7 +5953,7 @@ describe("App", () => {
     });
     const setupCheck = await screen.findByLabelText("Setup check");
     expect(within(setupCheck).getByText("1 routes planned")).toBeTruthy();
-    expect(within(setupCheck).getByText("1 downloads planned")).toBeTruthy();
+    expect(within(setupCheck).getByText("1 downloads planned · 609.8 MB")).toBeTruthy();
     const plannedRoutes = within(setupCheck).getByLabelText("Setup routes planned");
     expect(within(plannedRoutes).getByText("Claim suggestions")).toBeTruthy();
     expect(within(setupCheck).getByText("Would test local text runtime and activate Claim suggestions.")).toBeTruthy();
@@ -6209,6 +6213,8 @@ describe("App", () => {
           status: "done",
           dry_run: false,
           selected_capabilities: ["extract_claims", "generate_note", "embed_text"],
+          planned_download_count: 2,
+          planned_download_bytes: 700000000,
           downloads: [
             { model_id: "tiny-gguf-placeholder", state: "installed" },
             { model_id: "tiny-embedding-placeholder", state: "installed" }
@@ -6241,7 +6247,7 @@ describe("App", () => {
     const result = await within(wizard).findByLabelText("Setup result");
     expect(within(result).getByText("Trusted model setup")).toBeTruthy();
     expect(within(result).getByText("3 routes activated")).toBeTruthy();
-    expect(within(result).getByText("2 downloads checked")).toBeTruthy();
+    expect(within(result).getByText("2 downloads checked · 667.6 MB")).toBeTruthy();
     const activatedRoutes = within(result).getByLabelText("Setup routes activated");
     expect(within(activatedRoutes).getByText("Claim suggestions")).toBeTruthy();
     expect(within(activatedRoutes).getByText("Draft notes")).toBeTruthy();

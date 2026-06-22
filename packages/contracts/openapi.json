@@ -12072,7 +12072,7 @@
           "timeout_seconds": {
             "type": "number",
             "title": "Timeout Seconds",
-            "default": 10
+            "default": 120
           }
         },
         "type": "object",
@@ -12122,6 +12122,16 @@
             },
             "type": "array",
             "title": "Selected Capabilities"
+          },
+          "planned_download_count": {
+            "type": "integer",
+            "title": "Planned Download Count",
+            "default": 0
+          },
+          "planned_download_bytes": {
+            "type": "integer",
+            "title": "Planned Download Bytes",
+            "default": 0
           },
           "downloads": {
             "items": {

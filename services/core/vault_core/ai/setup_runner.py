@@ -29,13 +29,34 @@ def run_ai_setup(db: VaultDatabase, settings: Settings, req: AISetupRunRequest) 
     runtime_infos = list_runtime_infos(db, settings)
     packs = list_model_packs(db, runtime_infos)
     pack = _resolve_pack(req, packs)
-    if not pack.installed and not pack.installable:
-        return _blocked_pack_response(db, settings, req, pack)
-
     registry_models = {model["id"]: model for model in load_model_registry().get("models", [])}
     setup_model_ids = _setup_model_ids(pack, include_optional_models=req.include_optional_models)
+    planned_download_count, planned_download_bytes = (
+        _planned_model_download_summary(db, registry_models, setup_model_ids)
+        if req.download_models
+        else (0, 0)
+    )
+    if not pack.installed and not pack.installable:
+        return _blocked_pack_response(
+            db,
+            settings,
+            req,
+            pack,
+            planned_download_count=planned_download_count,
+            planned_download_bytes=planned_download_bytes,
+        )
+
     if req.dry_run:
-        return _dry_run_setup_response(db, settings, req, pack, registry_models, setup_model_ids)
+        return _dry_run_setup_response(
+            db,
+            settings,
+            req,
+            pack,
+            registry_models,
+            setup_model_ids,
+            planned_download_count=planned_download_count,
+            planned_download_bytes=planned_download_bytes,
+        )
 
     steps: list[AISetupRunStep] = []
     downloads: list[dict[str, Any]] = []
@@ -108,6 +129,8 @@ def run_ai_setup(db: VaultDatabase, settings: Settings, req: AISetupRunRequest) 
         status=status,
         dry_run=False,
         selected_capabilities=selected_capabilities,
+        planned_download_count=planned_download_count,
+        planned_download_bytes=planned_download_bytes,
         downloads=downloads,
         steps=steps,
         setup=ai_setup_status(db, settings),
@@ -142,6 +165,9 @@ def _blocked_pack_response(
     settings: Settings,
     req: AISetupRunRequest,
     pack: AIModelPackInfo,
+    *,
+    planned_download_count: int = 0,
+    planned_download_bytes: int = 0,
 ) -> AISetupRunResponse:
     blocked_checks = [check for check in pack.readiness_checks if check.status == "blocked"]
     steps = [
@@ -188,6 +214,8 @@ def _blocked_pack_response(
         status="blocked",
         dry_run=req.dry_run,
         selected_capabilities=[],
+        planned_download_count=planned_download_count,
+        planned_download_bytes=planned_download_bytes,
         downloads=[],
         steps=steps,
         setup=ai_setup_status(db, settings),
@@ -201,6 +229,9 @@ def _dry_run_setup_response(
     pack: AIModelPackInfo,
     registry_models: dict[str, dict[str, Any]],
     model_ids: list[str],
+    *,
+    planned_download_count: int = 0,
+    planned_download_bytes: int = 0,
 ) -> AISetupRunResponse:
     steps: list[AISetupRunStep] = []
     if req.install_runtimes:
@@ -262,10 +293,33 @@ def _dry_run_setup_response(
         status=status,
         dry_run=True,
         selected_capabilities=selected_capabilities,
+        planned_download_count=planned_download_count,
+        planned_download_bytes=planned_download_bytes,
         downloads=[],
         steps=steps,
         setup=ai_setup_status(db, settings),
     )
+
+
+def _planned_model_download_summary(
+    db: VaultDatabase,
+    registry_models: dict[str, dict[str, Any]],
+    model_ids: list[str],
+) -> tuple[int, int]:
+    infos = {model.id: model for model in list_model_infos(db)}
+    count = 0
+    size_bytes = 0
+    for model_id in model_ids:
+        info = infos.get(model_id)
+        if not info or info.installed or not info.downloadable:
+            continue
+        count += 1
+        model = registry_models.get(model_id, {})
+        for file_info in model.get("files", []) or []:
+            file_size = file_info.get("size_bytes")
+            if isinstance(file_size, int) and file_size > 0:
+                size_bytes += file_size
+    return count, size_bytes
 
 
 def _check_detail(check: Any) -> str:

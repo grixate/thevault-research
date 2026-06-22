@@ -35,6 +35,7 @@ Latest completed slice:
 - Real recommended setup runs now get a longer 120-second setup wait window, while dry-runs and starter/demo setup stay quick. This better supports actual runtime/model verification before route activation.
 - Pack-card `Check readiness` and `Check add-ons` actions now stay dry-run only; only explicit install/test actions can start downloads, runtime setup, or route activation.
 - Assistant is cleaner and more modern: the empty state now centers on the composer and starter chips, answer metadata is a quiet status row, evidence/citation context remains reviewable, and Enter submits while Shift+Enter keeps a new line.
+- Recommended setup checks/results now report planned model download count and size, so the final local-model activation step shows the real disk/network cost before any multi-GB install begins.
 - Added focused renderer coverage for a successful production setup run that activates approved local routes and shows a clean "Setup result" without mock/blocker language.
 - Updated focused backend coverage for the production-first setup contract.
 

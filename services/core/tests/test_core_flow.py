@@ -6037,6 +6037,8 @@ def test_ai_setup_run_dry_run_preflights_recommended_pack_without_side_effects(c
     assert preflight["pack_id"] == "starter-local-pack"
     assert preflight["release_channel"] == "production"
     assert preflight["status"] == "partial"
+    assert preflight["planned_download_count"] == 4
+    assert preflight["planned_download_bytes"] == 3237085333
     assert set(preflight["selected_capabilities"]) == {
         "extract_objects",
         "extract_claims",
@@ -6068,8 +6070,18 @@ def test_ai_setup_run_dry_run_preflights_recommended_pack_without_side_effects(c
         json={"mode": "recommended", "pack_id": "starter-local-pack", "dry_run": True, "activate_routes": False},
     ).json()
     assert no_activation_preflight["dry_run"] is True
+    assert no_activation_preflight["planned_download_count"] == 4
+    assert no_activation_preflight["planned_download_bytes"] == 3237085333
     assert no_activation_preflight["selected_capabilities"] == []
     assert any(step["id"] == "route-activation-skipped" and step["status"] == "skipped" for step in no_activation_preflight["steps"])
+    no_download_preflight = client.post(
+        "/ai/setup/run",
+        json={"mode": "recommended", "pack_id": "starter-local-pack", "dry_run": True, "download_models": False},
+    ).json()
+    assert no_download_preflight["dry_run"] is True
+    assert no_download_preflight["planned_download_count"] == 0
+    assert no_download_preflight["planned_download_bytes"] == 0
+    assert any(step["id"] == "model-download-skipped" and step["status"] == "skipped" for step in no_download_preflight["steps"])
 
     after_capabilities = client.get("/ai/capabilities").json()
     after_routes = {

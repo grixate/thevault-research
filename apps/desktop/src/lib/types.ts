@@ -968,6 +968,8 @@ export type AISetupRunResult = {
   status: "ready" | "demo_ready" | "partial" | "blocked" | "failed";
   dry_run: boolean;
   selected_capabilities: string[];
+  planned_download_count?: number;
+  planned_download_bytes?: number;
   downloads: Array<Record<string, unknown>>;
   steps: AISetupRunStep[];
   setup: AISetupStatus;
