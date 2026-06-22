@@ -129,38 +129,50 @@
       "display_name": "Managed Piper Runtime",
       "runtime": "piper",
       "release_channel": "production",
-      "version": "2023.11.14-2",
+      "version": "1.4.2",
       "platform": "macos",
       "arch": "arm64",
       "binary_name": "piper",
-      "license_label": "MIT",
-      "license_url": "https://github.com/rhasspy/piper/blob/2023.11.14-2/LICENSE.md",
+      "license_label": "GPL-3.0-or-later",
+      "license_url": "https://github.com/OHF-Voice/piper1-gpl/blob/main/COPYING",
       "source": {
         "type": "url",
-        "url": "https://github.com/rhasspy/piper/releases/download/2023.11.14-2/piper_macos_aarch64.tar.gz",
+        "url": "https://raw.githubusercontent.com/grixate/thevault-research/cf73a2cc2966be9a9f90c31ea24f32ab8a93d0ea/release-artifacts/piper-tts-1.4.2-macos-arm64/piper-tts-1.4.2-macos-arm64.tar.gz",
         "archive_format": "tar.gz",
-        "archive_member": "piper/piper"
+        "archive_member": "piper-tts-1.4.2-macos-arm64/piper"
       },
       "files": [
         {
-          "filename": "piper_macos_aarch64.tar.gz",
-          "sha256": "6b1eb03b3735946cb35216e063e7eebcc33a6bbf5dd96ec0217959bf1cdcb0cc",
-          "size_bytes": 19146957,
+          "filename": "piper-tts-1.4.2-macos-arm64.tar.gz",
+          "sha256": "982fd27644cf6fae8657585a81d3a80585b4a4d75f806cabdbc0c3f6f2d6c041",
+          "size_bytes": 37760615,
           "executable": true
         }
       ],
       "approval": {
-        "status": "pending",
-        "evidence": "Runtime setup smoke on 2026-06-22 showed piper_macos_aarch64.tar.gz is not self-contained on macOS: piper exits before --version because libespeak-ng.1.dylib is absent from the archive and not available on the host. Publish or select a self-contained Piper runtime package before approval."
+        "status": "approved",
+        "approved_by": "Codex release evidence review",
+        "approved_at": "2026-06-22",
+        "evidence": "release-artifacts/piper-tts-1.4.2-macos-arm64/published-url-byte-verification.txt; release-artifacts/piper-tts-1.4.2-macos-arm64/published-url-source-probe.json; packaged piper-tts 1.4.2 runtime is self-contained for local TTS, byte-pinned, GPL-3.0-or-later licensed, and --help smoke verified."
       },
       "candidate": {
-        "shortlist_id": "piper-macos-arm64",
+        "shortlist_id": "piper-tts-macos-arm64",
         "lifecycle_status": "needs_release_evidence",
         "evidence_urls": [
-          "https://github.com/rhasspy/piper/releases/tag/2023.11.14-2",
-          "https://github.com/rhasspy/piper/blob/master/LICENSE.md"
+          "https://pypi.org/project/piper-tts/1.4.2/",
+          "https://github.com/OHF-Voice/piper1-gpl/blob/main/COPYING",
+          "https://raw.githubusercontent.com/grixate/thevault-research/cf73a2cc2966be9a9f90c31ea24f32ab8a93d0ea/release-artifacts/piper-tts-1.4.2-macos-arm64/piper-tts-1.4.2-macos-arm64.tar.gz"
         ],
-        "rationale": "Archived Piper repo latest release includes piper_macos_aarch64.tar.gz for macOS Apple Silicon. Archive member, size, checksum, and license URL are pinned; it must still pass source probe, byte verification, smoke, and approval gates."
+        "rationale": "The archived rhasspy/piper macOS arm64 release archive is not self-contained on this host because it requires a missing libespeak-ng.1.dylib. This package vendors piper-tts 1.4.2 plus pinned Python dependencies beside a small piper wrapper, preserves local TTS behavior, and has a commit-pinned raw GitHub package URL, archive member, size, SHA-256, GPL license evidence, and --help smoke command."
+      },
+      "smoke_test": {
+        "args": [
+          "--help"
+        ],
+        "allowed_exit_codes": [
+          0
+        ],
+        "timeout_seconds": 30
       }
     }
   ],

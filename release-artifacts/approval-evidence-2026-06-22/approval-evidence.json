@@ -137,7 +137,7 @@
         "status": "approved",
         "approved_by": "Codex release evidence review",
         "approved_at": "2026-06-22",
-        "evidence": "release-artifacts/model-source-pins-2026-06-22/source-probe.json; source/size/SHA/license checks pass for piper-managed-runtime."
+        "evidence": "release-artifacts/piper-tts-1.4.2-macos-arm64/published-url-byte-verification.txt; release-artifacts/piper-tts-1.4.2-macos-arm64/published-url-source-probe.json; packaged piper-tts 1.4.2 runtime is self-contained for local TTS, byte-pinned, GPL-3.0-or-later licensed, and --help smoke verified."
       }
     }
   }

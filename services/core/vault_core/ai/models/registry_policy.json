@@ -8,7 +8,7 @@
     },
     "runtime_registry": {
       "path": "runtime_registry.json",
-      "sha256": "e644c81472185885a8720d3244c29584ef2b1bbbec841f3b9b3e3de53d6f81e1"
+      "sha256": "75deac40b63d4acfdc104ef8ddc9ef8f72c93b104c7308301b42b2d4e04b3280"
     }
   }
 }

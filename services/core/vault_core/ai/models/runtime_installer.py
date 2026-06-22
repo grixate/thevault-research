@@ -7,6 +7,7 @@ import platform as py_platform
 import shutil
 import stat
 import subprocess
+import sys
 import tarfile
 import urllib.error
 import urllib.parse
@@ -1010,6 +1011,10 @@ def _runtime_binary_smoke(runtime: dict[str, Any], path: Path) -> dict[str, Any]
     if not os.access(path, os.X_OK):
         return {"status": "failed", "error": "runtime binary is not executable", "command": [str(path), *args]}
     command = [str(path), *args]
+    env = None
+    if runtime.get("runtime") == "piper":
+        env = os.environ.copy()
+        env.setdefault("VAULT_PIPER_PYTHON", sys.executable)
     try:
         completed = subprocess.run(
             command,
@@ -1017,6 +1022,7 @@ def _runtime_binary_smoke(runtime: dict[str, Any], path: Path) -> dict[str, Any]
             text=True,
             timeout=float(timeout_seconds),
             check=False,
+            env=env,
         )
     except OSError as exc:
         return {"status": "failed", "error": str(exc), "command": command}

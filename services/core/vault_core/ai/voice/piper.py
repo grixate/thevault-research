@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import os
 import subprocess
+import sys
 from pathlib import Path
 
 from vault_core.ai.voice.tts_base import SpeechSynthesisResponse
@@ -38,6 +40,8 @@ class PiperTextToSpeechProvider:
         ]
         if self.config_path:
             command.extend(["--config", str(self.config_path)])
+        env = os.environ.copy()
+        env.setdefault("VAULT_PIPER_PYTHON", sys.executable)
         completed = subprocess.run(
             command,
             input=text,
@@ -45,6 +49,7 @@ class PiperTextToSpeechProvider:
             capture_output=True,
             timeout=self.timeout_seconds,
             check=False,
+            env=env,
         )
         if completed.returncode != 0:
             message = (completed.stderr or completed.stdout or "Piper synthesis failed").strip()

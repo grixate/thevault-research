@@ -281,10 +281,31 @@ Latest Piper TTS packaging slice on 2026-06-22:
   - smoke: `--help` exits 0 and prints Piper CLI usage.
 - Published the package, metadata, and README under `release-artifacts/piper-tts-1.4.2-macos-arm64/`.
 - License note: this package uses `piper-tts` / OHF Piper and is `GPL-3.0-or-later`, not the old archived `rhasspy/piper` MIT binary package. Keep that explicit in runtime approval evidence.
+- Published artifact commit: `cf73a2cc2966be9a9f90c31ea24f32ab8a93d0ea`.
+- Updated `piper-managed-runtime` to the commit-pinned raw package URL:
+  `https://raw.githubusercontent.com/grixate/thevault-research/cf73a2cc2966be9a9f90c31ea24f32ab8a93d0ea/release-artifacts/piper-tts-1.4.2-macos-arm64/piper-tts-1.4.2-macos-arm64.tar.gz`
+- Updated the Piper license artifact to the reachable OHF `COPYING` URL.
+- Added source and byte evidence:
+  - `release-artifacts/piper-tts-1.4.2-macos-arm64/published-url-source-probe.json`: 13 artifacts, 55/55 checks pass, 0 warnings, 0 pending, 0 blocked.
+  - `release-artifacts/piper-tts-1.4.2-macos-arm64/published-url-byte-verification.txt`: 1/1 files verified, 5/5 checks pass, 0 blocked.
+  - `release-artifacts/piper-tts-1.4.2-macos-arm64/published-url-byte-evidence.json`
+- Re-pinned `registry_policy.json`; runtime registry SHA-256 is now `75deac40b63d4acfdc104ef8ddc9ef8f72c93b104c7308301b42b2d4e04b3280`.
+- Added interpreter pinning for Piper runtime smoke and synthesis calls so the wrapper uses the running core Python via `VAULT_PIPER_PYTHON`.
+- Clean install probe in `/tmp/vault-piper-runtime-install-probe` passed:
+  - downloaded package SHA-256 `982fd27644cf6fae8657585a81d3a80585b4a4d75f806cabdbc0c3f6f2d6c041`
+  - downloaded package size `37760615`
+  - installed binary path `/tmp/vault-piper-runtime-install-probe/ai_runtime/piper/bin/piper`
+  - installer log recorded `--help` smoke exit code `0`.
 
-Recommended next slice: commit and push the Piper package artifact, then update `piper-managed-runtime` to the commit-pinned raw package URL, verify its byte stream and smoke behavior, apply approval evidence, repin the runtime registry, then rerun production setup and capability-route activation. Do not mark strict production local AI ready until Piper is restored, setup-run has installed/tested the selected pack, routes no longer point at mock providers, and `./scripts/check_ai_readiness.sh` exits zero.
+Current local-AI gates after Piper restoration:
 
-Note: strict production is still blocked by design, but the blocker is now more precise: Piper runtime packaging/approval first, then production setup plus capability-route activation.
+- `./scripts/validate_ai_registries.sh`: pass, 0 errors, 0 warnings.
+- `./scripts/plan_ai_registry_release.sh --format text`: ready_to_pin, 146 checks, 0 blocked, 0 warnings; production packs 4/4, models 10/10, runtimes 3/3.
+- `./scripts/check_ai_readiness.sh --format text`: still blocked by capability routes only; production packs 4/4 ready and production runtimes 3/3 ready.
+
+Recommended next slice: route production capabilities to the approved local models/runtimes, then rerun production setup and capability-route activation. Do not mark strict production local AI ready until routes no longer point at mock providers and `./scripts/check_ai_readiness.sh` exits zero.
+
+Note: strict production is still blocked by design, but Piper runtime packaging/approval is restored. The current blocker is production capability routing and setup activation, not runtime approval.
 
 ## Current State
 

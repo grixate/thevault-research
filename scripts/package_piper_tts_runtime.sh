@@ -139,7 +139,7 @@ payload = {
     "wrapper_sha256": "$WRAPPER_SHA256",
     "wrapper_size_bytes": int("$WRAPPER_SIZE_BYTES"),
     "license_label": "GPL-3.0-or-later",
-    "license_url": "https://github.com/OHF-Voice/piper1-gpl/blob/main/LICENSE",
+    "license_url": "https://github.com/OHF-Voice/piper1-gpl/blob/main/COPYING",
     "build": {
         "system": platform.system(),
         "machine": platform.machine(),

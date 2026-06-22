@@ -10,7 +10,10 @@ by `piper-managed-runtime`.
 - Build script: `scripts/package_piper_tts_runtime.sh`
 - Source package: `piper-tts==1.4.2`
 - License: `GPL-3.0-or-later`
-- License evidence: `https://github.com/OHF-Voice/piper1-gpl/blob/main/LICENSE`
+- License evidence: `https://github.com/OHF-Voice/piper1-gpl/blob/main/COPYING`
+- Source probe: `published-url-source-probe.json`
+- Byte verification: `published-url-byte-verification.txt`
+- Byte evidence: `published-url-byte-evidence.json`
 
 Why this package exists: the older upstream `piper_macos_aarch64.tar.gz`
 archive from `rhasspy/piper` is not self-contained on this host and exits

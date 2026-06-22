@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-06-22T07:18:38.115852+00:00",
+  "models": {},
+  "runtimes": {
+    "piper-managed-runtime": {
+      "files": [
+        {
+          "filename": "piper-tts-1.4.2-macos-arm64.tar.gz",
+          "sha256": "982fd27644cf6fae8657585a81d3a80585b4a4d75f806cabdbc0c3f6f2d6c041",
+          "size_bytes": 37760615
+        }
+      ],
+      "filename": "piper-tts-1.4.2-macos-arm64.tar.gz",
+      "sha256": "982fd27644cf6fae8657585a81d3a80585b4a4d75f806cabdbc0c3f6f2d6c041",
+      "size_bytes": 37760615
+    }
+  }
+}

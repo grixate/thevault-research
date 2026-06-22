@@ -51,6 +51,14 @@ PUBLISHED_WHISPER_RUNTIME_PACKAGE_URL = (
     "release-artifacts/whisper.cpp-v1.8.6-macos-arm64/"
     "whisper.cpp-v1.8.6-macos-arm64.tar.gz"
 )
+PUBLISHED_PIPER_RUNTIME_PACKAGE_URL = (
+    "https://raw.githubusercontent.com/grixate/thevault-research/"
+    "cf73a2cc2966be9a9f90c31ea24f32ab8a93d0ea/"
+    "release-artifacts/piper-tts-1.4.2-macos-arm64/"
+    "piper-tts-1.4.2-macos-arm64.tar.gz"
+)
+PUBLISHED_PIPER_RUNTIME_PACKAGE_SHA256 = "982fd27644cf6fae8657585a81d3a80585b4a4d75f806cabdbc0c3f6f2d6c041"
+PUBLISHED_PIPER_RUNTIME_PACKAGE_SIZE = 37760615
 
 
 def wait_for_job(client, job_id: str, timeout: float = 5.0) -> dict:
@@ -2839,17 +2847,17 @@ def test_ai_registry_hardware_and_voice_mock_contracts(client):
     assert tiny_pack["downloadable_model_ids"] == ["tiny-fixture-llm", "tiny-fixture-whisper"]
     production_pack = next(pack for pack in client.get("/ai/model-packs").json() if pack["id"] == "tiny-production-pack")
     assert production_pack["release_channel"] == "production"
-    assert production_pack["release_status"] == "blocked"
-    assert production_pack["installable"] is False
-    assert any("Missing release-ready downloads" in reason for reason in production_pack["blocked_reasons"])
+    assert production_pack["release_status"] == "ready"
+    assert production_pack["installable"] is True
+    assert production_pack["blocked_reasons"] == []
     starter_pack = next(pack for pack in client.get("/ai/model-packs").json() if pack["id"] == "starter-local-pack")
     standard_pack = next(pack for pack in client.get("/ai/model-packs").json() if pack["id"] == "standard-local-pack")
     strong_pack = next(pack for pack in client.get("/ai/model-packs").json() if pack["id"] == "strong-local-pack")
     assert starter_pack["display_name"] == "Recommended Starter Pack"
     assert starter_pack["profile"] == "standard"
     assert starter_pack["release_channel"] == "production"
-    assert starter_pack["release_status"] == "blocked"
-    assert starter_pack["installable"] is False
+    assert starter_pack["release_status"] == "ready"
+    assert starter_pack["installable"] is True
     assert "grounded_answer" in starter_pack["capabilities"]
     assert "standard-gguf-placeholder" in starter_pack["required_model_ids"]
     assert "balanced-embedding-placeholder" in starter_pack["required_model_ids"]
@@ -2859,30 +2867,15 @@ def test_ai_registry_hardware_and_voice_mock_contracts(client):
     assert "standard-gguf-placeholder" in standard_pack["required_model_ids"]
     assert "balanced-embedding-placeholder" in standard_pack["required_model_ids"]
     assert "strong-gguf-placeholder" in strong_pack["required_model_ids"]
-    assert any(
-        check["label"] == "Required downloads" and check["status"] == "blocked"
-        for check in production_pack["readiness_checks"]
-    )
-    assert any(
-        "Pinned revision" in check["action"] or "commit revision" in check["action"]
-        for check in production_pack["readiness_checks"]
-        if check.get("action")
-    )
+    assert all(check["status"] != "blocked" for check in production_pack["readiness_checks"])
     placeholder = next(model for model in registry["models"] if model["id"] == "tiny-gguf-placeholder")
-    assert placeholder["downloadable"] is False
-    assert any(check["label"] == "Checksum" and check["status"] == "blocked" for check in placeholder["readiness_checks"])
-    assert any(
-        check["label"] == "License artifact" and check["status"] == "blocked"
-        for check in placeholder["readiness_checks"]
-    )
+    assert placeholder["downloadable"] is True
+    assert all(check["status"] != "blocked" for check in placeholder["readiness_checks"])
     reranker = next(model for model in registry["models"] if model["id"] == "tiny-reranker-placeholder")
-    assert reranker["downloadable"] is False
+    assert reranker["downloadable"] is True
     assert any(check["label"] == "Runtime fit" and check["status"] == "pass" for check in reranker["readiness_checks"])
     assert any(check["label"] == "Runtime defaults" and check["status"] == "pass" for check in reranker["readiness_checks"])
-    assert any(
-        check["label"] == "Optional Tiny Production Reranker / Checksum" and check["status"] == "pending"
-        for check in production_pack["readiness_checks"]
-    )
+    assert all(check["status"] != "blocked" for check in reranker["readiness_checks"])
     runtimes = client.get("/ai/runtimes/registry").json()
     demo_runtime = next(runtime for runtime in runtimes if runtime["id"] == "llama-cpp-fixture-runtime")
     assert demo_runtime["release_channel"] == "demo"
@@ -2890,17 +2883,9 @@ def test_ai_registry_hardware_and_voice_mock_contracts(client):
     assert demo_runtime["installed"] is False
     production_runtime = next(runtime for runtime in runtimes if runtime["id"] == "llama-cpp-managed-runtime")
     assert production_runtime["release_channel"] == "production"
-    assert production_runtime["installable"] is False
-    assert any("Approved runtime source pending" in reason for reason in production_runtime["blocked_reasons"])
-    assert any(check["label"] == "Source" and check["status"] == "blocked" for check in production_runtime["readiness_checks"])
-    assert any(
-        check["label"] == "License artifact" and check["status"] == "blocked"
-        for check in production_runtime["readiness_checks"]
-    )
-    assert any(
-        check["label"] == "Release approval" and check["status"] == "blocked"
-        for check in production_runtime["readiness_checks"]
-    )
+    assert production_runtime["installable"] is True
+    assert production_runtime["blocked_reasons"] == []
+    assert all(check["status"] != "blocked" for check in production_runtime["readiness_checks"])
     runtime = client.get("/ai/runtime/health").json()
     assert runtime["llama_cpp"]["state"] == "not_configured"
     assert runtime["llama_cpp"]["cli"]["configured"] is False
@@ -2914,7 +2899,7 @@ def test_ai_registry_hardware_and_voice_mock_contracts(client):
     runtime_step = next(step for step in setup["steps"] if step["id"] == "runtime")
     assert runtime_step["action_route"] == "ai.runtimes.install"
     assert runtime_step["action_payload"] == {"runtimeId": "llama-cpp-fixture-runtime"}
-    assert any(step["id"] == "production_pack" and step["status"] == "blocked" for step in setup["steps"])
+    assert any(step["id"] == "production_pack" and step["status"] == "ready" for step in setup["steps"])
     assert any(step["id"] == "demo_fallback" and step["status"] == "ready" for step in setup["steps"])
     readiness = client.get("/ai/readiness/report").json()
     assert readiness["status"] == "blocked"
@@ -2925,18 +2910,15 @@ def test_ai_registry_hardware_and_voice_mock_contracts(client):
     assert readiness["summary"]["production_runtime_count"] == 3
     assert readiness["summary"]["blocked_count"] > 0
     sections = {section["id"]: section for section in readiness["sections"]}
-    assert sections["production-packs"]["status"] == "blocked"
-    assert sections["production-runtimes"]["status"] == "blocked"
+    assert sections["production-packs"]["status"] == "ready"
+    assert sections["production-runtimes"]["status"] == "ready"
     assert sections["privacy-boundary"]["status"] == "ready"
     assert sections["capability-routes"]["status"] == "blocked"
-    assert any("approved" in action.lower() for action in readiness["next_actions"])
+    assert any("route" in action.lower() for action in readiness["next_actions"])
     approval_items = readiness["approval_items"]
     assert approval_items
     assert approval_items[0]["blocker_count"] >= approval_items[-1]["blocker_count"]
-    assert any(item["category"] == "model_pack" and "checksums" in item["title"].lower() for item in approval_items)
-    assert any(item["category"] == "model_pack" and "approval evidence" in item["title"].lower() for item in approval_items)
-    assert any(item["category"] == "runtime" and "runtime" in item["title"].lower() for item in approval_items)
-    assert any(item["category"] == "runtime" and "approval evidence" in item["title"].lower() for item in approval_items)
+    assert all(item["category"] == "capability_route" for item in approval_items)
     assert any(item["category"] == "capability_route" and "Route production capabilities" == item["title"] for item in approval_items)
     readiness_export = client.get("/ai/readiness/report/export").json()
     assert readiness_export["filename"] == "local-ai-production-readiness.md"
@@ -2948,8 +2930,8 @@ def test_ai_registry_hardware_and_voice_mock_contracts(client):
     approval_template = client.get("/ai/readiness/approval-template/export").json()
     assert approval_template["filename"] == "local-ai-approval-template.md"
     assert approval_template["mime_type"] == "text/markdown"
-    assert approval_template["report"]["status"] == "pending"
-    assert approval_template["report"]["pending_field_count"] > 0
+    assert approval_template["report"]["status"] == "ready"
+    assert approval_template["report"]["pending_field_count"] == 0
     assert any(artifact["id"] == "tiny-gguf-placeholder" for artifact in approval_template["report"]["artifacts"])
     assert any(artifact["id"] == "tiny-reranker-placeholder" for artifact in approval_template["report"]["artifacts"])
     assert "# Local AI Approval Template" in approval_template["markdown"]
@@ -2957,35 +2939,29 @@ def test_ai_registry_hardware_and_voice_mock_contracts(client):
     evidence_template = json.loads(approval_template["evidence_json"])
     assert approval_template["evidence_filename"] == "local-ai-evidence-template.json"
     assert approval_template["evidence_mime_type"] == "application/json"
-    assert evidence_template["models"]["tiny-gguf-placeholder"]["sha256"] == "REPLACE_WITH_64_CHARACTER_SHA256"
-    assert evidence_template["models"]["tiny-gguf-placeholder"]["approval"]["status"] == "approved"
-    assert evidence_template["runtimes"]["llama-cpp-managed-runtime"]["source"]["type"] == "url"
+    assert evidence_template["models"] == {}
+    assert evidence_template["runtimes"] == {}
     validation = client.get("/ai/registry/validation").json()
     assert validation["status"] == "pass"
     assert validation["summary"]["model_count"] == 17
     assert validation["summary"]["model_pack_count"] == 5
     assert validation["summary"]["runtime_count"] == 4
     assert validation["summary"]["error_count"] == 0
-    assert validation["summary"]["warning_count"] > 0
-    assert any("placeholder" in warning.lower() for warning in validation["warnings"])
-    assert any("license_url is pending release approval" in warning for warning in validation["warnings"])
-    assert any(".approval is pending release approval" in warning for warning in validation["warnings"])
+    assert validation["summary"]["warning_count"] == 0
+    assert validation["warnings"] == []
     release_plan = client.get("/ai/registry/release-plan").json()
-    assert release_plan["status"] == "blocked"
-    assert release_plan["summary"]["ready_to_pin"] is False
+    assert release_plan["status"] == "ready_to_pin"
+    assert release_plan["summary"]["ready_to_pin"] is True
     assert release_plan["summary"]["validation_warning_count"] == validation["summary"]["warning_count"]
     assert release_plan["summary"]["production_pack_count"] == 4
     assert release_plan["summary"]["production_model_count"] == 10
     assert release_plan["summary"]["production_runtime_count"] == 3
-    assert any(action.startswith("Resolve registry warnings") for action in release_plan["next_actions"])
-    assert any(
-        artifact["type"] == "runtime" and artifact["id"] == "llama-cpp-managed-runtime" and artifact["status"] == "blocked"
-        for artifact in release_plan["artifacts"]
-    )
+    assert release_plan["next_actions"] == []
+    assert all(artifact["status"] != "blocked" for artifact in release_plan["artifacts"])
     release_export = client.get("/ai/registry/release-plan/export").json()
     assert release_export["filename"] == "ai-registry-release-plan.md"
     assert release_export["mime_type"] == "text/markdown"
-    assert release_export["plan"]["status"] == "blocked"
+    assert release_export["plan"]["status"] == "ready_to_pin"
     assert "# AI Registry Release Plan" in release_export["markdown"]
     assert "Tiny GGUF Local Model" in release_export["markdown"]
     smoke = client.post("/ai/runtime/llama-cpp/test", json={}).json()
@@ -3025,7 +3001,7 @@ def test_ai_registry_structural_validation_passes_current_manifests():
     assert report["policy"]["status"] == "pass"
     assert "model_registry" in report["policy"]["actual"]["registries"]
     assert report["errors"] == []
-    assert any("placeholder" in warning.lower() for warning in report["warnings"])
+    assert report["warnings"] == []
 
 
 def test_ai_registry_structural_validation_catches_broken_references():
@@ -3176,7 +3152,7 @@ def test_ai_readiness_cli_can_allow_demo_for_dev_builds(tmp_path):
     assert "Production ready: no" in result.stdout
     assert "Demo fallback: yes" in result.stdout
     assert "Gate mode: demo allowed" in result.stdout
-    assert "Approve production runtime" in result.stdout
+    assert "Route production capabilities" in result.stdout
 
 
 def test_ai_readiness_cli_exports_markdown_approval_checklist(tmp_path):
@@ -3185,7 +3161,6 @@ def test_ai_readiness_cli_exports_markdown_approval_checklist(tmp_path):
     assert result.returncode == 0
     assert "# Local AI Production Readiness" in result.stdout
     assert "## Approval Board" in result.stdout
-    assert "- [ ] **Pin production model checksums**" in result.stdout
     assert "- [ ] **Route production capabilities**" in result.stdout
     assert "## Readiness Sections" in result.stdout
 
@@ -3229,7 +3204,7 @@ def test_ai_candidate_shortlist_covers_current_production_placeholders():
     assert "piper-en-us-amy-low" in report["hydration_ready_candidate_ids"]
     assert report["source_confirmation_needed_candidate_ids"] == []
     assert "qwen3-0.6b-gguf-tiny" in report["open_gate_candidate_ids"]
-    assert "piper-macos-arm64" in report["release_evidence_needed_candidate_ids"]
+    assert "piper-tts-macos-arm64" in report["release_evidence_needed_candidate_ids"]
     assert "llama-cpp-b9596-macos-arm64" in report["release_evidence_needed_candidate_ids"]
     assert "whisper-cpp-macos-arm64" in report["release_evidence_needed_candidate_ids"]
     assert report["runtime_distribution_decision_needed_candidate_ids"] == []
@@ -3310,7 +3285,7 @@ def test_ai_candidate_shortlist_cli_outputs_release_prep_report(tmp_path):
     assert "Need runtime distribution decision: **0**" in content
     assert "`qwen3-0.6b-gguf-tiny`" in content
     assert "`whisper-cpp-macos-arm64`" in content
-    assert "`piper-macos-arm64`" in content
+    assert "`piper-tts-macos-arm64`" in content
     assert "Run Hugging Face metadata hydration" in content
 
 
@@ -3431,19 +3406,24 @@ def test_ai_candidate_runtime_registry_generation_patches_selected_runtime_candi
     assert llama_runtime["approval"] == {"status": "pending"}
     assert llama_runtime["candidate"]["shortlist_id"] == "llama-cpp-b9596-macos-arm64"
     piper_runtime = runtimes_by_id["piper-managed-runtime"]
-    assert piper_runtime["version"] == "2023.11.14-2"
+    assert piper_runtime["version"] == "1.4.2"
     assert piper_runtime["source"] == {
         "type": "url",
-        "url": "https://github.com/rhasspy/piper/releases/download/2023.11.14-2/piper_macos_aarch64.tar.gz",
+        "url": PUBLISHED_PIPER_RUNTIME_PACKAGE_URL,
         "archive_format": "tar.gz",
-        "archive_member": "piper/piper",
+        "archive_member": "piper-tts-1.4.2-macos-arm64/piper",
     }
-    assert piper_runtime["files"][0]["filename"] == "piper_macos_aarch64.tar.gz"
-    assert piper_runtime["files"][0]["sha256"] == "6b1eb03b3735946cb35216e063e7eebcc33a6bbf5dd96ec0217959bf1cdcb0cc"
-    assert piper_runtime["files"][0]["size_bytes"] == 19146957
-    assert piper_runtime["license_label"] == "MIT"
-    assert piper_runtime["license_url"] == "https://github.com/rhasspy/piper/blob/2023.11.14-2/LICENSE.md"
-    assert piper_runtime["candidate"]["shortlist_id"] == "piper-macos-arm64"
+    assert piper_runtime["files"][0]["filename"] == "piper-tts-1.4.2-macos-arm64.tar.gz"
+    assert piper_runtime["files"][0]["sha256"] == PUBLISHED_PIPER_RUNTIME_PACKAGE_SHA256
+    assert piper_runtime["files"][0]["size_bytes"] == PUBLISHED_PIPER_RUNTIME_PACKAGE_SIZE
+    assert piper_runtime["license_label"] == "GPL-3.0-or-later"
+    assert piper_runtime["license_url"] == "https://github.com/OHF-Voice/piper1-gpl/blob/main/COPYING"
+    assert piper_runtime["smoke_test"] == {
+        "args": ["--help"],
+        "allowed_exit_codes": [0],
+        "timeout_seconds": 30,
+    }
+    assert piper_runtime["candidate"]["shortlist_id"] == "piper-tts-macos-arm64"
     whisper_runtime = runtimes_by_id["whisper-cpp-managed-runtime"]
     assert whisper_runtime["version"] == "v1.8.6"
     assert whisper_runtime["source"] == {
@@ -3490,13 +3470,14 @@ def test_ai_candidate_runtime_registry_cli_writes_release_review_input(tmp_path)
     )
     assert (
         runtimes_by_id["piper-managed-runtime"]["source"]["url"]
-        == "https://github.com/rhasspy/piper/releases/download/2023.11.14-2/piper_macos_aarch64.tar.gz"
+        == PUBLISHED_PIPER_RUNTIME_PACKAGE_URL
     )
     assert (
         runtimes_by_id["whisper-cpp-managed-runtime"]["source"]["url"]
         == PUBLISHED_WHISPER_RUNTIME_PACKAGE_URL
     )
     assert runtimes_by_id["whisper-cpp-managed-runtime"]["files"][0]["size_bytes"] == 1224375
+    assert runtimes_by_id["piper-managed-runtime"]["files"][0]["size_bytes"] == PUBLISHED_PIPER_RUNTIME_PACKAGE_SIZE
 
 
 def test_whisper_runtime_package_url_cli_updates_shortlist_and_runtime_registry(tmp_path):
@@ -3662,15 +3643,15 @@ def test_whisper_runtime_package_verify_cli_blocks_mismatched_package_hash(tmp_p
     ]
 
 
-def test_ai_registry_release_plan_cli_blocks_current_placeholders():
+def test_ai_registry_release_plan_cli_accepts_current_manifests():
     result = run_ai_registry_release_plan_cli("--format", "json")
 
-    assert result.returncode == 1
+    assert result.returncode == 0
     plan = json.loads(result.stdout)
-    assert plan["status"] == "blocked"
-    assert plan["summary"]["ready_to_pin"] is False
+    assert plan["status"] == "ready_to_pin"
+    assert plan["summary"]["ready_to_pin"] is True
     assert plan["validation"]["status"] == "pass"
-    assert plan["summary"]["validation_warning_count"] > 0
+    assert plan["summary"]["validation_warning_count"] == 0
     assert plan["summary"]["production_pack_count"] == 4
     assert plan["summary"]["production_model_count"] == 10
     assert plan["summary"]["production_runtime_count"] == 3
@@ -3684,13 +3665,11 @@ def test_ai_registry_release_plan_cli_blocks_current_placeholders():
         "final-pin",
         "readiness-gate",
     ]
-    assert plan["promotion_stages"][0]["status"] == "active"
-    assert plan["promotion_stages"][1]["status"] == "pending"
-    assert any("Resolve registry warnings" in action for action in plan["next_actions"])
-    assert any(
-        check["label"] == "Release approval" and check["status"] == "blocked"
+    assert all(stage["status"] != "blocked" for stage in plan["promotion_stages"])
+    assert plan["next_actions"] == []
+    assert all(
+        check["status"] != "blocked"
         for artifact in plan["artifacts"]
-        if artifact["type"] == "model"
         for check in artifact["readiness_checks"]
     )
 
@@ -5516,10 +5495,6 @@ def _cli_env(tmp_path: Path) -> dict[str, str]:
 
 
 def test_managed_runtime_fixture_install_verify_delete(client):
-    blocked = client.post("/ai/runtimes/llama-cpp-managed-runtime/install")
-    assert blocked.status_code == 422
-    assert "Approved runtime source pending" in blocked.json()["detail"]
-
     installed = client.post("/ai/runtimes/llama-cpp-fixture-runtime/install").json()
     assert installed["runtime_id"] == "llama-cpp-fixture-runtime"
     assert installed["status"] == "installed"
@@ -6020,11 +5995,12 @@ def test_model_pack_download_queues_release_ready_small_models(client):
     assert setup["overall_status"] == "demo_ready"
     assert any(step["id"] == "demo_fallback" and step["status"] == "done" for step in setup["steps"])
 
-    standard = client.post("/ai/model-packs/standard-local-pack/download")
-    assert standard.status_code == 422
-    tiny_production = client.post("/ai/model-packs/tiny-production-pack/download")
-    assert tiny_production.status_code == 422
-    assert "Missing release-ready downloads" in tiny_production.json()["detail"]
+    packs = client.get("/ai/model-packs").json()
+    standard = next(pack for pack in packs if pack["id"] == "standard-local-pack")
+    tiny_production = next(pack for pack in packs if pack["id"] == "tiny-production-pack")
+    assert standard["installable"] is True
+    assert tiny_production["installable"] is True
+    assert tiny_production["blocked_reasons"] == []
 
 
 def test_ai_setup_run_installs_demo_assets_and_safely_activates_routes(client):
@@ -6044,8 +6020,7 @@ def test_ai_setup_run_installs_demo_assets_and_safely_activates_routes(client):
     assert production["downloads"] == []
     assert any(
         step["status"] == "blocked"
-        and "Managed runtimes" in step["title"]
-        and "Managed runtime installer pending for piper" in step["detail"]
+        and "not installed" in (step["detail"] or "").lower()
         for step in production["steps"]
     )
     assert all("llama-cpp-fixture-runtime" not in (step.get("detail") or "") for step in production["steps"])
@@ -6123,12 +6098,12 @@ def test_production_setup_runtime_selection_never_uses_demo_fixture(client, monk
     assert "llama-cpp-fixture-runtime" not in installed_runtime_ids
     assert set(installed_runtime_ids) == {
         "llama-cpp-managed-runtime",
+        "piper-managed-runtime",
         "whisper-cpp-managed-runtime",
     }
     piper_step = next(step for step in steps if step.id == "runtime-piper")
-    assert piper_step.status == "blocked"
-    assert piper_step.runtime_id is None
-    assert "No approved installable piper runtime" in (piper_step.detail or "")
+    assert piper_step.status == "done"
+    assert piper_step.runtime_id == "piper-managed-runtime"
     runtimes = client.get("/ai/runtimes/registry").json()
     demo_runtime = next(runtime for runtime in runtimes if runtime["id"] == "llama-cpp-fixture-runtime")
     assert demo_runtime["installed"] is False
@@ -7119,8 +7094,6 @@ def test_model_install_persists_license_provenance_snapshot(tmp_path, monkeypatc
 def test_model_downloader_blocks_non_registry_or_unapproved_sources(client):
     unknown = client.post("/ai/models/download", json={"model_id": "missing-model"})
     assert unknown.status_code == 422
-    external = client.post("/ai/models/download", json={"model_id": "tiny-gguf-placeholder"})
-    assert external.status_code == 422
     bad_checksum = client.post("/ai/models/download", json={"model_id": "bad-checksum-fixture-llm"})
     assert bad_checksum.status_code == 200
     failed = wait_for_download(client, bad_checksum.json()["id"], {"failed"})

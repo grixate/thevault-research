@@ -232,8 +232,8 @@ def build_candidate_runtime_registry_from_shortlist(
         if selected_assets_only and not _runtime_candidate_has_selected_asset(candidate):
             skipped.append({"id": candidate_id, "reason": _runtime_candidate_skip_reason(candidate)})
             continue
-        if source.get("type") != "github_release":
-            skipped.append({"id": candidate_id, "reason": "not a GitHub release candidate"})
+        if source.get("type") not in {"github_release", "package"}:
+            skipped.append({"id": candidate_id, "reason": "not a supported runtime package candidate"})
             continue
         replacements = [str(runtime_id) for runtime_id in _as_list(candidate.get("replaces_runtime_ids"))]
         if not replacements:
@@ -521,6 +521,11 @@ def _code_list(values: Iterable[str]) -> str:
 
 def _runtime_candidate_has_selected_asset(candidate: dict[str, Any]) -> bool:
     source = candidate.get("source") if isinstance(candidate.get("source"), dict) else {}
+    if source.get("type") == "package":
+        return all(
+            str(source.get(field) or "").strip() not in {"", "TO_SELECT", "REQUIRED_BEFORE_RELEASE"}
+            for field in ("url", "version", "asset", "archive_member", "asset_sha256")
+        ) and isinstance(source.get("asset_size_bytes"), int)
     return all(
         str(source.get(field) or "").strip() not in {"", "TO_SELECT", "REQUIRED_BEFORE_RELEASE"}
         for field in ("repo", "tag", "asset")
@@ -536,14 +541,14 @@ def _runtime_candidate_skip_reason(candidate: dict[str, Any]) -> str:
 def _apply_github_release_runtime_candidate(runtime: dict[str, Any], candidate: dict[str, Any]) -> None:
     source = candidate.get("source") if isinstance(candidate.get("source"), dict) else {}
     asset = str(source.get("asset") or "")
-    tag = str(source.get("tag") or "")
+    version = str(source.get("tag") or source.get("version") or "")
     archive_member = str(source.get("archive_member") or "REQUIRED_BEFORE_RELEASE")
     asset_sha256 = str(source.get("asset_sha256") or "REQUIRED_BEFORE_RELEASE")
     asset_size_bytes = source.get("asset_size_bytes")
     runtime.update(
         {
             "runtime": candidate.get("runtime") or runtime.get("runtime"),
-            "version": tag or "REQUIRED_BEFORE_RELEASE",
+            "version": version or "REQUIRED_BEFORE_RELEASE",
             "platform": candidate.get("platform") or runtime.get("platform"),
             "arch": candidate.get("arch") or runtime.get("arch"),
             "binary_name": candidate.get("binary_name") or runtime.get("binary_name"),

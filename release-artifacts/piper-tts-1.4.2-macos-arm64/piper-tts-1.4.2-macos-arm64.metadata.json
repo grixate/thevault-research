@@ -13,7 +13,7 @@
   "wrapper_sha256": "47f83c6b13d79a7eab4f81f571cc63d50cd1360236f2f53c01f3a28e0942a991",
   "wrapper_size_bytes": 223,
   "license_label": "GPL-3.0-or-later",
-  "license_url": "https://github.com/OHF-Voice/piper1-gpl/blob/main/LICENSE",
+  "license_url": "https://github.com/OHF-Voice/piper1-gpl/blob/main/COPYING",
   "build": {
     "system": "Darwin",
     "machine": "arm64",

@@ -14,7 +14,7 @@ This folder records the approval and pinning slice for the production local-AI m
 
 ## Superseding Runtime Smoke Note
 
-Later setup smoke on 2026-06-22 found that the selected Piper runtime archive is not self-contained on this host. `piper-managed-runtime` has been demoted back to pending approval, and the current pinned runtime registry SHA-256 is now `e644c81472185885a8720d3244c29584ef2b1bbbec841f3b9b3e3de53d6f81e1`. See `release-artifacts/runtime-setup-probe-2026-06-22/README.md` for the runtime setup probe.
+Later setup smoke on 2026-06-22 found that the selected archived `rhasspy/piper` runtime was not self-contained on this host. That archive was superseded by `release-artifacts/piper-tts-1.4.2-macos-arm64/`, a commit-pinned `piper-tts` package with byte/source evidence and `--help` smoke coverage. See `release-artifacts/runtime-setup-probe-2026-06-22/README.md` for the original runtime setup probe.
 
 ## Files
 
