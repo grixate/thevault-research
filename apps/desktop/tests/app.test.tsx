@@ -5996,6 +5996,246 @@ describe("App", () => {
     expect(await screen.findByLabelText("Settings JSON snapshot")).toBeTruthy();
   });
 
+  it("shows successful production setup route activation in settings", async () => {
+    const request = vi.fn(async (route: string, payload?: any) => {
+      if (route === "health.get") return { ok: true, version: "0.1.0", db_ready: true, workspace_id: "wrk_default" };
+      if (route === "jobs.list" || route === "events.list") return [];
+      if (route === "stats.get") {
+        return {
+          sources: 0,
+          source_blocks: 0,
+          notes: 0,
+          claims: 0,
+          claims_without_evidence: 0,
+          contradicted_claims: 0,
+          pending_review_items: 0,
+          generated_notes_pending_review: 0,
+          installed_tools: 0,
+          failed_jobs: 0,
+          learning_items: 0
+        };
+      }
+      if (route === "settings.get") return {};
+      if (route === "ai.providers") return [];
+      if (route === "ai.capabilities") {
+        return [
+          { capability: "extract_claims", provider_id: "llama_cpp_cli", model_id: "tiny-gguf-placeholder", local_only: true, settings: {} },
+          { capability: "generate_note", provider_id: "llama_cpp_cli", model_id: "tiny-gguf-placeholder", local_only: true, settings: {} },
+          { capability: "embed_text", provider_id: "local_embedding", model_id: "tiny-embedding-placeholder", local_only: true, settings: {} }
+        ];
+      }
+      if (route === "ai.hardware") {
+        return {
+          os: "macos",
+          arch: "arm64",
+          physical_ram_gb: 16,
+          apple_silicon: true,
+          metal_available: true,
+          cuda_available: false,
+          rocm_available: false,
+          vulkan_available: false,
+          recommended_profile: "tiny",
+          warnings: []
+        };
+      }
+      if (route === "ai.models.registry") return { models: [] };
+      if (route === "ai.modelPacks") {
+        return [
+          {
+            id: "tiny-production-pack",
+            display_name: "Tiny Production Local Pack",
+            profile: "tiny",
+            release_channel: "production",
+            release_status: "ready",
+            description: "Approved tiny local model pack.",
+            privacy_label: "Runs on this device",
+            model_ids: ["tiny-gguf-placeholder", "tiny-embedding-placeholder"],
+            required_model_ids: ["tiny-gguf-placeholder", "tiny-embedding-placeholder"],
+            optional_model_ids: [],
+            capabilities: ["extract_claims", "generate_note", "embed_text"],
+            disk_bytes: 1024,
+            installed_model_ids: [],
+            missing_model_ids: ["tiny-gguf-placeholder", "tiny-embedding-placeholder"],
+            downloadable_model_ids: ["tiny-gguf-placeholder", "tiny-embedding-placeholder"],
+            blocked_reasons: [],
+            installable: true,
+            installed: false,
+            readiness_checks: []
+          }
+        ];
+      }
+      if (route === "ai.runtimes.registry") {
+        return [
+          {
+            id: "llama-cpp-managed-runtime",
+            display_name: "Production llama.cpp Runtime",
+            runtime: "llama_cpp",
+            release_channel: "production",
+            version: "b9596",
+            platform: "macos",
+            arch: "arm64",
+            compatible: true,
+            host_platform: "macos",
+            host_arch: "arm64",
+            compatibility_error: null,
+            binary_name: "llama-cli",
+            installed: true,
+            install_state: "installed",
+            installable: true,
+            source_type: "url",
+            binary_path: "/tmp/vault-runtimes/llama-cli",
+            size_bytes: 252,
+            sha256: "fixture-sha",
+            sha256_actual: "fixture-sha",
+            integrity_status: "pass",
+            integrity_error: null,
+            license_label: "MIT",
+            blocked_reasons: [],
+            readiness_checks: [],
+            install_log: []
+          }
+        ];
+      }
+      if (route === "ai.models.installed" || route === "ai.models.downloads" || route === "ai.runs" || route === "voice.voices" || route === "voice.audioAssets" || route === "voice.speechAssets") {
+        return [];
+      }
+      if (route === "ai.runtime.health") {
+        return {
+          llama_cpp: {
+            runtime: "llama_cpp",
+            state: "ready",
+            runtime_dir: "/tmp/vault-runtimes",
+            cli: { configured: true, source: "managed" },
+            server: { configured: false, source: "missing" },
+            installed_models: ["tiny-gguf-placeholder"],
+            warnings: [],
+            next_actions: []
+          },
+          voice: {}
+        };
+      }
+      if (route === "ai.setup.status") {
+        return {
+          mode: "local_only",
+          overall_status: "ready",
+          recommended_profile: "tiny",
+          recommended_pack_id: "tiny-production-pack",
+          privacy_label: "Local only: cloud fallback blocked unless explicitly enabled",
+          next_action: "Install and activate the recommended local model setup.",
+          can_use_demo: false,
+          blocked_reasons: [],
+          steps: [
+            { id: "privacy", title: "Privacy mode", status: "done", summary: "Cloud fallback is blocked", detail: "Every core AI route is local-only.", action_payload: {} },
+            { id: "runtime", title: "Local runtimes", status: "done", summary: "Runtime ready", detail: "Verified managed runtime is installed.", action_payload: {} },
+            { id: "production_pack", title: "Tiny production pack", status: "ready", summary: "Approved pack ready", detail: "Required model files can be installed.", action_payload: {} },
+            { id: "capability_routes", title: "Model task routing", status: "ready", summary: "Ready to activate", detail: "Recommended local routes can be activated.", action_payload: {} }
+          ]
+        };
+      }
+      if (route === "ai.readiness.report") {
+        return {
+          generated_at: "2026-06-22T00:00:00Z",
+          status: "ready",
+          production_ready: true,
+          demo_available: false,
+          recommended_profile: "tiny",
+          recommended_pack_id: "tiny-production-pack",
+          summary: {
+            total_checks: 6,
+            pass_count: 6,
+            warn_count: 0,
+            pending_count: 0,
+            blocked_count: 0,
+            production_pack_count: 1,
+            ready_production_pack_count: 1,
+            production_runtime_count: 1,
+            ready_production_runtime_count: 1
+          },
+          next_actions: [],
+          approval_items: [],
+          sections: [
+            {
+              id: "capability-routes",
+              title: "Capability routes",
+              status: "ready",
+              summary: "Required production capabilities use approved local routes.",
+              blocked_count: 0,
+              checks: []
+            }
+          ]
+        };
+      }
+      if (route === "ai.registry.validation") {
+        return {
+          ...registryValidationFixture,
+          status: "pass",
+          summary: { ...registryValidationFixture.summary, error_count: 0, warning_count: 0 },
+          errors: [],
+          warnings: []
+        };
+      }
+      if (route === "ai.registry.releasePlan") {
+        return {
+          generated_at: "2026-06-22T00:00:00Z",
+          status: "ready_to_pin",
+          summary: {
+            production_model_count: 2,
+            ready_production_model_count: 2,
+            production_runtime_count: 1,
+            ready_production_runtime_count: 1
+          },
+          checks: [],
+          pin_preview: {}
+        };
+      }
+      if (route === "ai.registry.releaseWorkspace") return { schema_version: 1, has_workspace: false, updated_at: null };
+      if (route === "ai.setup.run") {
+        return {
+          mode: payload.mode,
+          pack_id: payload.pack_id,
+          release_channel: "production",
+          status: "done",
+          dry_run: false,
+          selected_capabilities: ["extract_claims", "generate_note", "embed_text"],
+          downloads: [
+            { model_id: "tiny-gguf-placeholder", state: "installed" },
+            { model_id: "tiny-embedding-placeholder", state: "installed" }
+          ],
+          steps: [
+            { id: "runtime-llama_cpp", title: "llama_cpp runtime", status: "done", detail: "Verified managed runtime.", runtime_id: "llama-cpp-managed-runtime" },
+            { id: "model-tiny-gguf-placeholder", title: "Tiny GGUF Local Model", status: "done", detail: "Downloaded and verified.", model_id: "tiny-gguf-placeholder" },
+            { id: "activate-extract_claims", title: "Claim suggestions", status: "done", detail: "Activated approved local route.", capability: "extract_claims" },
+            { id: "activate-generate_note", title: "Draft notes", status: "done", detail: "Activated approved local route.", capability: "generate_note" },
+            { id: "activate-embed_text", title: "Search index", status: "done", detail: "Activated approved local route.", capability: "embed_text" }
+          ],
+          setup: {}
+        };
+      }
+      return [];
+    });
+    window.vault = { request, selectFiles: vi.fn(async () => []) };
+
+    useUIStore.setState({ surface: "settings" });
+    renderApp();
+
+    expect(await screen.findByRole("heading", { name: "Models", level: 2 })).toBeTruthy();
+    const setupGuide = (await screen.findByText("Private setup steps")).closest("section");
+    expect(setupGuide).toBeTruthy();
+    fireEvent.click(within(setupGuide as HTMLElement).getByRole("button", { name: /^setup$/i }));
+    const wizard = await screen.findByRole("dialog", { name: /model setup/i });
+    const recommendedSetupActions = within(wizard).getAllByRole("button", { name: /use recommended setup/i });
+    fireEvent.click(recommendedSetupActions[recommendedSetupActions.length - 1]);
+    await waitFor(() => expect(request).toHaveBeenCalledWith("ai.setup.run", expect.objectContaining({ mode: "recommended", pack_id: "tiny-production-pack" })));
+    const result = await within(wizard).findByLabelText("Setup result");
+    expect(within(result).getByText("Trusted model setup")).toBeTruthy();
+    expect(within(result).getByText("3 routes activated")).toBeTruthy();
+    expect(within(result).getByText("2 downloads checked")).toBeTruthy();
+    expect(within(result).getAllByText("Claim suggestions").length).toBeGreaterThan(0);
+    expect(within(result).getAllByText("Search index").length).toBeGreaterThan(0);
+    expect(result.textContent).not.toContain("mock");
+    expect(result.textContent).not.toContain("blocked");
+  });
+
   it("shows privacy settings in local-first language", async () => {
     const request = vi.fn(async (route: string) => {
       if (route === "health.get") return { ok: true, version: "0.1.0", db_ready: true, workspace_id: "wrk_default" };

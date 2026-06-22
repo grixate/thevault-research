@@ -29,6 +29,7 @@ Latest completed slice:
 - Readiness reports now include the recommended provider/model target for each blocked capability route, for example `llama_cpp_cli / standard-gguf-placeholder`, `local_embedding / balanced-embedding-placeholder`, `whisper_cpp / standard-whisper-placeholder`, and `piper / tiny-piper-placeholder`.
 - `/ai/setup/run` now accepts `dry_run: true` to preflight recommended setup without installing runtimes, downloading model files, or changing routes.
 - Settings now exposes that dry-run as a quiet recommended setup check from both the compact setup guide and the setup wizard, with separate "Setup check" result language so users can inspect the plan before installing anything.
+- Added focused renderer coverage for a successful production setup run that activates approved local routes and shows a clean "Setup result" without mock/blocker language.
 - Updated focused backend coverage for the production-first setup contract.
 
 Earlier implementation slice built a reproducible macOS arm64 `whisper-cli` package from `whisper.cpp` source, moved the whisper runtime from distribution-decision to release-evidence, verified all production model candidate bytes, and merged the current byte-evidence files into one candidate overlay.
@@ -2921,7 +2922,7 @@ Remaining tasks:
   - `transcribe_audio`
   - `synthesize_speech`
 - Keep blockers for cloud, mock, fixture, manual-unapproved, missing, mismatched, and untested routes.
-- Add UI tests for successful production setup, not only blocked/demo setup.
+- Extend successful production setup UI coverage as more real approved route combinations are enabled.
 
 Acceptance evidence:
 
