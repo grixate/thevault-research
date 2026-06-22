@@ -8991,7 +8991,6 @@ function AssistantView() {
         <div className="assistant-thread" aria-label="Assistant conversation">
           {assistantEmpty ? (
             <div className="assistant-welcome">
-              <h2>Ask the Vault</h2>
               <div className="assistant-starter-row" aria-label="Assistant question starters">
                 {assistantPromptStarters.map((starter) => {
                   const StarterIcon = starter.icon;
@@ -9013,12 +9012,8 @@ function AssistantView() {
               )}
               <article className="assistant-message assistant-message-answer">
                 <div className="assistant-answer-header">
-                  <div>
-                    <Badge tone={evidenceQualityTone(answer?.evidence_quality)}>
-                      {evidenceQualityLabel(answer?.evidence_quality)}
-                    </Badge>
-                    {answer?.provider && <Badge tone={answer.sent_off_device ? "bad" : "good"}>{localityLabel}</Badge>}
-                    {validationStatus && <Badge tone={answer?.citation_validation?.status === "valid" ? "good" : "warn"}>{validationStatus}</Badge>}
+                  <div className="assistant-answer-status">
+                    <span>{ask.isPending ? "Assistant" : groundingTitle}</span>
                   </div>
                   <div className="assistant-answer-actions">
                     {answer?.review_item_id && (
@@ -9050,9 +9045,10 @@ function AssistantView() {
                   <div>
                     <Badge tone={answerEvidencePolicy.tone}>
                       <AnswerEvidencePolicyIcon size={12} />
-                      Evidence
+                      {answerEvidencePolicy.label}
                     </Badge>
                     <strong>{groundingTitle}</strong>
+                    <span>{evidenceQualityLabel(answer?.evidence_quality)}</span>
                     <span>{groundingDetail}</span>
                   </div>
                   <div className="assistant-grounding-meta" aria-label="Answer context">
@@ -9061,6 +9057,7 @@ function AssistantView() {
                     <span>{assistantCitationCountLabel(citations.length)}</span>
                     <span>{localityLabel}</span>
                     <span title={String(answer?.model_id ?? "")}>{modelLabel}</span>
+                    {validationStatus && <span>{validationStatus}</span>}
                   </div>
                 </div>
                 {saveAssistantAnswer.error && <small className="model-test-error">{saveAssistantAnswer.error.message}</small>}
@@ -9112,8 +9109,14 @@ function AssistantView() {
           <Textarea
             aria-label="Assistant question"
             value={question}
-            placeholder="Ask about notes, Storage, or a capsule..."
+            placeholder="Ask about Notes, Storage, or a capsule..."
             onChange={(event) => setQuestion(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" && !event.shiftKey && question.trim() && !ask.isPending) {
+                event.preventDefault();
+                askQuestion();
+              }
+            }}
           />
           <div className="assistant-composer-footer">
             <div className="assistant-compose-left">

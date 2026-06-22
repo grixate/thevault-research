@@ -9,6 +9,17 @@ const scenarios = {
     await installEmptyVaultBridge(page);
     await page.goto(baseUrl, { waitUntil: "networkidle" });
   },
+  "assistant-empty": async (page) => {
+    await installEmptyVaultBridge(page);
+    await openAssistant(page);
+  },
+  "assistant-answer": async (page) => {
+    await installEmptyVaultBridge(page);
+    await openAssistant(page);
+    await page.getByRole("textbox", { name: "Assistant question" }).fill("What should I verify next?");
+    await page.getByRole("button", { name: "Ask", exact: true }).click();
+    await page.getByText("Approved claims point to two review priorities.").waitFor();
+  },
   "notes-loading": async (page) => {
     await openNotes(page);
   },
@@ -104,6 +115,12 @@ async function openNotes(page) {
   if (await notes.count()) await notes.first().click();
 }
 
+async function openAssistant(page) {
+  await page.goto(baseUrl, { waitUntil: "networkidle" });
+  const assistant = page.locator('.main-nav button[aria-label="Assistant"]');
+  if (await assistant.count()) await assistant.first().click();
+}
+
 async function openStorage(page) {
   await page.goto(baseUrl, { waitUntil: "networkidle" });
   const storage = page.locator('.main-nav button[aria-label="Storage"]');
@@ -170,9 +187,33 @@ async function installEmptyVaultBridge(page) {
         if (route === "notes.list") return [];
         if (route === "sources.list") return [];
         if (route === "claims.list") return [];
+        if (route === "capsules.list") return { items: [] };
         if (route === "learning.items") return [];
         if (route === "tools.list") return [];
         if (route === "ai.capabilities") return [];
+        if (route === "assistant.ask") {
+          return {
+            answer_markdown: "Approved claims point to two review priorities.\n\n1. Confirm the strongest source-backed claim.\n2. Move unresolved source blocks into Review before drafting.",
+            ai_run_id: "visual-ai-run",
+            evidence_quality: "approved_claims",
+            provider: "mock-local-llm",
+            model_id: "mock-local-llm",
+            sent_off_device: false,
+            citation_validation: { status: "valid" },
+            citations: [
+              {
+                marker: "[1]",
+                title: "Review queue",
+                exact_quote: "Typed claims keep source context attached to review decisions.",
+                evidence_kind: "approved_claim_evidence",
+                source_id: "src_visual",
+                source_block_id: "block_visual",
+                claim_id: "claim_visual"
+              }
+            ],
+            uncertainties: []
+          };
+        }
         return [];
       },
       selectFiles: async () => []
