@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-06-22T05:33:31.514823+00:00",
+  "merged_from": [
+    "/Users/grixate/Documents/Research lab/release-artifacts/whisper.cpp-v1.8.6-macos-arm64/published-url-byte-evidence.json",
+    "/tmp/vault-piper-sidecar-byte-evidence.json"
+  ],
+  "models": {
+    "tiny-piper-placeholder": {
+      "files": [
+        {
+          "filename": "en/en_US/amy/low/en_US-amy-low.onnx",
+          "sha256": "a5a91abb7de0f104358a25aded480ddacf1ff0762886325886ec406a2e86aab3",
+          "size_bytes": 63104526
+        },
+        {
+          "filename": "en/en_US/amy/low/en_US-amy-low.onnx.json",
+          "sha256": "2250a9a605b8dc35a116717fadc5056695dd809e34a15d02f72a0f52d53d3ebb",
+          "size_bytes": 4164
+        }
+      ],
+      "filename": "en/en_US/amy/low/en_US-amy-low.onnx",
+      "sha256": "a5a91abb7de0f104358a25aded480ddacf1ff0762886325886ec406a2e86aab3",
+      "size_bytes": 63104526
+    }
+  },
+  "runtimes": {
+    "whisper-cpp-managed-runtime": {
+      "files": [
+        {
+          "filename": "whisper.cpp-v1.8.6-macos-arm64.tar.gz",
+          "sha256": "cfbba61b4f9a4fa3c0387ff7816c1368cac6394f2c97432e22b635564f03ad6d",
+          "size_bytes": 1224375
+        }
+      ],
+      "filename": "whisper.cpp-v1.8.6-macos-arm64.tar.gz",
+      "sha256": "cfbba61b4f9a4fa3c0387ff7816c1368cac6394f2c97432e22b635564f03ad6d",
+      "size_bytes": 1224375
+    }
+  }
+}

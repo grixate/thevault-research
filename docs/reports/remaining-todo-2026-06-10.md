@@ -170,16 +170,38 @@ Latest Whisper runtime evidence-application slice on 2026-06-22:
   - applied evidence fields: 3
   - source probe: 22 pass / 0 warn / 0 pending / 11 blocked
   - the three managed runtime probes now pass: llama.cpp, whisper.cpp, and Piper all return HTTP 200 with matching `Content-Length`, pinned SHA metadata, and reachable license URLs.
-  - remaining source-probe blockers are model artifact sources only: the 10 production model placeholders plus the Piper JSON sidecar still need concrete approved remote artifact URLs/revisions.
+  - remaining source-probe blockers at that point were model artifact sources only; superseded later on 2026-06-22 by the model source pinning slice, where 55/55 source-probe checks passed.
 - Verified wrapper behavior without `uv` cache prompts:
   - `./scripts/generate_ai_candidate_model_registry.sh --output /tmp/vault-candidate-model-registry.direct-smoke.json --format json`: passed.
   - `./scripts/plan_ai_candidate_shortlist.sh --format json --output /tmp/vault-candidate-shortlist.direct-smoke.json`: passed.
   - `./scripts/validate_ai_registries.sh`: passed with 0 errors and the expected 75 production-placeholder warnings.
   - note: avoid running several Python registry CLIs in parallel in this constrained shell; sequential runs are stable.
 
-Recommended next slice: pin concrete approved model artifact sources/revisions for the production model placeholders, then rerun source probe, byte verification, approval evidence overlay, release packet creation, dry-run pinning, final pinning, setup-run smoke, and capability-route activation. Do not mark production local AI ready until those gates are complete.
+Latest model source pinning slice on 2026-06-22:
 
-Note: strict production is still blocked by design. Merged byte evidence covers all 10 production model candidate IDs plus selected llama.cpp/Piper runtime archives, and the Whisper runtime package now has a commit-pinned HTTP(S) URL with source probe and byte verification passing. The published Whisper byte evidence has now been applied through the candidate overlay path, but none of this pins production registries or marks approval complete. The candidate set still lacks concrete model artifact source pins, release approval evidence, full setup-run smoke verification with approved manifests, and capability-route activation.
+- Hydrated the generated candidate model registry through `./scripts/hydrate_ai_registry_metadata.sh`, resolving all production Hugging Face model candidates to immutable 40-character revisions and filling model artifact sizes/SHA-256 values where Hugging Face LFS metadata exposes them.
+- Hydration result: `hydrated`, 31 updated fields, 0 errors, 1 expected warning for the Piper JSON sidecar lacking LFS SHA-256 metadata.
+- Byte-verified the Piper ONNX + JSON sidecar only, avoiding a full multi-GB model byte-verification rerun:
+  - report: `release-artifacts/model-source-pins-2026-06-22/piper-sidecar-byte-verification.txt`
+  - evidence: `release-artifacts/model-source-pins-2026-06-22/piper-sidecar-byte-evidence.json`
+  - result: 2/2 files verified, 10/10 checks pass, 0 blocked.
+- Merged the published Whisper runtime evidence with the Piper sidecar evidence:
+  - `release-artifacts/model-source-pins-2026-06-22/merged-byte-evidence.json`
+- Re-ran model/runtime source probing after hydration and Piper sidecar evidence:
+  - `release-artifacts/model-source-pins-2026-06-22/source-probe.json`
+  - source probe summary: 13 artifacts, 55 checks, 55 pass, 0 warn, 0 pending, 0 blocked.
+  - validation still has 13 warnings, all approval-status warnings for the 10 production models and 3 production runtimes.
+- Regenerated the source-probed release packet:
+  - `release-artifacts/model-source-pins-2026-06-22/release-packet.md`
+  - `release-artifacts/model-source-pins-2026-06-22/release-packet-summary.json`
+  - packet status: `blocked`
+  - blocking findings: none
+  - patched model registry SHA-256: `a804df817c86b16e2f133753c83b7d60c1d22bb1b0ae31c35376be1f369ab13c`
+  - patched runtime registry SHA-256: `09ad85bd412f1dccb853dfdd2577f6a704d8af50064c3abe0d3ec6f8c2d69a9e`
+
+Recommended next slice: add reviewer approval evidence for the 10 production models and 3 production runtimes, then rerun approval overlay, setup-run smoke verification, dry-run pinning, final pinning, and capability-route activation. Do not mark production local AI ready until those gates are complete.
+
+Note: strict production is still blocked by design. Merged byte evidence covers all 10 production model candidate IDs plus selected llama.cpp/Piper runtime archives, the Whisper runtime package has a commit-pinned HTTP(S) URL with source probe and byte verification passing, and hydrated candidate model sources now pass source probing with no blocked or pending checks. None of this pins production registries or marks approval complete. The candidate set still lacks reviewer approval evidence, full setup-run smoke verification with approved manifests, final pinning, and capability-route activation.
 
 ## Current State
 
@@ -955,11 +977,12 @@ Latest backend/local-AI verification on 2026-06-12 after the current whisper-run
 - Merged evidence overlay with standard Qwen: passed, 36 fields applied; patched model registry SHA-256 `065f12df5f63346a7a246ae47378ce993a85281084629a5aeb5187e7c4c4fd66`, patched runtime registry SHA-256 `a92c8910d62ad78dab0f9fe7f8564c35284a2c93bd85948a84d98f396d5127a1`.
 - Full byte-evidence merge with strong Qwen: passed; `/tmp/vault-merged-byte-evidence.all-models.json` covers all 10 model IDs and 2 runtime IDs.
 - Merged evidence overlay with all model bytes: passed, 39 fields applied; patched model registry SHA-256 `065f12df5f63346a7a246ae47378ce993a85281084629a5aeb5187e7c4c4fd66`, patched runtime registry SHA-256 `a92c8910d62ad78dab0f9fe7f8564c35284a2c93bd85948a84d98f396d5127a1`.
-- Source/license probe after all model byte evidence: historical expected warn result; 53 checks, 52 pass, 0 blocked, 1 pending for the then-unpublished `whisper-cpp-managed-runtime` package URL. Superseded on 2026-06-22 by the published Whisper evidence-application slice; remaining source-probe blockers are model artifact sources.
+- Source/license probe after all model byte evidence: historical expected warn result; 53 checks, 52 pass, 0 blocked, 1 pending for the then-unpublished `whisper-cpp-managed-runtime` package URL. Superseded on 2026-06-22 by the published Whisper evidence-application and model source pinning slices; current source-probe evidence has 55/55 checks passing.
 - Combined candidate release plan after all model byte evidence: expected blocked exit; structural validation passed with 0 errors and 14 warnings; 142 checks, 20 blocked, 0 check warnings.
 - Release packet after all model byte evidence: expected blocked result; `/tmp/vault-all-models-release-packet/candidate-ai-registry-release-packet.md` now includes a `Blocking Details` section naming `source_probe` / `whisper-cpp-managed-runtime:files[0]:source` as the remaining source-probe finding.
 - Whisper runtime package URL publication: passed on 2026-06-21. The candidate shortlist now points at a commit-pinned raw GitHub URL under `release-artifacts/whisper.cpp-v1.8.6-macos-arm64/`, and the generated candidate runtime registry verifies that URL for source, size, license, and bytes.
-- Whisper runtime published byte evidence application: passed on 2026-06-22. The candidate overlay applies 3 runtime byte fields, regenerates a blocked release packet, and source probing now passes for all three managed runtime URLs; remaining source-probe blockers are production model artifact sources only.
+- Whisper runtime published byte evidence application: passed on 2026-06-22. The candidate overlay applies 3 runtime byte fields, regenerates a blocked release packet, and source probing now passes for all three managed runtime URLs.
+- Model source pinning and Piper sidecar byte evidence: passed on 2026-06-22. Hydrated model sources and the Piper sidecar overlay produce 55/55 source-probe checks passing and 0 blocking findings in the regenerated packet.
 - Focused/adjacent registry/readiness/overlay tests: 24 passed.
 - Focused shortlist/runtime candidate tests after the whisper-runtime package update: 6 passed.
 - Focused evidence merge/artifact verification/evidence overlay tests: 11 passed.
@@ -1028,7 +1051,7 @@ Files touched:
 
 ## Completed In An Earlier Verified Slice
 
-Production local-AI byte evidence and whisper.cpp runtime package state are now explicit for all model candidates. The earlier remaining source/byte gap was the unpublished Whisper runtime URL; that gap is now closed by the 2026-06-21 publication and 2026-06-22 evidence-application slices. Current source gaps are production model artifact sources/revisions:
+Production local-AI byte evidence and whisper.cpp runtime package state are now explicit for all model candidates. The earlier remaining source/byte gap was the unpublished Whisper runtime URL; that gap is now closed by the 2026-06-21 publication and 2026-06-22 evidence-application slices. The subsequent 2026-06-22 model source pinning slice hydrated production model sources and cleared source-probe blockers:
 
 - Scoped byte verification for Whisper tiny/base model files and selected llama.cpp/Piper runtime archives passed.
 - Generated `/tmp/vault-small-ai-byte-evidence.json`.
@@ -2685,7 +2708,7 @@ Remaining tasks:
   - approver,
   - approval timestamp,
   - evidence reference.
-- Pin concrete approved production model artifact sources/revisions, then rerun approval evidence overlay, release packet creation, dry-run pinning, and final pinning.
+- Add reviewer approval evidence for production models/runtimes, then rerun approval evidence overlay, release packet creation, setup smoke, dry-run pinning, and final pinning.
 
 Acceptance evidence:
 

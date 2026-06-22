@@ -1,0 +1,122 @@
+{
+  "status": "blocked",
+  "ready_to_pin": false,
+  "output_dir": "/tmp/vault-model-source-pins-release-packet",
+  "generated_at": "2026-06-22T05:33:37.568728+00:00",
+  "applied_count": 9,
+  "patched_model_registry_sha256": "a804df817c86b16e2f133753c83b7d60c1d22bb1b0ae31c35376be1f369ab13c",
+  "patched_runtime_registry_sha256": "09ad85bd412f1dccb853dfdd2577f6a704d8af50064c3abe0d3ec6f8c2d69a9e",
+  "release_plan": {
+    "status": "blocked",
+    "ready_to_pin": false,
+    "total_checks": 146,
+    "blocked_count": 21,
+    "artifact_warning_count": 0,
+    "warning_count": 13,
+    "validation_error_count": 0,
+    "validation_warning_count": 13,
+    "production_pack_count": 4,
+    "ready_production_pack_count": 0,
+    "production_model_count": 10,
+    "ready_production_model_count": 0,
+    "production_runtime_count": 3,
+    "ready_production_runtime_count": 0
+  },
+  "acceptance": {
+    "status": "blocked",
+    "ready_to_pin": false,
+    "dry_run": true
+  },
+  "artifact_probe": {
+    "status": "warn",
+    "summary": {
+      "status": "warn",
+      "artifact_count": 13,
+      "check_count": 55,
+      "pass_count": 55,
+      "warn_count": 0,
+      "pending_count": 0,
+      "blocked_count": 0,
+      "validation_error_count": 0,
+      "validation_warning_count": 13
+    }
+  },
+  "artifact_verification": {
+    "status": "not_run",
+    "summary": null,
+    "evidence": null
+  },
+  "blocking_findings": [],
+  "artifacts": [
+    {
+      "type": "evidence_bundle",
+      "filename": "candidate-ai-registry-evidence-bundle.json",
+      "path": "/tmp/vault-model-source-pins-release-packet/candidate-ai-registry-evidence-bundle.json",
+      "bytes": 244923
+    },
+    {
+      "type": "patched_model_registry",
+      "filename": "vault-candidate-model-registry.hydrated.patched.json",
+      "path": "/tmp/vault-model-source-pins-release-packet/vault-candidate-model-registry.hydrated.patched.json",
+      "bytes": 28239
+    },
+    {
+      "type": "patched_runtime_registry",
+      "filename": "vault-candidate-runtime-registry.model-source-pins.patched.json",
+      "path": "/tmp/vault-model-source-pins-release-packet/vault-candidate-runtime-registry.model-source-pins.patched.json",
+      "bytes": 6548
+    },
+    {
+      "type": "applied_release_plan",
+      "filename": "candidate-ai-registry-release-plan.applied.md",
+      "path": "/tmp/vault-model-source-pins-release-packet/candidate-ai-registry-release-plan.applied.md",
+      "bytes": 23368
+    },
+    {
+      "type": "applied_approval_checklist",
+      "filename": "candidate-local-ai-approval-template.applied.md",
+      "path": "/tmp/vault-model-source-pins-release-packet/candidate-local-ai-approval-template.applied.md",
+      "bytes": 22682
+    },
+    {
+      "type": "pin_handoff",
+      "filename": "candidate-ai-registry-pin-handoff.applied.md",
+      "path": "/tmp/vault-model-source-pins-release-packet/candidate-ai-registry-pin-handoff.applied.md",
+      "bytes": 3334
+    },
+    {
+      "type": "artifact_probe",
+      "filename": "candidate-ai-registry-artifact-probe.applied.md",
+      "path": "/tmp/vault-model-source-pins-release-packet/candidate-ai-registry-artifact-probe.applied.md",
+      "bytes": 12356
+    },
+    {
+      "type": "acceptance_report",
+      "filename": "candidate-ai-registry-acceptance.applied.md",
+      "path": "/tmp/vault-model-source-pins-release-packet/candidate-ai-registry-acceptance.applied.md",
+      "bytes": 2059
+    },
+    {
+      "type": "packet_index",
+      "filename": "candidate-ai-registry-release-packet.md",
+      "path": "/tmp/vault-model-source-pins-release-packet/candidate-ai-registry-release-packet.md",
+      "bytes": 2835
+    },
+    {
+      "type": "packet_summary",
+      "filename": "candidate-ai-registry-release-packet.json",
+      "path": "/tmp/vault-model-source-pins-release-packet/candidate-ai-registry-release-packet.json",
+      "bytes": 4472
+    }
+  ],
+  "next_actions": [
+    "Resolve registry warnings before pinning approved production registries.",
+    "Resolve source, checksum, size, license, runtime, and approval blockers for required models.",
+    "Resolve source, checksum, size, license, and approval blockers for required runtimes.",
+    "Set approval.status to approved after artifact, license, and runtime review.",
+    "Set approval.status to approved after artifact, license, and platform review.",
+    "Resolve registry placeholder warnings before candidate artifact approval."
+  ],
+  "errors": [],
+  "warnings": []
+}

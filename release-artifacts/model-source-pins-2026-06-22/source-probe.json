@@ -1,0 +1,557 @@
+{
+  "generated_at": "2026-06-22T05:33:10.436226+00:00",
+  "status": "warn",
+  "summary": {
+    "status": "warn",
+    "artifact_count": 13,
+    "check_count": 55,
+    "pass_count": 55,
+    "warn_count": 0,
+    "pending_count": 0,
+    "blocked_count": 0,
+    "validation_error_count": 0,
+    "validation_warning_count": 13
+  },
+  "validation": {
+    "status": "pass",
+    "summary": {
+      "model_count": 17,
+      "model_pack_count": 5,
+      "runtime_count": 4,
+      "error_count": 0,
+      "warning_count": 13
+    },
+    "policy": {
+      "status": "skipped",
+      "path": "/Users/grixate/Documents/Research lab/services/core/vault_core/ai/models/registry_policy.json",
+      "actual": null,
+      "expected": null
+    },
+    "errors": [],
+    "warnings": [
+      "tiny-gguf-placeholder.approval.status is pending release approval.",
+      "standard-gguf-placeholder.approval.status is pending release approval.",
+      "strong-gguf-placeholder.approval.status is pending release approval.",
+      "tiny-embedding-placeholder.approval.status is pending release approval.",
+      "balanced-embedding-placeholder.approval.status is pending release approval.",
+      "tiny-reranker-placeholder.approval.status is pending release approval.",
+      "balanced-reranker-placeholder.approval.status is pending release approval.",
+      "tiny-whisper-placeholder.approval.status is pending release approval.",
+      "standard-whisper-placeholder.approval.status is pending release approval.",
+      "tiny-piper-placeholder.approval.status is pending release approval.",
+      "llama-cpp-managed-runtime.approval.status is pending release approval.",
+      "whisper-cpp-managed-runtime.approval.status is pending release approval.",
+      "piper-managed-runtime.approval.status is pending release approval."
+    ]
+  },
+  "artifacts": [
+    {
+      "type": "model",
+      "id": "tiny-gguf-placeholder",
+      "display_name": "Tiny GGUF Local Model",
+      "source_type": "huggingface",
+      "status": "pass",
+      "checks": [
+        {
+          "id": "tiny-gguf-placeholder:files[0]:source",
+          "label": "Artifact source",
+          "status": "pass",
+          "detail": "https://huggingface.co/Qwen/Qwen3-0.6B-GGUF/resolve/23749fefcc72300e3a2ad315e1317431b06b590a/Qwen3-0.6B-Q8_0.gguf returned HTTP 200. Content-Length: 639446688 bytes.",
+          "action": null
+        },
+        {
+          "id": "tiny-gguf-placeholder:files[0]:size",
+          "label": "Content length",
+          "status": "pass",
+          "detail": "Remote Content-Length matches 639446688 bytes.",
+          "action": null
+        },
+        {
+          "id": "tiny-gguf-placeholder:files[0]:sha256",
+          "label": "SHA-256 metadata",
+          "status": "pass",
+          "detail": "Registry SHA-256 is pinned; remote source did not expose checksum metadata, so full download verification remains the final gate.",
+          "action": null
+        },
+        {
+          "id": "tiny-gguf-placeholder:license",
+          "label": "License URL",
+          "status": "pass",
+          "detail": "https://huggingface.co/Qwen/Qwen3-0.6B-GGUF/blob/main/LICENSE returned HTTP 200. Content-Length: 296656 bytes.",
+          "action": null
+        }
+      ]
+    },
+    {
+      "type": "model",
+      "id": "standard-gguf-placeholder",
+      "display_name": "Standard GGUF Local Model",
+      "source_type": "huggingface",
+      "status": "pass",
+      "checks": [
+        {
+          "id": "standard-gguf-placeholder:files[0]:source",
+          "label": "Artifact source",
+          "status": "pass",
+          "detail": "https://huggingface.co/Qwen/Qwen3-1.7B-GGUF/resolve/90862c4b9d2787eaed51d12237eafdfe7c5f6077/Qwen3-1.7B-Q8_0.gguf returned HTTP 200. Content-Length: 1834426016 bytes.",
+          "action": null
+        },
+        {
+          "id": "standard-gguf-placeholder:files[0]:size",
+          "label": "Content length",
+          "status": "pass",
+          "detail": "Remote Content-Length matches 1834426016 bytes.",
+          "action": null
+        },
+        {
+          "id": "standard-gguf-placeholder:files[0]:sha256",
+          "label": "SHA-256 metadata",
+          "status": "pass",
+          "detail": "Registry SHA-256 is pinned; remote source did not expose checksum metadata, so full download verification remains the final gate.",
+          "action": null
+        },
+        {
+          "id": "standard-gguf-placeholder:license",
+          "label": "License URL",
+          "status": "pass",
+          "detail": "https://huggingface.co/Qwen/Qwen3-1.7B-GGUF/blob/main/LICENSE returned HTTP 200. Content-Length: 296834 bytes.",
+          "action": null
+        }
+      ]
+    },
+    {
+      "type": "model",
+      "id": "strong-gguf-placeholder",
+      "display_name": "Strong GGUF Local Model",
+      "source_type": "huggingface",
+      "status": "pass",
+      "checks": [
+        {
+          "id": "strong-gguf-placeholder:files[0]:source",
+          "label": "Artifact source",
+          "status": "pass",
+          "detail": "https://huggingface.co/Qwen/Qwen3-8B-GGUF/resolve/7c41481f57cb95916b40956ab2f0b139b296d974/Qwen3-8B-Q4_K_M.gguf returned HTTP 200. Content-Length: 5027783488 bytes.",
+          "action": null
+        },
+        {
+          "id": "strong-gguf-placeholder:files[0]:size",
+          "label": "Content length",
+          "status": "pass",
+          "detail": "Remote Content-Length matches 5027783488 bytes.",
+          "action": null
+        },
+        {
+          "id": "strong-gguf-placeholder:files[0]:sha256",
+          "label": "SHA-256 metadata",
+          "status": "pass",
+          "detail": "Registry SHA-256 is pinned; remote source did not expose checksum metadata, so full download verification remains the final gate.",
+          "action": null
+        },
+        {
+          "id": "strong-gguf-placeholder:license",
+          "label": "License URL",
+          "status": "pass",
+          "detail": "https://huggingface.co/Qwen/Qwen3-8B-GGUF/blob/main/LICENSE returned HTTP 200. Content-Length: 301289 bytes.",
+          "action": null
+        }
+      ]
+    },
+    {
+      "type": "model",
+      "id": "tiny-embedding-placeholder",
+      "display_name": "Tiny Production Embedding Model",
+      "source_type": "huggingface",
+      "status": "pass",
+      "checks": [
+        {
+          "id": "tiny-embedding-placeholder:files[0]:source",
+          "label": "Artifact source",
+          "status": "pass",
+          "detail": "https://huggingface.co/Qwen/Qwen3-Embedding-0.6B/resolve/97b0c614be4d77ee51c0cef4e5f07c00f9eb65b3/model.safetensors returned HTTP 200. Content-Length: 1191586416 bytes.",
+          "action": null
+        },
+        {
+          "id": "tiny-embedding-placeholder:files[0]:size",
+          "label": "Content length",
+          "status": "pass",
+          "detail": "Remote Content-Length matches 1191586416 bytes.",
+          "action": null
+        },
+        {
+          "id": "tiny-embedding-placeholder:files[0]:sha256",
+          "label": "SHA-256 metadata",
+          "status": "pass",
+          "detail": "Registry SHA-256 is pinned; remote source did not expose checksum metadata, so full download verification remains the final gate.",
+          "action": null
+        },
+        {
+          "id": "tiny-embedding-placeholder:license",
+          "label": "License URL",
+          "status": "pass",
+          "detail": "https://huggingface.co/Qwen/Qwen3-Embedding-0.6B/blob/main/README.md returned HTTP 200. Content-Length: 174060 bytes.",
+          "action": null
+        }
+      ]
+    },
+    {
+      "type": "model",
+      "id": "balanced-embedding-placeholder",
+      "display_name": "Balanced Production Embedding Model",
+      "source_type": "huggingface",
+      "status": "pass",
+      "checks": [
+        {
+          "id": "balanced-embedding-placeholder:files[0]:source",
+          "label": "Artifact source",
+          "status": "pass",
+          "detail": "https://huggingface.co/Qwen/Qwen3-Embedding-0.6B/resolve/97b0c614be4d77ee51c0cef4e5f07c00f9eb65b3/model.safetensors returned HTTP 200. Content-Length: 1191586416 bytes.",
+          "action": null
+        },
+        {
+          "id": "balanced-embedding-placeholder:files[0]:size",
+          "label": "Content length",
+          "status": "pass",
+          "detail": "Remote Content-Length matches 1191586416 bytes.",
+          "action": null
+        },
+        {
+          "id": "balanced-embedding-placeholder:files[0]:sha256",
+          "label": "SHA-256 metadata",
+          "status": "pass",
+          "detail": "Registry SHA-256 is pinned; remote source did not expose checksum metadata, so full download verification remains the final gate.",
+          "action": null
+        },
+        {
+          "id": "balanced-embedding-placeholder:license",
+          "label": "License URL",
+          "status": "pass",
+          "detail": "https://huggingface.co/Qwen/Qwen3-Embedding-0.6B/blob/main/README.md returned HTTP 200. Content-Length: 174060 bytes.",
+          "action": null
+        }
+      ]
+    },
+    {
+      "type": "model",
+      "id": "tiny-reranker-placeholder",
+      "display_name": "Tiny Production Reranker",
+      "source_type": "huggingface",
+      "status": "pass",
+      "checks": [
+        {
+          "id": "tiny-reranker-placeholder:files[0]:source",
+          "label": "Artifact source",
+          "status": "pass",
+          "detail": "https://huggingface.co/Qwen/Qwen3-Reranker-0.6B/resolve/e61197ed45024b0ed8a2d74b80b4d909f1255473/model.safetensors returned HTTP 200. Content-Length: 1191588280 bytes.",
+          "action": null
+        },
+        {
+          "id": "tiny-reranker-placeholder:files[0]:size",
+          "label": "Content length",
+          "status": "pass",
+          "detail": "Remote Content-Length matches 1191588280 bytes.",
+          "action": null
+        },
+        {
+          "id": "tiny-reranker-placeholder:files[0]:sha256",
+          "label": "SHA-256 metadata",
+          "status": "pass",
+          "detail": "Registry SHA-256 is pinned; remote source did not expose checksum metadata, so full download verification remains the final gate.",
+          "action": null
+        },
+        {
+          "id": "tiny-reranker-placeholder:license",
+          "label": "License URL",
+          "status": "pass",
+          "detail": "https://huggingface.co/Qwen/Qwen3-Reranker-0.6B/blob/main/README.md returned HTTP 200. Content-Length: 158387 bytes.",
+          "action": null
+        }
+      ]
+    },
+    {
+      "type": "model",
+      "id": "balanced-reranker-placeholder",
+      "display_name": "Balanced Production Reranker",
+      "source_type": "huggingface",
+      "status": "pass",
+      "checks": [
+        {
+          "id": "balanced-reranker-placeholder:files[0]:source",
+          "label": "Artifact source",
+          "status": "pass",
+          "detail": "https://huggingface.co/Qwen/Qwen3-Reranker-0.6B/resolve/e61197ed45024b0ed8a2d74b80b4d909f1255473/model.safetensors returned HTTP 200. Content-Length: 1191588280 bytes.",
+          "action": null
+        },
+        {
+          "id": "balanced-reranker-placeholder:files[0]:size",
+          "label": "Content length",
+          "status": "pass",
+          "detail": "Remote Content-Length matches 1191588280 bytes.",
+          "action": null
+        },
+        {
+          "id": "balanced-reranker-placeholder:files[0]:sha256",
+          "label": "SHA-256 metadata",
+          "status": "pass",
+          "detail": "Registry SHA-256 is pinned; remote source did not expose checksum metadata, so full download verification remains the final gate.",
+          "action": null
+        },
+        {
+          "id": "balanced-reranker-placeholder:license",
+          "label": "License URL",
+          "status": "pass",
+          "detail": "https://huggingface.co/Qwen/Qwen3-Reranker-0.6B/blob/main/README.md returned HTTP 200. Content-Length: 158387 bytes.",
+          "action": null
+        }
+      ]
+    },
+    {
+      "type": "model",
+      "id": "tiny-whisper-placeholder",
+      "display_name": "Tiny Production whisper.cpp Model",
+      "source_type": "huggingface",
+      "status": "pass",
+      "checks": [
+        {
+          "id": "tiny-whisper-placeholder:files[0]:source",
+          "label": "Artifact source",
+          "status": "pass",
+          "detail": "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-tiny.en.bin returned HTTP 200. Content-Length: 77704715 bytes.",
+          "action": null
+        },
+        {
+          "id": "tiny-whisper-placeholder:files[0]:size",
+          "label": "Content length",
+          "status": "pass",
+          "detail": "Remote Content-Length matches 77704715 bytes.",
+          "action": null
+        },
+        {
+          "id": "tiny-whisper-placeholder:files[0]:sha256",
+          "label": "SHA-256 metadata",
+          "status": "pass",
+          "detail": "Registry SHA-256 is pinned; remote source did not expose checksum metadata, so full download verification remains the final gate.",
+          "action": null
+        },
+        {
+          "id": "tiny-whisper-placeholder:license",
+          "label": "License URL",
+          "status": "pass",
+          "detail": "https://huggingface.co/ggerganov/whisper.cpp/blob/main/README.md returned HTTP 200. Content-Length: 89525 bytes.",
+          "action": null
+        }
+      ]
+    },
+    {
+      "type": "model",
+      "id": "standard-whisper-placeholder",
+      "display_name": "Production whisper.cpp Small Model",
+      "source_type": "huggingface",
+      "status": "pass",
+      "checks": [
+        {
+          "id": "standard-whisper-placeholder:files[0]:source",
+          "label": "Artifact source",
+          "status": "pass",
+          "detail": "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-base.en.bin returned HTTP 200. Content-Length: 147964211 bytes.",
+          "action": null
+        },
+        {
+          "id": "standard-whisper-placeholder:files[0]:size",
+          "label": "Content length",
+          "status": "pass",
+          "detail": "Remote Content-Length matches 147964211 bytes.",
+          "action": null
+        },
+        {
+          "id": "standard-whisper-placeholder:files[0]:sha256",
+          "label": "SHA-256 metadata",
+          "status": "pass",
+          "detail": "Registry SHA-256 is pinned; remote source did not expose checksum metadata, so full download verification remains the final gate.",
+          "action": null
+        },
+        {
+          "id": "standard-whisper-placeholder:license",
+          "label": "License URL",
+          "status": "pass",
+          "detail": "https://huggingface.co/ggerganov/whisper.cpp/blob/main/README.md returned HTTP 200. Content-Length: 89525 bytes.",
+          "action": null
+        }
+      ]
+    },
+    {
+      "type": "model",
+      "id": "tiny-piper-placeholder",
+      "display_name": "Tiny Production Piper Voice",
+      "source_type": "huggingface",
+      "status": "pass",
+      "checks": [
+        {
+          "id": "tiny-piper-placeholder:files[0]:source",
+          "label": "Artifact source",
+          "status": "pass",
+          "detail": "https://huggingface.co/rhasspy/piper-voices/resolve/e21c7de8d4eab79b902f0d61e662b3f21664b8d2/en/en_US/amy/low/en_US-amy-low.onnx returned HTTP 200. Content-Length: 63104526 bytes.",
+          "action": null
+        },
+        {
+          "id": "tiny-piper-placeholder:files[0]:size",
+          "label": "Content length",
+          "status": "pass",
+          "detail": "Remote Content-Length matches 63104526 bytes.",
+          "action": null
+        },
+        {
+          "id": "tiny-piper-placeholder:files[0]:sha256",
+          "label": "SHA-256 metadata",
+          "status": "pass",
+          "detail": "Registry SHA-256 is pinned; remote source did not expose checksum metadata, so full download verification remains the final gate.",
+          "action": null
+        },
+        {
+          "id": "tiny-piper-placeholder:files[1]:source",
+          "label": "Artifact source",
+          "status": "pass",
+          "detail": "https://huggingface.co/rhasspy/piper-voices/resolve/e21c7de8d4eab79b902f0d61e662b3f21664b8d2/en/en_US/amy/low/en_US-amy-low.onnx.json returned HTTP 200. Content-Length: 4164 bytes.",
+          "action": null
+        },
+        {
+          "id": "tiny-piper-placeholder:files[1]:size",
+          "label": "Content length",
+          "status": "pass",
+          "detail": "Remote Content-Length matches 4164 bytes.",
+          "action": null
+        },
+        {
+          "id": "tiny-piper-placeholder:files[1]:sha256",
+          "label": "SHA-256 metadata",
+          "status": "pass",
+          "detail": "Registry SHA-256 is pinned; remote source did not expose checksum metadata, so full download verification remains the final gate.",
+          "action": null
+        },
+        {
+          "id": "tiny-piper-placeholder:license",
+          "label": "License URL",
+          "status": "pass",
+          "detail": "https://huggingface.co/rhasspy/piper-voices/blob/main/en/en_US/amy/low/MODEL_CARD returned HTTP 200. Content-Length: 102183 bytes.",
+          "action": null
+        }
+      ]
+    },
+    {
+      "type": "runtime",
+      "id": "llama-cpp-managed-runtime",
+      "display_name": "Managed llama.cpp Runtime",
+      "source_type": "url",
+      "status": "pass",
+      "checks": [
+        {
+          "id": "llama-cpp-managed-runtime:files[0]:source",
+          "label": "Artifact source",
+          "status": "pass",
+          "detail": "https://github.com/ggml-org/llama.cpp/releases/download/b9596/llama-b9596-bin-macos-arm64.tar.gz returned HTTP 200. Content-Length: 10547769 bytes.",
+          "action": null
+        },
+        {
+          "id": "llama-cpp-managed-runtime:files[0]:size",
+          "label": "Content length",
+          "status": "pass",
+          "detail": "Remote Content-Length matches 10547769 bytes.",
+          "action": null
+        },
+        {
+          "id": "llama-cpp-managed-runtime:files[0]:sha256",
+          "label": "SHA-256 metadata",
+          "status": "pass",
+          "detail": "Registry SHA-256 is pinned; remote source did not expose checksum metadata, so full download verification remains the final gate.",
+          "action": null
+        },
+        {
+          "id": "llama-cpp-managed-runtime:license",
+          "label": "License URL",
+          "status": "pass",
+          "detail": "https://github.com/ggml-org/llama.cpp/blob/b9596/LICENSE returned HTTP 200.",
+          "action": null
+        }
+      ],
+      "runtime_name": "llama_cpp"
+    },
+    {
+      "type": "runtime",
+      "id": "whisper-cpp-managed-runtime",
+      "display_name": "Managed whisper.cpp Runtime",
+      "source_type": "url",
+      "status": "pass",
+      "checks": [
+        {
+          "id": "whisper-cpp-managed-runtime:files[0]:source",
+          "label": "Artifact source",
+          "status": "pass",
+          "detail": "https://raw.githubusercontent.com/grixate/thevault-research/c8c890ca3f1a3b6f10a74ca3b59f11e6a91f61bf/release-artifacts/whisper.cpp-v1.8.6-macos-arm64/whisper.cpp-v1.8.6-macos-arm64.tar.gz returned HTTP 200. Content-Length: 1224375 bytes.",
+          "action": null
+        },
+        {
+          "id": "whisper-cpp-managed-runtime:files[0]:size",
+          "label": "Content length",
+          "status": "pass",
+          "detail": "Remote Content-Length matches 1224375 bytes.",
+          "action": null
+        },
+        {
+          "id": "whisper-cpp-managed-runtime:files[0]:sha256",
+          "label": "SHA-256 metadata",
+          "status": "pass",
+          "detail": "Registry SHA-256 is pinned; remote source did not expose checksum metadata, so full download verification remains the final gate.",
+          "action": null
+        },
+        {
+          "id": "whisper-cpp-managed-runtime:license",
+          "label": "License URL",
+          "status": "pass",
+          "detail": "https://github.com/ggml-org/whisper.cpp/blob/v1.8.6/LICENSE returned HTTP 200.",
+          "action": null
+        }
+      ],
+      "runtime_name": "whisper_cpp"
+    },
+    {
+      "type": "runtime",
+      "id": "piper-managed-runtime",
+      "display_name": "Managed Piper Runtime",
+      "source_type": "url",
+      "status": "pass",
+      "checks": [
+        {
+          "id": "piper-managed-runtime:files[0]:source",
+          "label": "Artifact source",
+          "status": "pass",
+          "detail": "https://github.com/rhasspy/piper/releases/download/2023.11.14-2/piper_macos_aarch64.tar.gz returned HTTP 200. Content-Length: 19146957 bytes.",
+          "action": null
+        },
+        {
+          "id": "piper-managed-runtime:files[0]:size",
+          "label": "Content length",
+          "status": "pass",
+          "detail": "Remote Content-Length matches 19146957 bytes.",
+          "action": null
+        },
+        {
+          "id": "piper-managed-runtime:files[0]:sha256",
+          "label": "SHA-256 metadata",
+          "status": "pass",
+          "detail": "Registry SHA-256 is pinned; remote source did not expose checksum metadata, so full download verification remains the final gate.",
+          "action": null
+        },
+        {
+          "id": "piper-managed-runtime:license",
+          "label": "License URL",
+          "status": "pass",
+          "detail": "https://github.com/rhasspy/piper/blob/2023.11.14-2/LICENSE.md returned HTTP 200.",
+          "action": null
+        }
+      ],
+      "runtime_name": "piper"
+    }
+  ],
+  "next_actions": [
+    "Resolve registry placeholder warnings before candidate artifact approval."
+  ]
+}
