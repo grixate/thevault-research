@@ -53,11 +53,12 @@ def ai_production_readiness_report(db: VaultDatabase, settings: Settings) -> AIP
     ready_pack_count = sum(1 for pack in production_packs if pack.release_status in {"ready", "installed"})
     ready_runtime_count = sum(1 for runtime in production_runtimes if not runtime.blocked_reasons)
     status = "blocked" if blocked_count else "warn" if warn_count else "ready"
+    required_ready = blocked_count == 0 and ready_pack_count > 0
 
     return AIProductionReadinessReport(
         generated_at=now_iso(),
         status=status,
-        production_ready=status == "ready" and ready_pack_count > 0,
+        production_ready=required_ready,
         demo_available=setup.can_use_demo,
         recommended_profile=setup.recommended_profile,
         recommended_pack_id=setup.recommended_pack_id,

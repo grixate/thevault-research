@@ -24,6 +24,8 @@ Latest completed slice:
 - Updated Settings so the compact setup guide visually prioritizes Setup over starter setup.
 - Added renderer handling for backend `ai.setup.run` step actions.
 - Fixed the setup status route step so default mock bindings no longer count as finished capability routes.
+- Added bounded full-pack setup coverage proving an approved production pack can activate all nine required local routes and clear required route blockers without downloading real multi-GB models.
+- Updated readiness semantics so optional-route warnings do not keep `production_ready` false once all required blockers are cleared.
 - Updated focused backend coverage for the production-first setup contract.
 
 Earlier implementation slice built a reproducible macOS arm64 `whisper-cli` package from `whisper.cpp` source, moved the whisper runtime from distribution-decision to release-evidence, verified all production model candidate bytes, and merged the current byte-evidence files into one candidate overlay.
@@ -2895,12 +2897,14 @@ Current good state:
 - Setup step actions can call `/ai/setup/run` directly with `mode: recommended`.
 - The setup route step now reports mock/default bindings as unfinished and offers `Install and activate recommended routes`.
 - `/ai/setup/run` already has the code path for approved production runtime installation, model download, local smoke tests, and route activation.
+- A bounded fake-artifact production pack test now proves all required v1 routes can become local and approved in one setup run.
+- Optional reranking remains a warning, not a production-readiness blocker.
 - Strict readiness honestly remains blocked until the selected local routes replace mock providers.
 
 Remaining tasks:
 
-- Run and harden `/ai/setup/run` against the approved starter pack on clean app data, using bounded tests that do not repeatedly download multi-GB assets.
-- Route required capabilities to local approved inventory:
+- Run `/ai/setup/run` against the real approved starter pack on clean app data when ready to pay the download cost.
+- Route required capabilities to real local approved inventory in the user workspace:
   - `extract_objects`
   - `extract_claims`
   - `summarize`

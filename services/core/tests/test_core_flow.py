@@ -6858,6 +6858,340 @@ def test_approved_voice_setup_run_installs_tests_and_activates_routes(tmp_path, 
             server.server_close()
 
 
+def test_approved_full_production_setup_clears_required_route_blockers(tmp_path, monkeypatch):
+    llama_runtime_payload = (
+        b"#!/usr/bin/env sh\n"
+        b"if [ \"$1\" = \"--version\" ]; then echo 'approved llama.cpp runtime'; exit 0; fi\n"
+        b"echo 'APPROVED_LLAMA_OK'\n"
+    )
+    whisper_runtime_payload = (
+        b"#!/usr/bin/env python3\n"
+        b"import json, sys\n"
+        b"if '--version' in sys.argv:\n"
+        b"    print('approved whisper.cpp runtime')\n"
+        b"    raise SystemExit(0)\n"
+        b"print(json.dumps({'language':'en','segments':[{'start':0.0,'end':0.5,'text':'Setup smoke transcript.'}]}))\n"
+    )
+    piper_runtime_payload = (
+        b"#!/usr/bin/env python3\n"
+        b"import pathlib, sys\n"
+        b"if '--version' in sys.argv:\n"
+        b"    print('approved piper runtime')\n"
+        b"    raise SystemExit(0)\n"
+        b"out = sys.argv[sys.argv.index('--output_file') + 1]\n"
+        b"pathlib.Path(out).write_bytes(b'WAV:' + sys.stdin.read().encode())\n"
+    )
+    llm_payload = b"approved full production gguf bytes\n" + (b"l" * (1024 * 1024 + 128))
+    embedding_payload = b"approved full production embedding model"
+    whisper_model_payload = b"approved full production whisper model"
+    piper_model_payload = b"approved full production piper voice"
+    llama_runtime_server, llama_runtime_url = serve_payload(llama_runtime_payload, "/llama-cli")
+    whisper_runtime_server, whisper_runtime_url = serve_payload(whisper_runtime_payload, "/whisper-cli")
+    piper_runtime_server, piper_runtime_url = serve_payload(piper_runtime_payload, "/piper")
+    llm_server, llm_url = serve_payload(llm_payload, "/full-model.gguf")
+    embedding_server, embedding_url = serve_payload(embedding_payload, "/embedding-model.bin")
+    whisper_model_server, whisper_model_url = serve_payload(whisper_model_payload, "/ggml-base.bin")
+    piper_model_server, piper_model_url = serve_payload(piper_model_payload, "/voice.onnx")
+    servers = [
+        llama_runtime_server,
+        whisper_runtime_server,
+        piper_runtime_server,
+        llm_server,
+        embedding_server,
+        whisper_model_server,
+        piper_model_server,
+    ]
+    try:
+        model_registry_path = tmp_path / "model_registry.json"
+        model_registry_path.write_text(
+            json.dumps(
+                {
+                    "schema_version": 1,
+                    "models": [
+                        {
+                            "id": "approved-full-llm",
+                            "display_name": "Approved Full Production LLM",
+                            "family": "approved-test",
+                            "kind": "llm",
+                            "capabilities": [
+                                "extract_objects",
+                                "extract_claims",
+                                "summarize",
+                                "generate_note",
+                                "grounded_answer",
+                                "create_learning_item",
+                            ],
+                            "runtime": "llama_cpp",
+                            "format": "gguf",
+                            "recommended_profile": "tiny",
+                            "license_label": "MIT",
+                            "license_url": "https://example.test/llm-license",
+                            "approval": release_approval("approved full production LLM"),
+                            "source": {"type": "url", "url": llm_url},
+                            "files": [
+                                {
+                                    "filename": "full-model.gguf",
+                                    "sha256": content_hash(llm_payload),
+                                    "size_bytes": len(llm_payload),
+                                }
+                            ],
+                            "defaults": {
+                                "context_tokens": 2048,
+                                "temperature_extraction": 0,
+                                "max_tokens_extraction": 256,
+                                "temperature_generation": 0.2,
+                                "max_tokens_generation": 512,
+                            },
+                        },
+                        {
+                            "id": "approved-full-embedding",
+                            "display_name": "Approved Full Production Embedding",
+                            "family": "approved-test",
+                            "kind": "embedding",
+                            "capabilities": ["embed_text"],
+                            "runtime": "local_embedding",
+                            "format": "model",
+                            "recommended_profile": "tiny",
+                            "license_label": "MIT",
+                            "license_url": "https://example.test/embedding-license",
+                            "approval": release_approval("approved full production embedding"),
+                            "source": {"type": "url", "url": embedding_url},
+                            "files": [
+                                {
+                                    "filename": "embedding-model.bin",
+                                    "sha256": content_hash(embedding_payload),
+                                    "size_bytes": len(embedding_payload),
+                                }
+                            ],
+                            "defaults": {"dimensions": 16},
+                        },
+                        {
+                            "id": "approved-full-whisper",
+                            "display_name": "Approved Full Production whisper.cpp Model",
+                            "family": "approved-test",
+                            "kind": "stt",
+                            "capabilities": ["transcribe_audio"],
+                            "runtime": "whisper_cpp",
+                            "format": "ggml",
+                            "recommended_profile": "tiny",
+                            "license_label": "MIT",
+                            "license_url": "https://example.test/whisper-license",
+                            "approval": release_approval("approved full production whisper"),
+                            "source": {"type": "url", "url": whisper_model_url},
+                            "files": [
+                                {
+                                    "filename": "ggml-base.bin",
+                                    "sha256": content_hash(whisper_model_payload),
+                                    "size_bytes": len(whisper_model_payload),
+                                }
+                            ],
+                            "defaults": {"language": "en", "timestamps": True, "timeout_seconds": 3},
+                        },
+                        {
+                            "id": "approved-full-piper",
+                            "display_name": "Approved Full Production Piper Voice",
+                            "family": "approved-test",
+                            "kind": "tts",
+                            "capabilities": ["synthesize_speech"],
+                            "runtime": "piper",
+                            "format": "onnx",
+                            "recommended_profile": "tiny",
+                            "license_label": "MIT",
+                            "license_url": "https://example.test/piper-license",
+                            "approval": release_approval("approved full production piper"),
+                            "source": {"type": "url", "url": piper_model_url},
+                            "files": [
+                                {
+                                    "filename": "voice.onnx",
+                                    "sha256": content_hash(piper_model_payload),
+                                    "size_bytes": len(piper_model_payload),
+                                }
+                            ],
+                            "defaults": {"format": "wav", "voice_id": "approved_voice", "timeout_seconds": 3},
+                        },
+                    ],
+                    "model_packs": [
+                        {
+                            "id": "approved-full-production-pack",
+                            "display_name": "Approved Full Production Pack",
+                            "profile": "tiny",
+                            "release_channel": "production",
+                            "description": "Approved full local setup test pack.",
+                            "required_model_ids": [
+                                "approved-full-llm",
+                                "approved-full-embedding",
+                                "approved-full-whisper",
+                                "approved-full-piper",
+                            ],
+                            "capabilities": [
+                                "extract_objects",
+                                "extract_claims",
+                                "summarize",
+                                "generate_note",
+                                "grounded_answer",
+                                "create_learning_item",
+                                "embed_text",
+                                "transcribe_audio",
+                                "synthesize_speech",
+                            ],
+                            "requires_managed_runtime": True,
+                        }
+                    ],
+                }
+            ),
+            encoding="utf-8",
+        )
+        runtime_registry_path = tmp_path / "runtime_registry.json"
+        runtime_registry_path.write_text(
+            json.dumps(
+                {
+                    "schema_version": 1,
+                    "runtimes": [
+                        {
+                            "id": "approved-full-llama-runtime",
+                            "display_name": "Approved Full llama.cpp Runtime",
+                            "runtime": "llama_cpp",
+                            "release_channel": "production",
+                            "version": "approved-test",
+                            "platform": "any",
+                            "arch": "any",
+                            "binary_name": "llama-cli",
+                            "license_label": "MIT",
+                            "license_url": "https://example.test/llama-runtime-license",
+                            "approval": release_approval("approved full llama runtime"),
+                            "source": {"type": "url", "url": llama_runtime_url},
+                            "files": [
+                                {
+                                    "filename": "llama-cli",
+                                    "sha256": content_hash(llama_runtime_payload),
+                                    "size_bytes": len(llama_runtime_payload),
+                                    "executable": True,
+                                }
+                            ],
+                        },
+                        {
+                            "id": "approved-full-whisper-runtime",
+                            "display_name": "Approved Full whisper.cpp Runtime",
+                            "runtime": "whisper_cpp",
+                            "release_channel": "production",
+                            "version": "approved-test",
+                            "platform": "any",
+                            "arch": "any",
+                            "binary_name": "whisper-cli",
+                            "license_label": "MIT",
+                            "license_url": "https://example.test/whisper-runtime-license",
+                            "approval": release_approval("approved full whisper runtime"),
+                            "source": {"type": "url", "url": whisper_runtime_url},
+                            "files": [
+                                {
+                                    "filename": "whisper-cli",
+                                    "sha256": content_hash(whisper_runtime_payload),
+                                    "size_bytes": len(whisper_runtime_payload),
+                                    "executable": True,
+                                }
+                            ],
+                        },
+                        {
+                            "id": "approved-full-piper-runtime",
+                            "display_name": "Approved Full Piper Runtime",
+                            "runtime": "piper",
+                            "release_channel": "production",
+                            "version": "approved-test",
+                            "platform": "any",
+                            "arch": "any",
+                            "binary_name": "piper",
+                            "license_label": "MIT",
+                            "license_url": "https://example.test/piper-runtime-license",
+                            "approval": release_approval("approved full piper runtime"),
+                            "source": {"type": "url", "url": piper_runtime_url},
+                            "files": [
+                                {
+                                    "filename": "piper",
+                                    "sha256": content_hash(piper_runtime_payload),
+                                    "size_bytes": len(piper_runtime_payload),
+                                    "executable": True,
+                                }
+                            ],
+                        },
+                    ],
+                }
+            ),
+            encoding="utf-8",
+        )
+        monkeypatch.setattr(model_registry, "REGISTRY_PATH", model_registry_path)
+        monkeypatch.setattr(runtime_installer, "REGISTRY_PATH", runtime_registry_path)
+        settings = Settings(data_dir=tmp_path / "vault-data", desktop_token=None, port=8877, workspace_name="Full AI Lab")
+        with TestClient(create_app(settings)) as client:
+            before = client.get("/ai/setup/status").json()
+            route_step_before = next(step for step in before["steps"] if step["id"] == "capability_routes")
+            assert route_step_before["summary"] == "0/9 local routes ready"
+
+            run = client.post(
+                "/ai/setup/run",
+                json={"mode": "recommended", "pack_id": "approved-full-production-pack", "timeout_seconds": 3},
+            ).json()
+            assert run["status"] == "ready"
+            assert set(run["selected_capabilities"]) == {
+                "extract_objects",
+                "extract_claims",
+                "summarize",
+                "generate_note",
+                "grounded_answer",
+                "create_learning_item",
+                "embed_text",
+                "transcribe_audio",
+                "synthesize_speech",
+            }
+            assert all(download["state"] == "installed" for download in run["downloads"])
+
+            setup = client.get("/ai/setup/status").json()
+            assert setup["overall_status"] == "ready"
+            route_step = next(step for step in setup["steps"] if step["id"] == "capability_routes")
+            assert route_step["status"] == "done"
+            assert route_step["summary"] == "9/9 local routes ready"
+
+            capabilities = {item["capability"]: item for item in client.get("/ai/capabilities").json()}
+            for capability in [
+                "extract_objects",
+                "extract_claims",
+                "summarize",
+                "generate_note",
+                "grounded_answer",
+                "create_learning_item",
+            ]:
+                assert capabilities[capability]["provider_id"] == "llama_cpp_cli"
+                assert capabilities[capability]["model_id"] == "approved-full-llm"
+                assert capabilities[capability]["local_only"] is True
+            assert capabilities["embed_text"]["provider_id"] == "local_embedding"
+            assert capabilities["transcribe_audio"]["provider_id"] == "whisper_cpp"
+            assert capabilities["synthesize_speech"]["provider_id"] == "piper"
+
+            readiness = client.get("/ai/readiness/report").json()
+            assert readiness["summary"]["blocked_count"] == 0
+            assert readiness["production_ready"] is True
+            sections = {section["id"]: section for section in readiness["sections"]}
+            assert sections["capability-routes"]["blocked_count"] == 0
+            assert sections["capability-routes"]["status"] == "warn"
+            route_checks = {check["id"]: check for check in sections["capability-routes"]["checks"]}
+            for capability in [
+                "extract_objects",
+                "extract_claims",
+                "summarize",
+                "generate_note",
+                "grounded_answer",
+                "create_learning_item",
+                "embed_text",
+                "transcribe_audio",
+                "synthesize_speech",
+            ]:
+                assert route_checks[f"capability:{capability}"]["status"] == "pass"
+            assert route_checks["capability:rerank_results"]["status"] == "warn"
+    finally:
+        for server in servers:
+            server.shutdown()
+            server.server_close()
+
+
 def test_voice_transcription_can_create_audio_source_with_timestamped_segments(client, tmp_path):
     audio_path = tmp_path / "lab voice memo.wav"
     audio_path.write_bytes(b"fake wav bytes for local voice memo")
