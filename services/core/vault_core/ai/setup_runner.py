@@ -34,6 +34,9 @@ def run_ai_setup(db: VaultDatabase, settings: Settings, req: AISetupRunRequest) 
 
     registry_models = {model["id"]: model for model in load_model_registry().get("models", [])}
     setup_model_ids = _setup_model_ids(pack, include_optional_models=req.include_optional_models)
+    if req.dry_run:
+        return _dry_run_setup_response(db, settings, req, pack, registry_models, setup_model_ids)
+
     steps: list[AISetupRunStep] = []
     downloads: list[dict[str, Any]] = []
     selected_capabilities: list[str] = []
@@ -103,6 +106,7 @@ def run_ai_setup(db: VaultDatabase, settings: Settings, req: AISetupRunRequest) 
         pack_id=pack.id,
         release_channel=pack.release_channel,
         status=status,
+        dry_run=False,
         selected_capabilities=selected_capabilities,
         downloads=downloads,
         steps=steps,
@@ -182,6 +186,79 @@ def _blocked_pack_response(
         pack_id=pack.id,
         release_channel=pack.release_channel,
         status="blocked",
+        dry_run=req.dry_run,
+        selected_capabilities=[],
+        downloads=[],
+        steps=steps,
+        setup=ai_setup_status(db, settings),
+    )
+
+
+def _dry_run_setup_response(
+    db: VaultDatabase,
+    settings: Settings,
+    req: AISetupRunRequest,
+    pack: AIModelPackInfo,
+    registry_models: dict[str, dict[str, Any]],
+    model_ids: list[str],
+) -> AISetupRunResponse:
+    steps: list[AISetupRunStep] = []
+    if req.install_runtimes:
+        steps.extend(_plan_pack_runtimes(db, settings, pack, registry_models, model_ids))
+    else:
+        steps.append(
+            AISetupRunStep(
+                id="runtime-install-skipped",
+                title="Runtime installation",
+                status="skipped",
+                detail="Runtime installation would be skipped.",
+            )
+        )
+    if req.download_models:
+        steps.extend(_plan_pack_models(db, model_ids))
+    else:
+        steps.append(
+            AISetupRunStep(
+                id="model-download-skipped",
+                title="Model download",
+                status="skipped",
+                detail="Model downloads would be skipped.",
+            )
+        )
+    if req.activate_routes:
+        steps.extend(_plan_route_activation(pack, registry_models, model_ids))
+    else:
+        steps.append(
+            AISetupRunStep(
+                id="route-activation-skipped",
+                title="Route activation",
+                status="skipped",
+                detail="Capability route activation would be skipped.",
+            )
+        )
+
+    status = "blocked" if any(step.status in {"blocked", "failed"} for step in steps) else "partial"
+    with db.connect() as conn:
+        db.event(
+            conn,
+            "ai.setup_run_planned",
+            "ai_setup",
+            pack.id,
+            {
+                "mode": req.mode,
+                "release_channel": pack.release_channel,
+                "status": status,
+                "include_optional_models": req.include_optional_models,
+                "step_count": len(steps),
+            },
+            "user",
+        )
+    return AISetupRunResponse(
+        mode=req.mode,
+        pack_id=pack.id,
+        release_channel=pack.release_channel,
+        status=status,
+        dry_run=True,
         selected_capabilities=[],
         downloads=[],
         steps=steps,
@@ -193,6 +270,65 @@ def _check_detail(check: Any) -> str:
     if check.action:
         return f"{check.detail} Action: {check.action}"
     return check.detail
+
+
+def _plan_pack_runtimes(
+    db: VaultDatabase,
+    settings: Settings,
+    pack: AIModelPackInfo,
+    registry_models: dict[str, dict[str, Any]],
+    model_ids: list[str],
+) -> list[AISetupRunStep]:
+    steps: list[AISetupRunStep] = []
+    runtime_infos = list_runtime_infos(db, settings)
+    for runtime in _pack_runtime_ids(pack, registry_models, model_ids):
+        if runtime in {"mock", "local_embedding", "local_cross_encoder"}:
+            steps.append(
+                AISetupRunStep(
+                    id=f"runtime-{runtime}",
+                    title=f"{runtime} runtime",
+                    status="done",
+                    detail="Built-in local provider is already available.",
+                )
+            )
+            continue
+        candidates = [
+            item
+            for item in runtime_infos
+            if item.runtime == runtime and item.release_channel == pack.release_channel
+        ]
+        installed = next((item for item in candidates if item.installed), None)
+        installable = next((item for item in candidates if item.installable), None)
+        if installed:
+            steps.append(
+                AISetupRunStep(
+                    id=f"runtime-{runtime}",
+                    title=f"{runtime} runtime",
+                    status="done",
+                    runtime_id=installed.id,
+                    detail=f"{installed.display_name} is already installed and verified.",
+                )
+            )
+        elif installable:
+            steps.append(
+                AISetupRunStep(
+                    id=f"runtime-{runtime}",
+                    title=f"{runtime} runtime",
+                    status="queued",
+                    runtime_id=installable.id,
+                    detail=f"Would install and verify {installable.display_name}.",
+                )
+            )
+        else:
+            steps.append(
+                AISetupRunStep(
+                    id=f"runtime-{runtime}",
+                    title=f"{runtime} runtime",
+                    status="blocked",
+                    detail=f"No approved installable {runtime} runtime is available yet.",
+                )
+            )
+    return steps
 
 
 def _install_pack_runtimes(
@@ -265,6 +401,57 @@ def _install_pack_runtimes(
                     detail=str(exc),
                 )
             )
+    return steps
+
+
+def _plan_pack_models(db: VaultDatabase, model_ids: list[str]) -> list[AISetupRunStep]:
+    steps: list[AISetupRunStep] = []
+    infos = {model.id: model for model in list_model_infos(db)}
+    for model_id in model_ids:
+        info = infos.get(model_id)
+        if not info:
+            steps.append(
+                AISetupRunStep(
+                    id=f"model-{model_id}",
+                    title=model_id,
+                    status="blocked",
+                    model_id=model_id,
+                    detail="Model is not in the registry.",
+                )
+            )
+            continue
+        if info.installed:
+            steps.append(
+                AISetupRunStep(
+                    id=f"model-{model_id}",
+                    title=info.display_name,
+                    status="done",
+                    model_id=model_id,
+                    detail="Model is already installed.",
+                )
+            )
+            continue
+        if info.downloadable:
+            size_detail = f" ({info.size_bytes} bytes)" if info.size_bytes else ""
+            steps.append(
+                AISetupRunStep(
+                    id=f"model-{model_id}",
+                    title=info.display_name,
+                    status="queued",
+                    model_id=model_id,
+                    detail=f"Would download and verify {info.display_name}{size_detail}.",
+                )
+            )
+            continue
+        steps.append(
+            AISetupRunStep(
+                id=f"model-{model_id}",
+                title=info.display_name,
+                status="blocked",
+                model_id=model_id,
+                detail="No release-ready downloadable artifact is available.",
+            )
+        )
     return steps
 
 
@@ -349,6 +536,46 @@ def _download_pack_models(
                 )
             )
     return steps, downloads
+
+
+def _plan_route_activation(
+    pack: AIModelPackInfo,
+    registry_models: dict[str, dict[str, Any]],
+    model_ids: list[str],
+) -> list[AISetupRunStep]:
+    steps: list[AISetupRunStep] = []
+    target_capabilities = _setup_capabilities(pack, registry_models, model_ids)
+    for model_id in model_ids:
+        model = registry_models.get(model_id)
+        if not model:
+            steps.append(
+                AISetupRunStep(
+                    id=f"activate-{model_id}",
+                    title=model_id,
+                    status="blocked",
+                    model_id=model_id,
+                    detail="Model definition is missing.",
+                )
+            )
+            continue
+        capabilities = [
+            capability
+            for capability in model.get("capabilities", [])
+            if capability in target_capabilities
+        ]
+        if not capabilities:
+            continue
+        provider_id = _provider_for_model(model)
+        steps.append(
+            AISetupRunStep(
+                id=f"activate-{model_id}",
+                title=model.get("display_name", model_id),
+                status="queued",
+                model_id=model_id,
+                detail=f"Would smoke-test {provider_id} and activate {', '.join(capabilities)}.",
+            )
+        )
+    return steps
 
 
 def _activate_ready_pack_routes(

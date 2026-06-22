@@ -966,6 +966,7 @@ export type AISetupRunResult = {
   pack_id: string;
   release_channel: "demo" | "production";
   status: "ready" | "demo_ready" | "partial" | "blocked" | "failed";
+  dry_run: boolean;
   selected_capabilities: string[];
   downloads: Array<Record<string, unknown>>;
   steps: AISetupRunStep[];
@@ -976,6 +977,7 @@ export type AISetupRunInput = {
   mode: "demo" | "recommended";
   pack_id?: string;
   include_optional_models?: boolean;
+  dry_run?: boolean;
 };
 
 export type AIRuntimeInfo = {

@@ -6021,6 +6021,52 @@ def test_model_pack_download_queues_release_ready_small_models(client):
     assert tiny_production["blocked_reasons"] == []
 
 
+def test_ai_setup_run_dry_run_preflights_recommended_pack_without_side_effects(client):
+    before_capabilities = client.get("/ai/capabilities").json()
+    before_routes = {
+        item["capability"]: (item["provider_id"], item["model_id"])
+        for item in before_capabilities
+    }
+    before_installed_models = client.get("/ai/models/installed").json()
+    preflight = client.post(
+        "/ai/setup/run",
+        json={"mode": "recommended", "pack_id": "starter-local-pack", "dry_run": True},
+    ).json()
+    assert preflight["dry_run"] is True
+    assert preflight["pack_id"] == "starter-local-pack"
+    assert preflight["release_channel"] == "production"
+    assert preflight["status"] == "partial"
+    assert preflight["selected_capabilities"] == []
+    assert preflight["downloads"] == []
+    assert any(step["id"] == "runtime-llama_cpp" and step["status"] == "queued" for step in preflight["steps"])
+    assert any(step["id"] == "runtime-whisper_cpp" and step["status"] == "queued" for step in preflight["steps"])
+    assert any(step["id"] == "runtime-piper" and step["status"] == "queued" for step in preflight["steps"])
+    assert any(step["model_id"] == "standard-gguf-placeholder" and step["status"] == "queued" for step in preflight["steps"])
+    assert any(step["model_id"] == "balanced-embedding-placeholder" and step["status"] == "queued" for step in preflight["steps"])
+    assert any(step["model_id"] == "standard-whisper-placeholder" and step["status"] == "queued" for step in preflight["steps"])
+    assert any(step["model_id"] == "tiny-piper-placeholder" and step["status"] == "queued" for step in preflight["steps"])
+    assert any(
+        step["model_id"] == "standard-gguf-placeholder"
+        and step["status"] == "queued"
+        and "activate extract_objects" in (step["detail"] or "")
+        for step in preflight["steps"]
+    )
+
+    after_capabilities = client.get("/ai/capabilities").json()
+    after_routes = {
+        item["capability"]: (item["provider_id"], item["model_id"])
+        for item in after_capabilities
+    }
+    assert after_routes == before_routes
+    downloads = client.get("/ai/models/downloads").json()
+    assert downloads == []
+    installed_models = client.get("/ai/models/installed").json()
+    assert installed_models == before_installed_models
+    events = client.get("/events").json()
+    assert any(event["action"] == "ai.setup_run_planned" for event in events)
+    assert not any(event["action"] == "ai.setup_run_completed" for event in events)
+
+
 def test_ai_setup_run_installs_demo_assets_and_safely_activates_routes(client):
     production = client.post(
         "/ai/setup/run",

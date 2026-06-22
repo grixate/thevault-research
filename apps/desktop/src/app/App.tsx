@@ -10691,6 +10691,7 @@ function SettingsView() {
         download_models: true,
         activate_routes: true,
         include_optional_models: Boolean(input.include_optional_models),
+        dry_run: Boolean(input.dry_run),
         timeout_seconds: 10
       }),
     onSuccess: () => {

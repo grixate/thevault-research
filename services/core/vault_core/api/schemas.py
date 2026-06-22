@@ -884,6 +884,7 @@ class AISetupRunRequest(BaseModel):
     download_models: bool = True
     activate_routes: bool = True
     include_optional_models: bool = False
+    dry_run: bool = False
     timeout_seconds: float = 10
 
 
@@ -902,6 +903,7 @@ class AISetupRunResponse(BaseModel):
     pack_id: str
     release_channel: Literal["demo", "production"]
     status: Literal["ready", "demo_ready", "partial", "blocked", "failed"]
+    dry_run: bool = False
     selected_capabilities: list[str] = Field(default_factory=list)
     downloads: list[dict[str, Any]] = Field(default_factory=list)
     steps: list[AISetupRunStep]

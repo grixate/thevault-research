@@ -12064,6 +12064,11 @@
             "title": "Include Optional Models",
             "default": false
           },
+          "dry_run": {
+            "type": "boolean",
+            "title": "Dry Run",
+            "default": false
+          },
           "timeout_seconds": {
             "type": "number",
             "title": "Timeout Seconds",
@@ -12105,6 +12110,11 @@
               "failed"
             ],
             "title": "Status"
+          },
+          "dry_run": {
+            "type": "boolean",
+            "title": "Dry Run",
+            "default": false
           },
           "selected_capabilities": {
             "items": {
