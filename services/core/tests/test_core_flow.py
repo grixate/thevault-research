@@ -4150,6 +4150,36 @@ def test_ai_approval_template_evaluate_exports_missing_runtime_defaults(client):
     assert model_patch["defaults"]["max_tokens_generation"] == 1200
 
 
+def test_ai_approval_template_accepts_zero_temperature_extraction_default(client):
+    model_registry, runtime_registry = approved_candidate_registries()
+    model_registry["models"][0]["capabilities"].append("extract_claims")
+    model_registry["models"][0]["defaults"] = {
+        "context_tokens": 4096,
+        "temperature_extraction": 0,
+        "max_tokens_extraction": 384,
+        "temperature_generation": 0.3,
+        "max_tokens_generation": 1200,
+    }
+
+    response = client.post(
+        "/ai/readiness/approval-template/evaluate",
+        json={
+            "model_registry": model_registry,
+            "runtime_registry": runtime_registry,
+            "model_registry_label": "candidate-model-registry.json",
+            "runtime_registry_label": "candidate-runtime-registry.json",
+        },
+    )
+
+    assert response.status_code == 200
+    exported = response.json()
+    assert exported["report"]["status"] == "ready"
+    artifact = next(item for item in exported["report"]["artifacts"] if item["id"] == "candidate-tiny-llm")
+    defaults_field = next(field for field in artifact["fields"] if field["path"] == "defaults")
+    assert defaults_field["status"] == "present"
+    assert "candidate-tiny-llm" not in exported["evidence"]["models"]
+
+
 def test_ai_approval_template_cli_exports_candidate_markdown(tmp_path):
     model_registry, runtime_registry = approved_candidate_registries()
     model_registry_path = tmp_path / "candidate-model-registry.json"

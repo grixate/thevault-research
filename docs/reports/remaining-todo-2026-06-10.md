@@ -199,9 +199,51 @@ Latest model source pinning slice on 2026-06-22:
   - patched model registry SHA-256: `a804df817c86b16e2f133753c83b7d60c1d22bb1b0ae31c35376be1f369ab13c`
   - patched runtime registry SHA-256: `09ad85bd412f1dccb853dfdd2577f6a704d8af50064c3abe0d3ec6f8c2d69a9e`
 
-Recommended next slice: add reviewer approval evidence for the 10 production models and 3 production runtimes, then rerun approval overlay, setup-run smoke verification, dry-run pinning, final pinning, and capability-route activation. Do not mark production local AI ready until those gates are complete.
+Latest production local-AI approval and pinning slice on 2026-06-22:
 
-Note: strict production is still blocked by design. Merged byte evidence covers all 10 production model candidate IDs plus selected llama.cpp/Piper runtime archives, the Whisper runtime package has a commit-pinned HTTP(S) URL with source probe and byte verification passing, and hydrated candidate model sources now pass source probing with no blocked or pending checks. None of this pins production registries or marks approval complete. The candidate set still lacks reviewer approval evidence, full setup-run smoke verification with approved manifests, final pinning, and capability-route activation.
+- Added durable approval overlay evidence under `release-artifacts/approval-evidence-2026-06-22/approval-evidence.json` for the 10 production models and 3 production runtimes.
+- Fixed approval-template evaluation so a required zero-valued extraction temperature (`temperature_extraction: 0`) counts as present instead of missing; added a focused regression test.
+- Applied approval evidence and regenerated the candidate release packet:
+  - packet status: `ready_to_pin`
+  - applied fields: 16
+  - source probe: 13 artifacts, 55 checks, 55 pass, 0 warn, 0 pending, 0 blocked
+  - release plan: 146 checks, 0 blocked, 0 warnings
+  - production packs ready: 4/4
+  - production models ready: 10/10
+  - production runtimes ready: 3/3
+  - patched model registry SHA-256: `5419d56e760155d9559e0479b453cfad90e304be4395fa610fd0df4dbee20e08`
+  - patched runtime registry SHA-256: `a050ca271ca3acee8fa2df7875ab91327571f462bdc766e1889dffd96f92d2a6`
+- Dry-run pinning passed, then final pinning copied the approved candidate manifests into the bundled registries and wrote `registry_policy.json` from the copied bytes.
+- Post-pin `./scripts/validate_ai_registries.sh`: passed with 0 errors and 0 warnings.
+- Post-pin `./scripts/plan_ai_registry_release.sh --format text`: `ready_to_pin`, 0 blocked, 0 warnings.
+- Post-pin strict readiness:
+  - blocked, but only on capability routes
+  - 277 checks total, 267 pass, 1 warning, 0 pending, 9 blocked
+  - production packs ready: 4/4
+  - production runtimes ready: 3/3
+  - remaining route blockers are demo mock routes for capabilities such as `extract_objects`, `extract_claims`, `summarize`, `generate_note`, `grounded_answer`, `create_learning_item`, `embed_text`, `transcribe_audio`, `synthesize_speech`, and optional reranking.
+- Saved durable evidence:
+  - `release-artifacts/approval-evidence-2026-06-22/README.md`
+  - `release-artifacts/approval-evidence-2026-06-22/release-packet-summary.json`
+  - `release-artifacts/approval-evidence-2026-06-22/release-plan.applied.md`
+  - `release-artifacts/approval-evidence-2026-06-22/approval-template.applied.md`
+  - `release-artifacts/approval-evidence-2026-06-22/artifact-probe.applied.md`
+  - `release-artifacts/approval-evidence-2026-06-22/pin-acceptance.dry-run.md`
+  - `release-artifacts/approval-evidence-2026-06-22/pin-acceptance.applied.md`
+  - `release-artifacts/approval-evidence-2026-06-22/current-policy.after-pin.md`
+  - `release-artifacts/approval-evidence-2026-06-22/readiness.after-pin.md`
+- Verified:
+  - `uv run pytest tests/test_core_flow.py -k "approval_template_accepts_zero_temperature_extraction_default or approval_template_evaluate or pin_ai_registries or ai_registry_validation"`: passed, 5 focused tests.
+  - `uv run ruff check vault_core tests`: passed.
+
+Prompt/sandbox note for autonomous work:
+
+- `scripts/lib/core_python.sh` now preserves the caller's working directory while still preferring `services/core/.venv/bin/python`; relative `--output` paths from registry scripts now land where the command was launched, not under `services/core`.
+- For Chromium/Playwright visual QA, keep using the stable helper `node scripts/visual_check.mjs <scenario> <output>`. The `node scripts/visual_check.mjs` prefix is approved; avoid ad-hoc `node -e` Playwright snippets because each unique inline Chromium command shape can trigger another approval prompt.
+
+Recommended next slice: run the production setup path for the selected pack, allowing approved model/runtime downloads and smoke tests, then activate capability routes away from mock providers. Do not mark strict production local AI ready until route activation has happened against installed, runtime-tested local artifacts and `./scripts/check_ai_readiness.sh` exits zero.
+
+Note: strict production is still blocked by design, but no longer because approval evidence or registry pinning is missing. The remaining blocker is runtime setup plus capability-route activation.
 
 ## Current State
 

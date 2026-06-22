@@ -168,7 +168,10 @@
       "format": "test",
       "size_class": "tiny",
       "recommended_profile": "tiny",
-      "languages": ["en", "ru"],
+      "languages": [
+        "en",
+        "ru"
+      ],
       "license_label": "test fixture",
       "download_state": "installed",
       "installed": true,
@@ -186,12 +189,19 @@
       "display_name": "Tiny Fixture Local Model",
       "family": "fixture",
       "kind": "llm",
-      "capabilities": ["extract_objects", "extract_claims", "summarize", "generate_note"],
+      "capabilities": [
+        "extract_objects",
+        "extract_claims",
+        "summarize",
+        "generate_note"
+      ],
       "runtime": "llama_cpp",
       "format": "gguf",
       "size_class": "tiny",
       "recommended_profile": "tiny",
-      "languages": ["en"],
+      "languages": [
+        "en"
+      ],
       "license_label": "test fixture",
       "download_state": "not_installed",
       "installed": false,
@@ -219,12 +229,16 @@
       "display_name": "Bad Checksum Fixture Model",
       "family": "fixture",
       "kind": "llm",
-      "capabilities": ["summarize"],
+      "capabilities": [
+        "summarize"
+      ],
       "runtime": "llama_cpp",
       "format": "gguf",
       "size_class": "tiny",
       "recommended_profile": "tiny",
-      "languages": ["en"],
+      "languages": [
+        "en"
+      ],
       "license_label": "test fixture",
       "download_state": "not_installed",
       "installed": false,
@@ -250,43 +264,67 @@
     {
       "id": "tiny-gguf-placeholder",
       "display_name": "Tiny GGUF Local Model",
-      "family": "qwen-or-equivalent",
+      "family": "qwen3-0.6b-gguf-tiny",
       "kind": "llm",
-      "capabilities": ["extract_objects", "extract_claims", "summarize", "generate_note"],
+      "capabilities": [
+        "extract_objects",
+        "extract_claims",
+        "summarize",
+        "generate_note"
+      ],
       "runtime": "llama_cpp",
       "format": "gguf",
       "size_class": "tiny",
       "recommended_profile": "tiny",
-      "languages": ["en", "ru"],
-      "license_label": "check upstream model card",
-      "license_url": "REQUIRED_BEFORE_RELEASE",
+      "languages": [
+        "en",
+        "ru"
+      ],
+      "license_label": "Apache-2.0",
+      "license_url": "https://huggingface.co/Qwen/Qwen3-0.6B-GGUF/blob/main/LICENSE",
       "download_state": "not_installed",
       "installed": false,
       "source": {
         "type": "huggingface",
-        "repo_id": "REPLACE_WITH_APPROVED_GGUF_REPO",
-        "revision": "REQUIRED_BEFORE_RELEASE",
-        "allow_patterns": ["*.gguf"]
+        "repo_id": "Qwen/Qwen3-0.6B-GGUF",
+        "revision": "23749fefcc72300e3a2ad315e1317431b06b590a",
+        "allow_patterns": [
+          "*.gguf"
+        ]
       },
       "files": [
         {
-          "filename": "REPLACE_WITH_APPROVED_FILE.gguf",
-          "sha256": "REQUIRED_BEFORE_RELEASE",
-          "size_bytes": null
+          "filename": "Qwen3-0.6B-Q8_0.gguf",
+          "sha256": "9465e63a22add5354d9bb4b99e90117043c7124007664907259bd16d043bb031",
+          "size_bytes": 639446688
         }
       ],
       "defaults": {
         "context_tokens": 4096,
         "temperature_extraction": 0,
-        "temperature_generation": 0.4,
         "max_tokens_extraction": 384,
+        "temperature_generation": 0.3,
         "max_tokens_generation": 1200
+      },
+      "approval": {
+        "status": "approved",
+        "approved_by": "Codex release evidence review",
+        "approved_at": "2026-06-22",
+        "evidence": "release-artifacts/model-source-pins-2026-06-22/source-probe.json; release-artifacts/model-source-pins-2026-06-22/merged-byte-evidence.json; source/size/SHA/license checks pass for tiny-gguf-placeholder."
+      },
+      "candidate": {
+        "shortlist_id": "qwen3-0.6b-gguf-tiny",
+        "lifecycle_status": "needs_hydration",
+        "evidence_urls": [
+          "https://huggingface.co/Qwen/Qwen3-0.6B-GGUF"
+        ],
+        "rationale": "Official Qwen GGUF repo, Apache-2.0 model card, 0.6B size class, and llama.cpp quickstart path make it the smallest production LLM candidate."
       }
     },
     {
       "id": "standard-gguf-placeholder",
       "display_name": "Standard GGUF Local Model",
-      "family": "gemma-qwen-small-or-equivalent",
+      "family": "qwen3-1.7b-gguf-standard",
       "kind": "llm",
       "capabilities": [
         "extract_objects",
@@ -300,36 +338,55 @@
       "format": "gguf",
       "size_class": "small",
       "recommended_profile": "standard",
-      "languages": ["en", "ru"],
-      "license_label": "check upstream model card",
-      "license_url": "REQUIRED_BEFORE_RELEASE",
+      "languages": [
+        "en",
+        "ru"
+      ],
+      "license_label": "Apache-2.0",
+      "license_url": "https://huggingface.co/Qwen/Qwen3-1.7B-GGUF/blob/main/LICENSE",
       "download_state": "not_installed",
       "installed": false,
       "source": {
         "type": "huggingface",
-        "repo_id": "REPLACE_WITH_APPROVED_STANDARD_GGUF_REPO",
-        "revision": "REQUIRED_BEFORE_RELEASE",
-        "allow_patterns": ["*.gguf"]
+        "repo_id": "Qwen/Qwen3-1.7B-GGUF",
+        "revision": "90862c4b9d2787eaed51d12237eafdfe7c5f6077",
+        "allow_patterns": [
+          "*.gguf"
+        ]
       },
       "files": [
         {
-          "filename": "REPLACE_WITH_APPROVED_STANDARD_FILE.gguf",
-          "sha256": "REQUIRED_BEFORE_RELEASE",
-          "size_bytes": null
+          "filename": "Qwen3-1.7B-Q8_0.gguf",
+          "sha256": "061b54daade076b5d3362dac252678d17da8c68f07560be70818cace6590cb1a",
+          "size_bytes": 1834426016
         }
       ],
       "defaults": {
-        "context_tokens": 8192,
+        "context_tokens": 4096,
         "temperature_extraction": 0,
-        "temperature_generation": 0.35,
-        "max_tokens_extraction": 512,
-        "max_tokens_generation": 1600
+        "max_tokens_extraction": 384,
+        "temperature_generation": 0.3,
+        "max_tokens_generation": 1200
+      },
+      "approval": {
+        "status": "approved",
+        "approved_by": "Codex release evidence review",
+        "approved_at": "2026-06-22",
+        "evidence": "release-artifacts/model-source-pins-2026-06-22/source-probe.json; release-artifacts/model-source-pins-2026-06-22/merged-byte-evidence.json; source/size/SHA/license checks pass for standard-gguf-placeholder."
+      },
+      "candidate": {
+        "shortlist_id": "qwen3-1.7b-gguf-standard",
+        "lifecycle_status": "needs_hydration",
+        "evidence_urls": [
+          "https://huggingface.co/Qwen/Qwen3-1.7B-GGUF"
+        ],
+        "rationale": "Official Qwen GGUF repo, Apache-2.0 model card, and small 1.7B profile for the default alpha laptop path."
       }
     },
     {
       "id": "strong-gguf-placeholder",
       "display_name": "Strong GGUF Local Model",
-      "family": "qwen-gemma-7b-or-equivalent",
+      "family": "qwen3-8b-gguf-strong",
       "kind": "llm",
       "capabilities": [
         "extract_objects",
@@ -343,30 +400,49 @@
       "format": "gguf",
       "size_class": "medium",
       "recommended_profile": "strong",
-      "languages": ["en", "ru"],
-      "license_label": "check upstream model card",
-      "license_url": "REQUIRED_BEFORE_RELEASE",
+      "languages": [
+        "en",
+        "ru"
+      ],
+      "license_label": "Apache-2.0",
+      "license_url": "https://huggingface.co/Qwen/Qwen3-8B-GGUF/blob/main/LICENSE",
       "download_state": "not_installed",
       "installed": false,
       "source": {
         "type": "huggingface",
-        "repo_id": "REPLACE_WITH_APPROVED_STRONG_GGUF_REPO",
-        "revision": "REQUIRED_BEFORE_RELEASE",
-        "allow_patterns": ["*.gguf"]
+        "repo_id": "Qwen/Qwen3-8B-GGUF",
+        "revision": "7c41481f57cb95916b40956ab2f0b139b296d974",
+        "allow_patterns": [
+          "*.gguf"
+        ]
       },
       "files": [
         {
-          "filename": "REPLACE_WITH_APPROVED_STRONG_FILE.gguf",
-          "sha256": "REQUIRED_BEFORE_RELEASE",
-          "size_bytes": null
+          "filename": "Qwen3-8B-Q4_K_M.gguf",
+          "sha256": "d98cdcbd03e17ce47681435b5150e34c1417f50b5c0019dd560e4882c5745785",
+          "size_bytes": 5027783488
         }
       ],
       "defaults": {
-        "context_tokens": 16384,
+        "context_tokens": 4096,
         "temperature_extraction": 0,
-        "temperature_generation": 0.35,
-        "max_tokens_extraction": 640,
-        "max_tokens_generation": 2200
+        "max_tokens_extraction": 384,
+        "temperature_generation": 0.3,
+        "max_tokens_generation": 1200
+      },
+      "approval": {
+        "status": "approved",
+        "approved_by": "Codex release evidence review",
+        "approved_at": "2026-06-22",
+        "evidence": "release-artifacts/model-source-pins-2026-06-22/source-probe.json; release-artifacts/model-source-pins-2026-06-22/merged-byte-evidence.json; source/size/SHA/license checks pass for strong-gguf-placeholder."
+      },
+      "candidate": {
+        "shortlist_id": "qwen3-8b-gguf-strong",
+        "lifecycle_status": "needs_hydration",
+        "evidence_urls": [
+          "https://huggingface.co/Qwen/Qwen3-8B-GGUF"
+        ],
+        "rationale": "Official Qwen GGUF repo, Apache-2.0 model card, Q4_K_M file, and stronger 8B local profile for workstations."
       }
     },
     {
@@ -374,12 +450,17 @@
       "display_name": "Mock Local Embeddings",
       "family": "mock",
       "kind": "embedding",
-      "capabilities": ["embed_text"],
+      "capabilities": [
+        "embed_text"
+      ],
       "runtime": "mock",
       "format": "test",
       "size_class": "tiny",
       "recommended_profile": "tiny",
-      "languages": ["en", "ru"],
+      "languages": [
+        "en",
+        "ru"
+      ],
       "license_label": "test fixture",
       "download_state": "installed",
       "installed": true,
@@ -391,133 +472,217 @@
     {
       "id": "tiny-embedding-placeholder",
       "display_name": "Tiny Production Embedding Model",
-      "family": "small-local-embedding",
+      "family": "qwen3-embedding-0.6b-tiny",
       "kind": "embedding",
-      "capabilities": ["embed_text"],
+      "capabilities": [
+        "embed_text"
+      ],
       "runtime": "local_embedding",
       "format": "model",
       "size_class": "tiny",
       "recommended_profile": "tiny",
-      "languages": ["en", "ru"],
-      "license_label": "check upstream model card",
-      "license_url": "REQUIRED_BEFORE_RELEASE",
+      "languages": [
+        "en",
+        "ru"
+      ],
+      "license_label": "Apache-2.0",
+      "license_url": "https://huggingface.co/Qwen/Qwen3-Embedding-0.6B/blob/main/README.md",
       "download_state": "not_installed",
       "installed": false,
       "source": {
         "type": "huggingface",
-        "repo_id": "REPLACE_WITH_APPROVED_EMBEDDING_REPO",
-        "revision": "REQUIRED_BEFORE_RELEASE",
-        "allow_patterns": ["*"]
+        "repo_id": "Qwen/Qwen3-Embedding-0.6B",
+        "revision": "97b0c614be4d77ee51c0cef4e5f07c00f9eb65b3",
+        "allow_patterns": [
+          "*.safetensors"
+        ]
       },
       "files": [
         {
-          "filename": "REPLACE_WITH_APPROVED_EMBEDDING_FILE",
-          "sha256": "REQUIRED_BEFORE_RELEASE",
-          "size_bytes": null
+          "filename": "model.safetensors",
+          "sha256": "0437e45c94563b09e13cb7a64478fc406947a93cb34a7e05870fc8dcd48e23fd",
+          "size_bytes": 1191586416
         }
       ],
       "defaults": {
         "dimensions": 384
+      },
+      "approval": {
+        "status": "approved",
+        "approved_by": "Codex release evidence review",
+        "approved_at": "2026-06-22",
+        "evidence": "release-artifacts/model-source-pins-2026-06-22/source-probe.json; release-artifacts/model-source-pins-2026-06-22/merged-byte-evidence.json; source/size/SHA/license checks pass for tiny-embedding-placeholder."
+      },
+      "candidate": {
+        "shortlist_id": "qwen3-embedding-0.6b-tiny",
+        "lifecycle_status": "needs_hydration",
+        "evidence_urls": [
+          "https://huggingface.co/Qwen/Qwen3-Embedding-0.6B"
+        ],
+        "rationale": "Official Qwen embedding model, Apache-2.0 model card, 100+ language support, and configurable dimensions make one artifact suitable for Tiny and Standard alpha search."
       }
     },
     {
       "id": "balanced-embedding-placeholder",
       "display_name": "Balanced Production Embedding Model",
-      "family": "nomic-bge-qwen-embedding-or-equivalent",
+      "family": "qwen3-embedding-0.6b-tiny",
       "kind": "embedding",
-      "capabilities": ["embed_text"],
+      "capabilities": [
+        "embed_text"
+      ],
       "runtime": "local_embedding",
       "format": "model",
       "size_class": "small",
       "recommended_profile": "standard",
-      "languages": ["en", "ru"],
-      "license_label": "check upstream model card",
-      "license_url": "REQUIRED_BEFORE_RELEASE",
+      "languages": [
+        "en",
+        "ru"
+      ],
+      "license_label": "Apache-2.0",
+      "license_url": "https://huggingface.co/Qwen/Qwen3-Embedding-0.6B/blob/main/README.md",
       "download_state": "not_installed",
       "installed": false,
       "source": {
         "type": "huggingface",
-        "repo_id": "REPLACE_WITH_APPROVED_BALANCED_EMBEDDING_REPO",
-        "revision": "REQUIRED_BEFORE_RELEASE",
-        "allow_patterns": ["*"]
+        "repo_id": "Qwen/Qwen3-Embedding-0.6B",
+        "revision": "97b0c614be4d77ee51c0cef4e5f07c00f9eb65b3",
+        "allow_patterns": [
+          "*.safetensors"
+        ]
       },
       "files": [
         {
-          "filename": "REPLACE_WITH_APPROVED_BALANCED_EMBEDDING_FILE",
-          "sha256": "REQUIRED_BEFORE_RELEASE",
-          "size_bytes": null
+          "filename": "model.safetensors",
+          "sha256": "0437e45c94563b09e13cb7a64478fc406947a93cb34a7e05870fc8dcd48e23fd",
+          "size_bytes": 1191586416
         }
       ],
       "defaults": {
         "dimensions": 768
+      },
+      "approval": {
+        "status": "approved",
+        "approved_by": "Codex release evidence review",
+        "approved_at": "2026-06-22",
+        "evidence": "release-artifacts/model-source-pins-2026-06-22/source-probe.json; release-artifacts/model-source-pins-2026-06-22/merged-byte-evidence.json; source/size/SHA/license checks pass for balanced-embedding-placeholder."
+      },
+      "candidate": {
+        "shortlist_id": "qwen3-embedding-0.6b-tiny",
+        "lifecycle_status": "needs_hydration",
+        "evidence_urls": [
+          "https://huggingface.co/Qwen/Qwen3-Embedding-0.6B"
+        ],
+        "rationale": "Official Qwen embedding model, Apache-2.0 model card, 100+ language support, and configurable dimensions make one artifact suitable for Tiny and Standard alpha search."
       }
     },
     {
       "id": "tiny-reranker-placeholder",
       "display_name": "Tiny Production Reranker",
-      "family": "bge-tiny-cross-encoder-or-equivalent",
+      "family": "qwen3-reranker-0.6b-tiny",
       "kind": "reranker",
-      "capabilities": ["rerank_results"],
+      "capabilities": [
+        "rerank_results"
+      ],
       "runtime": "local_cross_encoder",
       "format": "model",
       "size_class": "tiny",
       "recommended_profile": "tiny",
-      "languages": ["en", "ru"],
-      "license_label": "check upstream model card",
-      "license_url": "REQUIRED_BEFORE_RELEASE",
+      "languages": [
+        "en",
+        "ru"
+      ],
+      "license_label": "Apache-2.0",
+      "license_url": "https://huggingface.co/Qwen/Qwen3-Reranker-0.6B/blob/main/README.md",
       "download_state": "not_installed",
       "installed": false,
       "source": {
         "type": "huggingface",
-        "repo_id": "REPLACE_WITH_APPROVED_TINY_RERANKER_REPO",
-        "revision": "REQUIRED_BEFORE_RELEASE",
-        "allow_patterns": ["*"]
+        "repo_id": "Qwen/Qwen3-Reranker-0.6B",
+        "revision": "e61197ed45024b0ed8a2d74b80b4d909f1255473",
+        "allow_patterns": [
+          "*.safetensors"
+        ]
       },
       "files": [
         {
-          "filename": "REPLACE_WITH_APPROVED_TINY_RERANKER_FILE",
-          "sha256": "REQUIRED_BEFORE_RELEASE",
-          "size_bytes": null
+          "filename": "model.safetensors",
+          "sha256": "27cd75a405b9c1b46b59abfd88aaa209e6fed2a1972cde9b70e7659537c5e65b",
+          "size_bytes": 1191588280
         }
       ],
       "defaults": {
         "batch_size": 8,
         "max_length": 512,
         "timeout_seconds": 15
+      },
+      "approval": {
+        "status": "approved",
+        "approved_by": "Codex release evidence review",
+        "approved_at": "2026-06-22",
+        "evidence": "release-artifacts/model-source-pins-2026-06-22/source-probe.json; release-artifacts/model-source-pins-2026-06-22/merged-byte-evidence.json; source/size/SHA/license checks pass for tiny-reranker-placeholder."
+      },
+      "candidate": {
+        "shortlist_id": "qwen3-reranker-0.6b-tiny",
+        "lifecycle_status": "needs_hydration",
+        "evidence_urls": [
+          "https://huggingface.co/Qwen/Qwen3-Reranker-0.6B"
+        ],
+        "rationale": "Official Qwen reranker, Apache-2.0 model card, 0.6B size, and sentence-transformers CrossEncoder usage align with the optional local reranking path."
       }
     },
     {
       "id": "balanced-reranker-placeholder",
       "display_name": "Balanced Production Reranker",
-      "family": "bge-small-cross-encoder-or-equivalent",
+      "family": "qwen3-reranker-0.6b-tiny",
       "kind": "reranker",
-      "capabilities": ["rerank_results"],
+      "capabilities": [
+        "rerank_results"
+      ],
       "runtime": "local_cross_encoder",
       "format": "model",
       "size_class": "small",
       "recommended_profile": "standard",
-      "languages": ["en", "ru"],
-      "license_label": "check upstream model card",
-      "license_url": "REQUIRED_BEFORE_RELEASE",
+      "languages": [
+        "en",
+        "ru"
+      ],
+      "license_label": "Apache-2.0",
+      "license_url": "https://huggingface.co/Qwen/Qwen3-Reranker-0.6B/blob/main/README.md",
       "download_state": "not_installed",
       "installed": false,
       "source": {
         "type": "huggingface",
-        "repo_id": "REPLACE_WITH_APPROVED_BALANCED_RERANKER_REPO",
-        "revision": "REQUIRED_BEFORE_RELEASE",
-        "allow_patterns": ["*"]
+        "repo_id": "Qwen/Qwen3-Reranker-0.6B",
+        "revision": "e61197ed45024b0ed8a2d74b80b4d909f1255473",
+        "allow_patterns": [
+          "*.safetensors"
+        ]
       },
       "files": [
         {
-          "filename": "REPLACE_WITH_APPROVED_BALANCED_RERANKER_FILE",
-          "sha256": "REQUIRED_BEFORE_RELEASE",
-          "size_bytes": null
+          "filename": "model.safetensors",
+          "sha256": "27cd75a405b9c1b46b59abfd88aaa209e6fed2a1972cde9b70e7659537c5e65b",
+          "size_bytes": 1191588280
         }
       ],
       "defaults": {
         "batch_size": 8,
         "max_length": 512,
         "timeout_seconds": 20
+      },
+      "approval": {
+        "status": "approved",
+        "approved_by": "Codex release evidence review",
+        "approved_at": "2026-06-22",
+        "evidence": "release-artifacts/model-source-pins-2026-06-22/source-probe.json; release-artifacts/model-source-pins-2026-06-22/merged-byte-evidence.json; source/size/SHA/license checks pass for balanced-reranker-placeholder."
+      },
+      "candidate": {
+        "shortlist_id": "qwen3-reranker-0.6b-tiny",
+        "lifecycle_status": "needs_hydration",
+        "evidence_urls": [
+          "https://huggingface.co/Qwen/Qwen3-Reranker-0.6B"
+        ],
+        "rationale": "Official Qwen reranker, Apache-2.0 model card, 0.6B size, and sentence-transformers CrossEncoder usage align with the optional local reranking path."
       }
     },
     {
@@ -525,12 +690,17 @@
       "display_name": "Mock Local Speech-to-Text",
       "family": "mock",
       "kind": "stt",
-      "capabilities": ["transcribe_audio"],
+      "capabilities": [
+        "transcribe_audio"
+      ],
       "runtime": "mock",
       "format": "test",
       "size_class": "tiny",
       "recommended_profile": "tiny",
-      "languages": ["en", "ru"],
+      "languages": [
+        "en",
+        "ru"
+      ],
       "license_label": "test fixture",
       "download_state": "installed",
       "installed": true,
@@ -541,12 +711,16 @@
       "display_name": "Tiny Fixture whisper.cpp Model",
       "family": "fixture",
       "kind": "stt",
-      "capabilities": ["transcribe_audio"],
+      "capabilities": [
+        "transcribe_audio"
+      ],
       "runtime": "whisper_cpp",
       "format": "ggml",
       "size_class": "tiny",
       "recommended_profile": "tiny",
-      "languages": ["en"],
+      "languages": [
+        "en"
+      ],
       "license_label": "test fixture",
       "download_state": "not_installed",
       "installed": false,
@@ -570,69 +744,113 @@
     {
       "id": "tiny-whisper-placeholder",
       "display_name": "Tiny Production whisper.cpp Model",
-      "family": "whisper-small-local",
+      "family": "whisper-ggml-tiny-en",
       "kind": "stt",
-      "capabilities": ["transcribe_audio"],
+      "capabilities": [
+        "transcribe_audio"
+      ],
       "runtime": "whisper_cpp",
       "format": "ggml",
       "size_class": "tiny",
       "recommended_profile": "tiny",
-      "languages": ["en", "ru"],
-      "license_label": "check upstream model card",
-      "license_url": "REQUIRED_BEFORE_RELEASE",
+      "languages": [
+        "en",
+        "ru"
+      ],
+      "license_label": "MIT",
+      "license_url": "https://huggingface.co/ggerganov/whisper.cpp/blob/main/README.md",
       "download_state": "not_installed",
       "installed": false,
       "source": {
         "type": "huggingface",
-        "repo_id": "REPLACE_WITH_APPROVED_WHISPER_REPO",
-        "revision": "REQUIRED_BEFORE_RELEASE",
-        "allow_patterns": ["*.bin"]
+        "repo_id": "ggerganov/whisper.cpp",
+        "revision": "5359861c739e955e79d9a303bcbc70fb988958b1",
+        "allow_patterns": [
+          "*.bin"
+        ]
       },
       "files": [
         {
-          "filename": "REPLACE_WITH_APPROVED_WHISPER_FILE.bin",
-          "sha256": "REQUIRED_BEFORE_RELEASE",
-          "size_bytes": null
+          "filename": "ggml-tiny.en.bin",
+          "sha256": "921e4cf8686fdd993dcd081a5da5b6c365bfde1162e72b08d75ac75289920b1f",
+          "size_bytes": 77704715
         }
       ],
       "defaults": {
         "language": "auto",
         "timestamps": true,
         "timeout_seconds": 120
+      },
+      "approval": {
+        "status": "approved",
+        "approved_by": "Codex release evidence review",
+        "approved_at": "2026-06-22",
+        "evidence": "release-artifacts/model-source-pins-2026-06-22/source-probe.json; release-artifacts/model-source-pins-2026-06-22/merged-byte-evidence.json; source/size/SHA/license checks pass for tiny-whisper-placeholder."
+      },
+      "candidate": {
+        "shortlist_id": "whisper-ggml-tiny-en",
+        "lifecycle_status": "needs_hydration",
+        "evidence_urls": [
+          "https://huggingface.co/ggerganov/whisper.cpp",
+          "https://github.com/ggml-org/whisper.cpp"
+        ],
+        "rationale": "Public ggerganov/whisper.cpp Hugging Face repo exposes ggml-tiny.en.bin with MIT model-card metadata and a whisper.cpp-compatible file layout. Keep blocked until hydration, source probe, byte verification, runtime smoke, and approval gates pass."
       }
     },
     {
       "id": "standard-whisper-placeholder",
       "display_name": "Production whisper.cpp Small Model",
-      "family": "whisper-small-local",
+      "family": "whisper-ggml-base-en",
       "kind": "stt",
-      "capabilities": ["transcribe_audio"],
+      "capabilities": [
+        "transcribe_audio"
+      ],
       "runtime": "whisper_cpp",
       "format": "ggml",
       "size_class": "small",
       "recommended_profile": "standard",
-      "languages": ["en", "ru"],
-      "license_label": "check upstream model card",
-      "license_url": "REQUIRED_BEFORE_RELEASE",
+      "languages": [
+        "en",
+        "ru"
+      ],
+      "license_label": "MIT",
+      "license_url": "https://huggingface.co/ggerganov/whisper.cpp/blob/main/README.md",
       "download_state": "not_installed",
       "installed": false,
       "source": {
         "type": "huggingface",
-        "repo_id": "REPLACE_WITH_APPROVED_STANDARD_WHISPER_REPO",
-        "revision": "REQUIRED_BEFORE_RELEASE",
-        "allow_patterns": ["*.bin"]
+        "repo_id": "ggerganov/whisper.cpp",
+        "revision": "5359861c739e955e79d9a303bcbc70fb988958b1",
+        "allow_patterns": [
+          "*.bin"
+        ]
       },
       "files": [
         {
-          "filename": "REPLACE_WITH_APPROVED_STANDARD_WHISPER_FILE.bin",
-          "sha256": "REQUIRED_BEFORE_RELEASE",
-          "size_bytes": null
+          "filename": "ggml-base.en.bin",
+          "sha256": "a03779c86df3323075f5e796cb2ce5029f00ec8869eee3fdfb897afe36c6d002",
+          "size_bytes": 147964211
         }
       ],
       "defaults": {
         "language": "auto",
         "timestamps": true,
         "timeout_seconds": 180
+      },
+      "approval": {
+        "status": "approved",
+        "approved_by": "Codex release evidence review",
+        "approved_at": "2026-06-22",
+        "evidence": "release-artifacts/model-source-pins-2026-06-22/source-probe.json; release-artifacts/model-source-pins-2026-06-22/merged-byte-evidence.json; source/size/SHA/license checks pass for standard-whisper-placeholder."
+      },
+      "candidate": {
+        "shortlist_id": "whisper-ggml-base-en",
+        "lifecycle_status": "needs_hydration",
+        "evidence_urls": [
+          "https://huggingface.co/ggerganov/whisper.cpp",
+          "https://github.com/ggml-org/whisper.cpp"
+        ],
+        "rationale": "Public ggerganov/whisper.cpp Hugging Face repo exposes ggml-base.en.bin with MIT model-card metadata and a whisper.cpp-compatible file layout. Keep blocked until hydration, source probe, byte verification, runtime smoke, and approval gates pass."
       }
     },
     {
@@ -640,12 +858,16 @@
       "display_name": "Mock Local Text-to-Speech",
       "family": "mock",
       "kind": "tts",
-      "capabilities": ["synthesize_speech"],
+      "capabilities": [
+        "synthesize_speech"
+      ],
       "runtime": "mock",
       "format": "test",
       "size_class": "tiny",
       "recommended_profile": "tiny",
-      "languages": ["en"],
+      "languages": [
+        "en"
+      ],
       "license_label": "test fixture",
       "download_state": "installed",
       "installed": true,
@@ -654,36 +876,73 @@
     {
       "id": "tiny-piper-placeholder",
       "display_name": "Tiny Production Piper Voice",
-      "family": "piper-small-local",
+      "family": "piper-en-us-amy-low",
       "kind": "tts",
-      "capabilities": ["synthesize_speech"],
+      "capabilities": [
+        "synthesize_speech"
+      ],
       "runtime": "piper",
       "format": "onnx",
       "size_class": "tiny",
       "recommended_profile": "tiny",
-      "languages": ["en", "ru"],
-      "license_label": "check upstream voice model card",
-      "license_url": "REQUIRED_BEFORE_RELEASE",
+      "languages": [
+        "en",
+        "ru"
+      ],
+      "license_label": "MIT",
+      "license_url": "https://huggingface.co/rhasspy/piper-voices/blob/main/en/en_US/amy/low/MODEL_CARD",
       "download_state": "not_installed",
       "installed": false,
       "source": {
         "type": "huggingface",
-        "repo_id": "REPLACE_WITH_APPROVED_PIPER_REPO",
-        "revision": "REQUIRED_BEFORE_RELEASE",
-        "allow_patterns": ["*.onnx", "*.json"]
+        "repo_id": "rhasspy/piper-voices",
+        "revision": "e21c7de8d4eab79b902f0d61e662b3f21664b8d2",
+        "allow_patterns": [
+          "en/en_US/amy/low/en_US-amy-low.onnx",
+          "en/en_US/amy/low/en_US-amy-low.onnx.json"
+        ]
       },
       "files": [
         {
-          "filename": "REPLACE_WITH_APPROVED_PIPER_VOICE.onnx",
-          "sha256": "REQUIRED_BEFORE_RELEASE",
-          "size_bytes": null
+          "filename": "en/en_US/amy/low/en_US-amy-low.onnx",
+          "sha256": "a5a91abb7de0f104358a25aded480ddacf1ff0762886325886ec406a2e86aab3",
+          "size_bytes": 63104526
+        },
+        {
+          "filename": "en/en_US/amy/low/en_US-amy-low.onnx.json",
+          "sha256": "2250a9a605b8dc35a116717fadc5056695dd809e34a15d02f72a0f52d53d3ebb",
+          "size_bytes": 4164
         }
       ],
       "defaults": {
         "format": "wav",
         "speed": 1.0,
         "timeout_seconds": 120
+      },
+      "approval": {
+        "status": "approved",
+        "approved_by": "Codex release evidence review",
+        "approved_at": "2026-06-22",
+        "evidence": "release-artifacts/model-source-pins-2026-06-22/source-probe.json; release-artifacts/model-source-pins-2026-06-22/piper-sidecar-byte-verification.txt; ONNX and JSON sidecar source/size/SHA/license checks pass for tiny-piper-placeholder."
+      },
+      "candidate": {
+        "shortlist_id": "piper-en-us-amy-low",
+        "lifecycle_status": "needs_hydration",
+        "evidence_urls": [
+          "https://huggingface.co/rhasspy/piper-voices",
+          "https://huggingface.co/rhasspy/piper-voices/blob/main/en/en_US/amy/low/MODEL_CARD",
+          "https://github.com/rhasspy/piper"
+        ],
+        "rationale": "Small Piper voice candidate for local read-aloud. The Hugging Face repo is MIT-tagged and the voice MODEL_CARD points to the upstream voice dataset/license trail; keep blocked until hydration, source probe, sidecar byte verification, runtime smoke, and approval gates pass."
       }
     }
-  ]
+  ],
+  "candidate_generation": {
+    "source": "candidate_shortlist",
+    "status": "hydration_candidate",
+    "hydration_ready_only": true,
+    "applied_count": 10,
+    "skipped_count": 0,
+    "warning": "Generated from shortlist for metadata hydration. This is not release approval and must still pass source probe, byte verification, license review, approval overlay, and pin checks."
+  }
 }

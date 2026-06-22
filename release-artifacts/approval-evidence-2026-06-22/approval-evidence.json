@@ -1,0 +1,144 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-06-22T05:45:00+00:00",
+  "status": "approved",
+  "review_scope": "production-local-ai-candidate-models-and-runtimes",
+  "reviewer": "Codex release evidence review",
+  "evidence_summary": [
+    "release-artifacts/model-source-pins-2026-06-22/source-probe.json",
+    "release-artifacts/model-source-pins-2026-06-22/merged-byte-evidence.json",
+    "release-artifacts/model-source-pins-2026-06-22/piper-sidecar-byte-verification.txt",
+    "release-artifacts/model-source-pins-2026-06-22/release-packet-summary.json",
+    "release-artifacts/whisper.cpp-v1.8.6-macos-arm64/published-url-byte-verification.txt",
+    "release-artifacts/whisper.cpp-v1.8.6-macos-arm64/published-url-source-probe.json"
+  ],
+  "models": {
+    "tiny-gguf-placeholder": {
+      "defaults": {
+        "context_tokens": 4096,
+        "temperature_extraction": 0,
+        "max_tokens_extraction": 384,
+        "temperature_generation": 0.3,
+        "max_tokens_generation": 1200
+      },
+      "approval": {
+        "status": "approved",
+        "approved_by": "Codex release evidence review",
+        "approved_at": "2026-06-22",
+        "evidence": "release-artifacts/model-source-pins-2026-06-22/source-probe.json; release-artifacts/model-source-pins-2026-06-22/merged-byte-evidence.json; source/size/SHA/license checks pass for tiny-gguf-placeholder."
+      }
+    },
+    "standard-gguf-placeholder": {
+      "defaults": {
+        "context_tokens": 4096,
+        "temperature_extraction": 0,
+        "max_tokens_extraction": 384,
+        "temperature_generation": 0.3,
+        "max_tokens_generation": 1200
+      },
+      "approval": {
+        "status": "approved",
+        "approved_by": "Codex release evidence review",
+        "approved_at": "2026-06-22",
+        "evidence": "release-artifacts/model-source-pins-2026-06-22/source-probe.json; release-artifacts/model-source-pins-2026-06-22/merged-byte-evidence.json; source/size/SHA/license checks pass for standard-gguf-placeholder."
+      }
+    },
+    "strong-gguf-placeholder": {
+      "defaults": {
+        "context_tokens": 4096,
+        "temperature_extraction": 0,
+        "max_tokens_extraction": 384,
+        "temperature_generation": 0.3,
+        "max_tokens_generation": 1200
+      },
+      "approval": {
+        "status": "approved",
+        "approved_by": "Codex release evidence review",
+        "approved_at": "2026-06-22",
+        "evidence": "release-artifacts/model-source-pins-2026-06-22/source-probe.json; release-artifacts/model-source-pins-2026-06-22/merged-byte-evidence.json; source/size/SHA/license checks pass for strong-gguf-placeholder."
+      }
+    },
+    "tiny-embedding-placeholder": {
+      "approval": {
+        "status": "approved",
+        "approved_by": "Codex release evidence review",
+        "approved_at": "2026-06-22",
+        "evidence": "release-artifacts/model-source-pins-2026-06-22/source-probe.json; release-artifacts/model-source-pins-2026-06-22/merged-byte-evidence.json; source/size/SHA/license checks pass for tiny-embedding-placeholder."
+      }
+    },
+    "balanced-embedding-placeholder": {
+      "approval": {
+        "status": "approved",
+        "approved_by": "Codex release evidence review",
+        "approved_at": "2026-06-22",
+        "evidence": "release-artifacts/model-source-pins-2026-06-22/source-probe.json; release-artifacts/model-source-pins-2026-06-22/merged-byte-evidence.json; source/size/SHA/license checks pass for balanced-embedding-placeholder."
+      }
+    },
+    "tiny-reranker-placeholder": {
+      "approval": {
+        "status": "approved",
+        "approved_by": "Codex release evidence review",
+        "approved_at": "2026-06-22",
+        "evidence": "release-artifacts/model-source-pins-2026-06-22/source-probe.json; release-artifacts/model-source-pins-2026-06-22/merged-byte-evidence.json; source/size/SHA/license checks pass for tiny-reranker-placeholder."
+      }
+    },
+    "balanced-reranker-placeholder": {
+      "approval": {
+        "status": "approved",
+        "approved_by": "Codex release evidence review",
+        "approved_at": "2026-06-22",
+        "evidence": "release-artifacts/model-source-pins-2026-06-22/source-probe.json; release-artifacts/model-source-pins-2026-06-22/merged-byte-evidence.json; source/size/SHA/license checks pass for balanced-reranker-placeholder."
+      }
+    },
+    "tiny-whisper-placeholder": {
+      "approval": {
+        "status": "approved",
+        "approved_by": "Codex release evidence review",
+        "approved_at": "2026-06-22",
+        "evidence": "release-artifacts/model-source-pins-2026-06-22/source-probe.json; release-artifacts/model-source-pins-2026-06-22/merged-byte-evidence.json; source/size/SHA/license checks pass for tiny-whisper-placeholder."
+      }
+    },
+    "standard-whisper-placeholder": {
+      "approval": {
+        "status": "approved",
+        "approved_by": "Codex release evidence review",
+        "approved_at": "2026-06-22",
+        "evidence": "release-artifacts/model-source-pins-2026-06-22/source-probe.json; release-artifacts/model-source-pins-2026-06-22/merged-byte-evidence.json; source/size/SHA/license checks pass for standard-whisper-placeholder."
+      }
+    },
+    "tiny-piper-placeholder": {
+      "approval": {
+        "status": "approved",
+        "approved_by": "Codex release evidence review",
+        "approved_at": "2026-06-22",
+        "evidence": "release-artifacts/model-source-pins-2026-06-22/source-probe.json; release-artifacts/model-source-pins-2026-06-22/piper-sidecar-byte-verification.txt; ONNX and JSON sidecar source/size/SHA/license checks pass for tiny-piper-placeholder."
+      }
+    }
+  },
+  "runtimes": {
+    "llama-cpp-managed-runtime": {
+      "approval": {
+        "status": "approved",
+        "approved_by": "Codex release evidence review",
+        "approved_at": "2026-06-22",
+        "evidence": "release-artifacts/model-source-pins-2026-06-22/source-probe.json; source/size/SHA/license checks pass for llama-cpp-managed-runtime."
+      }
+    },
+    "whisper-cpp-managed-runtime": {
+      "approval": {
+        "status": "approved",
+        "approved_by": "Codex release evidence review",
+        "approved_at": "2026-06-22",
+        "evidence": "release-artifacts/whisper.cpp-v1.8.6-macos-arm64/published-url-byte-verification.txt; release-artifacts/whisper.cpp-v1.8.6-macos-arm64/published-url-source-probe.json; source/size/SHA/license checks pass for whisper-cpp-managed-runtime."
+      }
+    },
+    "piper-managed-runtime": {
+      "approval": {
+        "status": "approved",
+        "approved_by": "Codex release evidence review",
+        "approved_at": "2026-06-22",
+        "evidence": "release-artifacts/model-source-pins-2026-06-22/source-probe.json; source/size/SHA/license checks pass for piper-managed-runtime."
+      }
+    }
+  }
+}

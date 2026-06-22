@@ -1,0 +1,115 @@
+{
+  "status": "ready_to_pin",
+  "ready_to_pin": true,
+  "output_dir": "/tmp/vault-approved-release-packet",
+  "generated_at": "2026-06-22T05:40:44.969594+00:00",
+  "applied_count": 16,
+  "patched_model_registry_sha256": "5419d56e760155d9559e0479b453cfad90e304be4395fa610fd0df4dbee20e08",
+  "patched_runtime_registry_sha256": "a050ca271ca3acee8fa2df7875ab91327571f462bdc766e1889dffd96f92d2a6",
+  "release_plan": {
+    "status": "ready_to_pin",
+    "ready_to_pin": true,
+    "total_checks": 146,
+    "blocked_count": 0,
+    "artifact_warning_count": 0,
+    "warning_count": 0,
+    "validation_error_count": 0,
+    "validation_warning_count": 0,
+    "production_pack_count": 4,
+    "ready_production_pack_count": 4,
+    "production_model_count": 10,
+    "ready_production_model_count": 10,
+    "production_runtime_count": 3,
+    "ready_production_runtime_count": 3
+  },
+  "acceptance": {
+    "status": "ready_to_pin",
+    "ready_to_pin": true,
+    "dry_run": true
+  },
+  "artifact_probe": {
+    "status": "pass",
+    "summary": {
+      "status": "pass",
+      "artifact_count": 13,
+      "check_count": 55,
+      "pass_count": 55,
+      "warn_count": 0,
+      "pending_count": 0,
+      "blocked_count": 0,
+      "validation_error_count": 0,
+      "validation_warning_count": 0
+    }
+  },
+  "artifact_verification": {
+    "status": "not_run",
+    "summary": null,
+    "evidence": null
+  },
+  "blocking_findings": [],
+  "artifacts": [
+    {
+      "type": "evidence_bundle",
+      "filename": "candidate-ai-registry-evidence-bundle.json",
+      "path": "/tmp/vault-approved-release-packet/candidate-ai-registry-evidence-bundle.json",
+      "bytes": 251078
+    },
+    {
+      "type": "patched_model_registry",
+      "filename": "vault-candidate-model-registry.hydrated.patched.patched.json",
+      "path": "/tmp/vault-approved-release-packet/vault-candidate-model-registry.hydrated.patched.patched.json",
+      "bytes": 31511
+    },
+    {
+      "type": "patched_runtime_registry",
+      "filename": "vault-candidate-runtime-registry.model-source-pins.patched.patched.json",
+      "path": "/tmp/vault-approved-release-packet/vault-candidate-runtime-registry.model-source-pins.patched.patched.json",
+      "bytes": 7398
+    },
+    {
+      "type": "applied_release_plan",
+      "filename": "candidate-ai-registry-release-plan.applied.md",
+      "path": "/tmp/vault-approved-release-packet/candidate-ai-registry-release-plan.applied.md",
+      "bytes": 20814
+    },
+    {
+      "type": "applied_approval_checklist",
+      "filename": "candidate-local-ai-approval-template.applied.md",
+      "path": "/tmp/vault-approved-release-packet/candidate-local-ai-approval-template.applied.md",
+      "bytes": 23549
+    },
+    {
+      "type": "pin_handoff",
+      "filename": "candidate-ai-registry-pin-handoff.applied.md",
+      "path": "/tmp/vault-approved-release-packet/candidate-ai-registry-pin-handoff.applied.md",
+      "bytes": 3235
+    },
+    {
+      "type": "artifact_probe",
+      "filename": "candidate-ai-registry-artifact-probe.applied.md",
+      "path": "/tmp/vault-approved-release-packet/candidate-ai-registry-artifact-probe.applied.md",
+      "bytes": 12356
+    },
+    {
+      "type": "acceptance_report",
+      "filename": "candidate-ai-registry-acceptance.applied.md",
+      "path": "/tmp/vault-approved-release-packet/candidate-ai-registry-acceptance.applied.md",
+      "bytes": 1728
+    },
+    {
+      "type": "packet_index",
+      "filename": "candidate-ai-registry-release-packet.md",
+      "path": "/tmp/vault-approved-release-packet/candidate-ai-registry-release-packet.md",
+      "bytes": 2493
+    },
+    {
+      "type": "packet_summary",
+      "filename": "candidate-ai-registry-release-packet.json",
+      "path": "/tmp/vault-approved-release-packet/candidate-ai-registry-release-packet.json",
+      "bytes": 3890
+    }
+  ],
+  "next_actions": [],
+  "errors": [],
+  "warnings": []
+}

@@ -362,8 +362,13 @@ def _defaults_cover_required(defaults: dict[str, Any], required: dict[str, Any])
         value = defaults.get(key)
         if value is None:
             return False
-        if isinstance(required_value, int) and (not isinstance(value, int) or value <= 0):
-            return False
+        if isinstance(required_value, int):
+            if not isinstance(value, int):
+                return False
+            if required_value > 0 and value <= 0:
+                return False
+            if required_value == 0 and value != 0:
+                return False
         if isinstance(required_value, float) and (not isinstance(value, int | float) or value <= 0):
             return False
     return True
