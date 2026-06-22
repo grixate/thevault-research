@@ -34,7 +34,7 @@ def ai_setup_status(db: VaultDatabase, settings: Settings) -> AISetupStatusRespo
             summary=f"{hardware.recommended_profile.title()} profile recommended",
             detail=f"{hardware.os} / {hardware.arch} / {hardware.physical_ram_gb or '?'} GB RAM",
         ),
-        _runtime_step(runtime, runtime_blockers, runtime_infos),
+        _runtime_step(runtime, runtime_blockers, runtime_infos, production_pack),
         _production_pack_step(production_pack),
         _demo_pack_step(demo_pack),
         _capability_routes_step(capabilities, production_pack, demo_pack),
@@ -107,16 +107,26 @@ def _privacy_step(blockers: list[str]) -> AISetupStepInfo:
     )
 
 
-def _runtime_step(runtime: dict[str, Any], blockers: list[str], runtime_infos: list[AIRuntimeInfo]) -> AISetupStepInfo:
+def _runtime_step(
+    runtime: dict[str, Any],
+    blockers: list[str],
+    runtime_infos: list[AIRuntimeInfo],
+    production_pack: AIModelPackInfo | None,
+) -> AISetupStepInfo:
     llama = runtime.get("llama_cpp", {})
     state = str(llama.get("state", "not_configured"))
     status = "blocked" if blockers else "done"
-    installable_llama = _installable_runtime(runtime_infos, "llama_cpp")
+    production_setup_available = bool(production_pack and (production_pack.installable or production_pack.installed))
+    installable_llama = _installable_runtime(runtime_infos, "llama_cpp", release_channel="demo")
     action_label = "Open runtime settings"
     action_route = "settings.ai.runtime"
     action_payload: dict[str, Any] = {}
-    if installable_llama and any("llama.cpp runtime is not configured." == blocker for blocker in blockers):
-        action_label = "Install demo runtime"
+    if production_setup_available:
+        action_label = "Install and test recommended setup"
+        action_route = "ai.setup.run"
+        action_payload = {"mode": "recommended", "packId": production_pack.id if production_pack else None}
+    elif installable_llama and any("llama.cpp runtime is not configured." == blocker for blocker in blockers):
+        action_label = "Install starter runtime"
         action_route = "ai.runtimes.install"
         action_payload = {"runtimeId": installable_llama.id}
     return AISetupStepInfo(
@@ -145,7 +155,7 @@ def _production_pack_step(pack: AIModelPackInfo | None) -> AISetupStepInfo:
         action_label = None
     elif pack.installable:
         status = "ready"
-        action_label = "Download pack"
+        action_label = "Install and test"
     else:
         status = "blocked"
         action_label = None
@@ -156,8 +166,8 @@ def _production_pack_step(pack: AIModelPackInfo | None) -> AISetupStepInfo:
         summary=pack.release_status.replace("_", " "),
         detail=(pack.blocked_reasons[0] if pack.blocked_reasons else pack.description),
         action_label=action_label,
-        action_route="ai.modelPacks.download" if action_label else None,
-        action_payload={"packId": pack.id} if action_label else {},
+        action_route="ai.setup.run" if action_label else None,
+        action_payload={"mode": "recommended", "packId": pack.id} if action_label else {},
     )
 
 
@@ -222,6 +232,8 @@ def _overall_status(
         return "ready"
     if demo_pack and demo_pack.installed:
         return "demo_ready"
+    if production_pack and production_pack.installable:
+        return "not_started"
     if demo_pack and demo_pack.installable:
         return "not_started"
     return "blocked"
@@ -236,10 +248,10 @@ def _next_action(
 ) -> str:
     if overall_status == "ready":
         return "Local production AI is ready."
-    if runtime_blockers and _installable_runtime(runtime_infos, "llama_cpp"):
-        return "Install the demo llama.cpp runtime to unlock local pipeline testing."
     if production_pack and production_pack.installable:
-        return f"Download and test {production_pack.display_name}."
+        return f"Install and test {production_pack.display_name}."
+    if runtime_blockers and _installable_runtime(runtime_infos, "llama_cpp", release_channel="demo"):
+        return "Install the starter llama.cpp runtime to unlock local pipeline testing."
     if demo_pack and demo_pack.installable and not demo_pack.installed:
         return f"Install {demo_pack.display_name} while production packs are blocked."
     if runtime_blockers:
@@ -249,8 +261,23 @@ def _next_action(
     return "Review local AI setup blockers."
 
 
-def _installable_runtime(runtime_infos: list[AIRuntimeInfo], runtime: str) -> AIRuntimeInfo | None:
-    return next((item for item in runtime_infos if item.runtime == runtime and item.installable and not item.installed), None)
+def _installable_runtime(
+    runtime_infos: list[AIRuntimeInfo],
+    runtime: str,
+    *,
+    release_channel: str | None = None,
+) -> AIRuntimeInfo | None:
+    return next(
+        (
+            item
+            for item in runtime_infos
+            if item.runtime == runtime
+            and item.installable
+            and not item.installed
+            and (release_channel is None or item.release_channel == release_channel)
+        ),
+        None,
+    )
 
 
 def _dedupe(values: list[str]) -> list[str]:

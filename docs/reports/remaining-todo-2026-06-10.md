@@ -14,7 +14,18 @@ It is intentionally written as an execution document, not a status memo. Start f
 
 ## Immediate Resume Point
 
-The last implementation slice built a reproducible macOS arm64 `whisper-cli` package from `whisper.cpp` source, moved the whisper runtime from distribution-decision to release-evidence, verified all production model candidate bytes, and merged the current byte-evidence files into one candidate overlay.
+Latest state on 2026-06-22: production model packs and the three production runtimes are approved and release-plan ready, including the restored Piper package. The setup status now points first to the recommended production local setup instead of the starter/demo runtime, and the renderer can execute that `ai.setup.run` action directly. Strict production readiness is still intentionally blocked because the required capabilities still route to mock providers until a recommended setup installs, smoke-tests, and activates the approved local inventory.
+
+Latest completed slice:
+
+- Changed `/ai/setup/status` so approved production packs take priority over demo runtime setup.
+- Changed the production pack setup action from a raw pack download to `ai.setup.run` with `mode: recommended`, so one action can install runtimes, download models, smoke test, and activate routes.
+- Kept starter/demo setup available as a fallback when production setup is not installable.
+- Updated Settings so the compact setup guide visually prioritizes Setup over starter setup.
+- Added renderer handling for backend `ai.setup.run` step actions.
+- Updated focused backend coverage for the production-first setup contract.
+
+Earlier implementation slice built a reproducible macOS arm64 `whisper-cli` package from `whisper.cpp` source, moved the whisper runtime from distribution-decision to release-evidence, verified all production model candidate bytes, and merged the current byte-evidence files into one candidate overlay.
 
 Completed in that slice:
 
@@ -2859,30 +2870,34 @@ Current good state:
 
 Remaining tasks:
 
-- Publish the packaged whisper.cpp runtime archive to an approved immutable release URL.
-- Apply the approved URL with `scripts/apply_whisper_runtime_package_url.sh` to avoid hand-editing candidate shortlist/runtime registry files.
-- Re-run source probing and byte verification against the published package URL.
-- Add runtime approval evidence records.
-- Run smoke verification and approval evidence overlay for the packaged whisper.cpp runtime and selected llama.cpp/Piper runtime candidates.
+- Keep llama.cpp, whisper.cpp, and Piper runtime manifests pinned to immutable approved URLs with size, SHA-256, archive member, license, and smoke evidence.
+- Re-run runtime source probing and byte verification if any URL or artifact changes.
+- Exercise the production setup run on clean app data without downloading unnecessary large models during routine checks.
 - Keep unsafe archive member protections covered by real archive-member tests and final packet verification.
-- Verify macOS arm64 runtime smoke/version commands.
 - Decide Intel macOS, Windows, and Linux alpha scope.
 - Ensure Settings runtime cards show clear target/host compatibility.
 
 Acceptance evidence:
 
-- Runtime warnings disappear for approved targets.
+- Runtime registry and release-plan checks stay ready for approved targets.
 - Setup wizard installs/verifies production runtimes.
 - Runtime install never uses fixture binaries for production packs.
-- Runtime blockers disappear from strict readiness.
+- Runtime blockers do not mask the remaining capability-route blockers in strict readiness.
 
 ## Workstream 3 - Capability Routes And Setup Wizard
 
 Goal: one guided setup leaves the app with real local-only routes.
 
+Current good state:
+
+- `/ai/setup/status` recommends the production starter pack first when production packs are installable.
+- Setup step actions can call `/ai/setup/run` directly with `mode: recommended`.
+- `/ai/setup/run` already has the code path for approved production runtime installation, model download, local smoke tests, and route activation.
+- Strict readiness honestly remains blocked until the selected local routes replace mock providers.
+
 Remaining tasks:
 
-- Ensure `/ai/setup/run` handles real approved production packs end to end.
+- Run and harden `/ai/setup/run` against the approved starter pack on clean app data, using bounded tests that do not repeatedly download multi-GB assets.
 - Route required capabilities to local approved inventory:
   - `extract_objects`
   - `extract_claims`

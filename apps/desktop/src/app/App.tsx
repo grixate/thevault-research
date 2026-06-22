@@ -2035,11 +2035,11 @@ function AISetupGuide({
           <Badge tone="good">{setup.privacy_label}</Badge>
           <span>{setup.recommended_profile} profile</span>
           {setup.recommended_pack_id && <small title={setup.recommended_pack_id}>Trusted pack selected</small>}
-          <Button icon={<Sparkles size={14} />} variant="secondary" disabled={busy} onClick={onOpenWizard}>
+          <Button icon={<Sparkles size={14} />} variant="primary" disabled={busy} onClick={onOpenWizard}>
             Setup
           </Button>
           {setup.can_use_demo && (
-            <Button icon={<Beaker size={14} />} variant="primary" disabled={busy} onClick={onPrepareDemo}>
+            <Button icon={<Beaker size={14} />} variant="secondary" disabled={busy} onClick={onPrepareDemo}>
               Use starter setup
             </Button>
           )}
@@ -11276,6 +11276,12 @@ function SettingsView() {
   }
 
   function runSetupAction(step: AISetupStepInfo) {
+    if (step.action_route === "ai.setup.run") {
+      const mode = step.action_payload.mode === "recommended" ? "recommended" : "demo";
+      const packId = typeof step.action_payload.packId === "string" ? step.action_payload.packId : undefined;
+      runSetup.mutate({ mode, pack_id: packId });
+      return;
+    }
     if (step.action_route === "ai.modelPacks.download" && typeof step.action_payload.packId === "string") {
       downloadModelPack.mutate(step.action_payload.packId);
       return;

@@ -2895,11 +2895,15 @@ def test_ai_registry_hardware_and_voice_mock_contracts(client):
     assert setup["demo_pack_id"] == "tiny-local-pack"
     assert setup["overall_status"] == "not_started"
     assert setup["can_use_demo"] is True
-    assert "demo llama.cpp runtime" in setup["next_action"]
+    assert setup["next_action"] == "Install and test Recommended Starter Pack."
     runtime_step = next(step for step in setup["steps"] if step["id"] == "runtime")
-    assert runtime_step["action_route"] == "ai.runtimes.install"
-    assert runtime_step["action_payload"] == {"runtimeId": "llama-cpp-fixture-runtime"}
-    assert any(step["id"] == "production_pack" and step["status"] == "ready" for step in setup["steps"])
+    assert runtime_step["action_label"] == "Install and test recommended setup"
+    assert runtime_step["action_route"] == "ai.setup.run"
+    assert runtime_step["action_payload"] == {"mode": "recommended", "packId": "starter-local-pack"}
+    production_setup_step = next(step for step in setup["steps"] if step["id"] == "production_pack")
+    assert production_setup_step["status"] == "ready"
+    assert production_setup_step["action_route"] == "ai.setup.run"
+    assert production_setup_step["action_payload"] == {"mode": "recommended", "packId": "starter-local-pack"}
     assert any(step["id"] == "demo_fallback" and step["status"] == "ready" for step in setup["steps"])
     readiness = client.get("/ai/readiness/report").json()
     assert readiness["status"] == "blocked"
