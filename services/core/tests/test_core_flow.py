@@ -2904,6 +2904,13 @@ def test_ai_registry_hardware_and_voice_mock_contracts(client):
     assert production_setup_step["status"] == "ready"
     assert production_setup_step["action_route"] == "ai.setup.run"
     assert production_setup_step["action_payload"] == {"mode": "recommended", "packId": "starter-local-pack"}
+    route_setup_step = next(step for step in setup["steps"] if step["id"] == "capability_routes")
+    assert route_setup_step["status"] == "ready"
+    assert route_setup_step["summary"] == "0/9 local routes ready"
+    assert route_setup_step["action_label"] == "Install and activate recommended routes"
+    assert route_setup_step["action_route"] == "ai.setup.run"
+    assert route_setup_step["action_payload"] == {"mode": "recommended", "packId": "starter-local-pack"}
+    assert "Not on approved local models yet" in route_setup_step["detail"]
     assert any(step["id"] == "demo_fallback" and step["status"] == "ready" for step in setup["steps"])
     readiness = client.get("/ai/readiness/report").json()
     assert readiness["status"] == "blocked"
@@ -5998,6 +6005,10 @@ def test_model_pack_download_queues_release_ready_small_models(client):
     setup = client.get("/ai/setup/status").json()
     assert setup["overall_status"] == "demo_ready"
     assert any(step["id"] == "demo_fallback" and step["status"] == "done" for step in setup["steps"])
+    route_setup_step = next(step for step in setup["steps"] if step["id"] == "capability_routes")
+    assert route_setup_step["status"] == "ready"
+    assert route_setup_step["summary"] == "0/9 local routes ready"
+    assert route_setup_step["action_route"] == "ai.setup.run"
 
     packs = client.get("/ai/model-packs").json()
     standard = next(pack for pack in packs if pack["id"] == "standard-local-pack")

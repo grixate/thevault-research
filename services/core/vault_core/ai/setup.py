@@ -205,18 +205,64 @@ def _capability_routes_step(
     production_pack: AIModelPackInfo | None,
     demo_pack: AIModelPackInfo | None,
 ) -> AISetupStepInfo:
-    routed = {binding.capability for binding in capabilities}
-    expected = set((production_pack or demo_pack).capabilities if (production_pack or demo_pack) else [])
-    missing = sorted(expected - routed)
+    target_pack = production_pack or demo_pack
+    routed = {binding.capability: binding for binding in capabilities}
+    expected = set(target_pack.capabilities if target_pack else [])
+    missing = sorted(expected - set(routed))
+    inactive = [
+        capability
+        for capability in sorted(expected & set(routed))
+        if not _route_is_local_model(routed[capability])
+    ]
+    unfinished = [*missing, *inactive]
+    if not unfinished:
+        status = "done"
+        detail = "All pack capabilities route to local model providers."
+        action_label = None
+        action_route = None
+        action_payload: dict[str, Any] = {}
+    elif target_pack and target_pack.release_channel == "production" and (target_pack.installable or target_pack.installed):
+        status = "ready"
+        detail = _route_gap_detail(missing, inactive)
+        action_label = "Install and activate recommended routes"
+        action_route = "ai.setup.run"
+        action_payload = {"mode": "recommended", "packId": target_pack.id}
+    else:
+        status = "blocked"
+        detail = _route_gap_detail(missing, inactive)
+        action_label = "Open routing"
+        action_route = "settings.routing"
+        action_payload = {}
     return AISetupStepInfo(
         id="capability_routes",
         title="Capability routes",
-        status="done" if not missing else "blocked",
-        summary=f"{len(routed)} routes configured",
-        detail="All pack capabilities have bindings." if not missing else f"Missing bindings: {', '.join(missing)}.",
-        action_label="Open routing" if missing else None,
-        action_route="settings.routing" if missing else None,
+        status=status,
+        summary=f"{len(expected) - len(unfinished)}/{len(expected)} local routes ready" if expected else "No target pack routes",
+        detail=detail,
+        action_label=action_label,
+        action_route=action_route,
+        action_payload=action_payload,
     )
+
+
+def _route_is_local_model(binding: Any) -> bool:
+    provider = PROVIDERS_BY_ID.get(binding.provider_id)
+    if provider is None:
+        return False
+    if not binding.local_only or provider.locality == "cloud":
+        return False
+    if binding.provider_id.startswith("mock_"):
+        return False
+    return bool(binding.model_id)
+
+
+def _route_gap_detail(missing: list[str], inactive: list[str]) -> str:
+    parts: list[str] = []
+    if missing:
+        parts.append(f"Missing bindings: {', '.join(missing)}.")
+    if inactive:
+        parts.append(f"Not on approved local models yet: {', '.join(inactive)}.")
+    return " ".join(parts) if parts else "All pack capabilities route to local model providers."
 
 
 def _overall_status(

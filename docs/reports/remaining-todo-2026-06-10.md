@@ -23,6 +23,7 @@ Latest completed slice:
 - Kept starter/demo setup available as a fallback when production setup is not installable.
 - Updated Settings so the compact setup guide visually prioritizes Setup over starter setup.
 - Added renderer handling for backend `ai.setup.run` step actions.
+- Fixed the setup status route step so default mock bindings no longer count as finished capability routes.
 - Updated focused backend coverage for the production-first setup contract.
 
 Earlier implementation slice built a reproducible macOS arm64 `whisper-cli` package from `whisper.cpp` source, moved the whisper runtime from distribution-decision to release-evidence, verified all production model candidate bytes, and merged the current byte-evidence files into one candidate overlay.
@@ -2892,6 +2893,7 @@ Current good state:
 
 - `/ai/setup/status` recommends the production starter pack first when production packs are installable.
 - Setup step actions can call `/ai/setup/run` directly with `mode: recommended`.
+- The setup route step now reports mock/default bindings as unfinished and offers `Install and activate recommended routes`.
 - `/ai/setup/run` already has the code path for approved production runtime installation, model download, local smoke tests, and route activation.
 - Strict readiness honestly remains blocked until the selected local routes replace mock providers.
 
