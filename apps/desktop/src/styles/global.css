@@ -6951,6 +6951,25 @@ blockquote span {
   gap: 6px;
 }
 
+.setup-run-routes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.setup-run-routes span {
+  min-height: 26px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 9px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.05);
+  font-size: 12px;
+  line-height: 1;
+}
+
 .setup-run-steps {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

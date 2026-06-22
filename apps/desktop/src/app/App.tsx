@@ -3820,6 +3820,15 @@ function AISetupRunReport({ result }: { result?: AISetupRunResult }) {
           <span>{result.dry_run ? result.steps.filter((step) => step.id.startsWith("model-") && step.status === "queued").length : result.downloads.length} {downloadLabel}</span>
         </div>
       </div>
+      {result.selected_capabilities.length > 0 && (
+        <div className="setup-run-routes" aria-label={result.dry_run ? "Setup routes planned" : "Setup routes activated"}>
+          {result.selected_capabilities.map((capability) => (
+            <span key={capability} title={capability}>
+              {capabilityDisplayLabel(capability)}
+            </span>
+          ))}
+        </div>
+      )}
       <div className="setup-run-steps">
         {result.steps.map((step) => (
           <article key={step.id}>

@@ -5950,6 +5950,8 @@ describe("App", () => {
     const setupCheck = await screen.findByLabelText("Setup check");
     expect(within(setupCheck).getByText("1 routes planned")).toBeTruthy();
     expect(within(setupCheck).getByText("1 downloads planned")).toBeTruthy();
+    const plannedRoutes = within(setupCheck).getByLabelText("Setup routes planned");
+    expect(within(plannedRoutes).getByText("Claim suggestions")).toBeTruthy();
     expect(within(setupCheck).getByText("Would test local text runtime and activate Claim suggestions.")).toBeTruthy();
     expect(setupCheck.textContent).not.toContain("extract_claims");
     fireEvent.click(within(setupGuide as HTMLElement).getByRole("button", { name: /^setup$/i }));
@@ -6240,6 +6242,10 @@ describe("App", () => {
     expect(within(result).getByText("Trusted model setup")).toBeTruthy();
     expect(within(result).getByText("3 routes activated")).toBeTruthy();
     expect(within(result).getByText("2 downloads checked")).toBeTruthy();
+    const activatedRoutes = within(result).getByLabelText("Setup routes activated");
+    expect(within(activatedRoutes).getByText("Claim suggestions")).toBeTruthy();
+    expect(within(activatedRoutes).getByText("Draft notes")).toBeTruthy();
+    expect(within(activatedRoutes).getByText("Search index")).toBeTruthy();
     expect(within(result).getAllByText("Claim suggestions").length).toBeGreaterThan(0);
     expect(within(result).getAllByText("Search index").length).toBeGreaterThan(0);
     expect(result.textContent).not.toContain("mock");
