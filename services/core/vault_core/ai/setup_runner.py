@@ -556,7 +556,7 @@ def _model_definition(
         registry = registry_models.get(model_id, {})
         return {**registry, **installed[model_id], "id": model_id}
     registry = registry_models.get(model_id)
-    if registry and registry.get("installed"):
+    if registry:
         return registry
     return None
 

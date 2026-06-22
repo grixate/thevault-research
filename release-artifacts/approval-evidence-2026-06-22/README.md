@@ -12,6 +12,10 @@ This folder records the approval and pinning slice for the production local-AI m
 - Pinned runtime registry SHA-256: `a050ca271ca3acee8fa2df7875ab91327571f462bdc766e1889dffd96f92d2a6`.
 - Strict production readiness after pin: blocked only by capability routes that still point at demo mock providers.
 
+## Superseding Runtime Smoke Note
+
+Later setup smoke on 2026-06-22 found that the selected Piper runtime archive is not self-contained on this host. `piper-managed-runtime` has been demoted back to pending approval, and the current pinned runtime registry SHA-256 is now `e644c81472185885a8720d3244c29584ef2b1bbbec841f3b9b3e3de53d6f81e1`. See `release-artifacts/runtime-setup-probe-2026-06-22/README.md` for the runtime setup probe.
+
 ## Files
 
 - `approval-evidence.json`: reviewer evidence overlay applied to the candidate registries.

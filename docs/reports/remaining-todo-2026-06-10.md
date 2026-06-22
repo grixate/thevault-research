@@ -241,9 +241,31 @@ Prompt/sandbox note for autonomous work:
 - `scripts/lib/core_python.sh` now preserves the caller's working directory while still preferring `services/core/.venv/bin/python`; relative `--output` paths from registry scripts now land where the command was launched, not under `services/core`.
 - For Chromium/Playwright visual QA, keep using the stable helper `node scripts/visual_check.mjs <scenario> <output>`. The `node scripts/visual_check.mjs` prefix is approved; avoid ad-hoc `node -e` Playwright snippets because each unique inline Chromium command shape can trigger another approval prompt.
 
-Recommended next slice: run the production setup path for the selected pack, allowing approved model/runtime downloads and smoke tests, then activate capability routes away from mock providers. Do not mark strict production local AI ready until route activation has happened against installed, runtime-tested local artifacts and `./scripts/check_ai_readiness.sh` exits zero.
+Latest production runtime setup probe on 2026-06-22:
 
-Note: strict production is still blocked by design, but no longer because approval evidence or registry pinning is missing. The remaining blocker is runtime setup plus capability-route activation.
+- Dry activation probe found and fixed a setup-run bug where approved-but-not-installed production models were reported as `Model definition is missing`; they now correctly report `Model is not installed yet`.
+- Runtime archive installer now preserves regular sibling files from the selected executable folder and safely resolves tar symlink chains by copying linked regular file bytes under the alias name. This is required for the llama.cpp macOS archive dylib layout.
+- Added explicit llama.cpp runtime smoke metadata: `--help`, allowed exit code `0`, timeout `30` seconds.
+- Clean `/tmp` runtime install probe now verifies:
+  - `llama-cpp-managed-runtime`: installed and smoke verified.
+  - `whisper-cpp-managed-runtime`: installed and smoke verified.
+- Piper runtime smoke found the current selected archive is not self-contained:
+  - installed `piper` exits before `--version`.
+  - missing dependency: `libespeak-ng.1.dylib`.
+  - the selected `piper_macos_aarch64.tar.gz` archive does not include the required dylibs.
+  - no matching Homebrew dependency was present on this host.
+- `piper-managed-runtime` approval has been demoted back to `pending`; the runtime registry policy was repinned to SHA-256 `e644c81472185885a8720d3244c29584ef2b1bbbec841f3b9b3e3de53d6f81e1`.
+- Current gates:
+  - `./scripts/validate_ai_registries.sh`: pass, 1 expected warning for `piper-managed-runtime.approval.status`.
+  - `./scripts/check_ai_readiness.sh --format text`: blocked; production runtimes are 2/3 ready and production packs are 0/4 ready until Piper runtime approval is restored.
+  - focused setup/runtime tests: 8 passed.
+  - `uv run ruff check vault_core tests`: passed.
+- Evidence note:
+  - `release-artifacts/runtime-setup-probe-2026-06-22/README.md`
+
+Recommended next slice: package or select a self-contained Piper runtime for macOS, verify its byte stream and smoke behavior, apply approval evidence, repin the runtime registry, then rerun production setup and capability-route activation. Do not mark strict production local AI ready until Piper is restored, setup-run has installed/tested the selected pack, routes no longer point at mock providers, and `./scripts/check_ai_readiness.sh` exits zero.
+
+Note: strict production is still blocked by design, but the blocker is now more precise: Piper runtime packaging/approval first, then production setup plus capability-route activation.
 
 ## Current State
 

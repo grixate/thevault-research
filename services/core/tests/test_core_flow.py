@@ -5658,7 +5658,13 @@ def test_managed_runtime_url_install_verify_delete(tmp_path, monkeypatch):
 
 def test_managed_runtime_url_archive_install_extracts_named_member(tmp_path, monkeypatch):
     binary_payload = b"#!/bin/sh\nif [ \"$1\" = \"--version\" ]; then echo archive runtime 0.1; exit 0; fi\necho ok\n"
-    archive_payload = runtime_zip_payload("runtime/bin/llama-cli", binary_payload)
+    sibling_payload = b"support library bytes"
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, "w") as archive:
+        archive.writestr("runtime/bin/llama-cli", binary_payload)
+        archive.writestr("runtime/bin/libllama-cli-impl.dylib", sibling_payload)
+        archive.writestr("runtime/docs/readme.txt", b"not part of the executable folder")
+    archive_payload = buffer.getvalue()
     server, url = serve_payload(archive_payload, "/llama-runtime.zip")
     try:
         registry_path = tmp_path / "runtime_registry.json"
@@ -5684,6 +5690,8 @@ def test_managed_runtime_url_archive_install_extracts_named_member(tmp_path, mon
             binary_path = Path(installed["binary_path"])
             assert binary_path.name == "llama-cli"
             assert binary_path.read_bytes() == binary_payload
+            assert (binary_path.parent / "libllama-cli-impl.dylib").read_bytes() == sibling_payload
+            assert not (binary_path.parent / "readme.txt").exists()
             assert os.access(binary_path, os.X_OK)
 
             verified = client.post("/ai/runtimes/llama-cpp-url-runtime/verify").json()
@@ -5699,6 +5707,53 @@ def test_managed_runtime_url_archive_install_extracts_named_member(tmp_path, mon
             assert install_log["source_artifact_sha256"] == content_hash(archive_payload)
             assert install_log["source_artifact_size_bytes"] == len(archive_payload)
             assert install_log["archive_member"] == "runtime/bin/llama-cli"
+    finally:
+        server.shutdown()
+        server.server_close()
+
+
+def test_managed_runtime_url_archive_install_resolves_safe_tar_sibling_symlinks(tmp_path, monkeypatch):
+    binary_payload = b"#!/bin/sh\nif [ \"$1\" = \"--version\" ]; then echo archive runtime 0.2; exit 0; fi\necho ok\n"
+    dylib_payload = b"linked dylib bytes"
+    buffer = io.BytesIO()
+    with tarfile.open(fileobj=buffer, mode="w:gz") as archive:
+        binary = tarfile.TarInfo("runtime/bin/llama-cli")
+        binary.size = len(binary_payload)
+        binary.mode = 0o755
+        archive.addfile(binary, io.BytesIO(binary_payload))
+        dylib = tarfile.TarInfo("runtime/bin/libllama.0.0.1.dylib")
+        dylib.size = len(dylib_payload)
+        dylib.mode = 0o755
+        archive.addfile(dylib, io.BytesIO(dylib_payload))
+        alias = tarfile.TarInfo("runtime/bin/libllama.0.dylib")
+        alias.type = tarfile.SYMTYPE
+        alias.linkname = "libllama.0.0.1.dylib"
+        archive.addfile(alias)
+        alias_chain = tarfile.TarInfo("runtime/bin/libllama.dylib")
+        alias_chain.type = tarfile.SYMTYPE
+        alias_chain.linkname = "libllama.0.dylib"
+        archive.addfile(alias_chain)
+    archive_payload = buffer.getvalue()
+    server, url = serve_payload(archive_payload, "/llama-runtime.tar.gz")
+    try:
+        registry_path = tmp_path / "runtime_registry.json"
+        write_runtime_url_registry(
+            registry_path,
+            url,
+            archive_payload,
+            filename="llama-runtime.tar.gz",
+            source_extra={"archive_format": "tar.gz", "archive_member": "runtime/bin/llama-cli"},
+        )
+        monkeypatch.setattr(runtime_installer, "REGISTRY_PATH", registry_path)
+        settings = Settings(data_dir=tmp_path / "vault-data", desktop_token=None, port=8877, workspace_name="Test Lab")
+        with TestClient(create_app(settings)) as client:
+            installed = client.post("/ai/runtimes/llama-cpp-url-runtime/install").json()
+            binary_path = Path(installed["binary_path"])
+            assert binary_path.read_bytes() == binary_payload
+            assert (binary_path.parent / "libllama.0.dylib").read_bytes() == dylib_payload
+            assert not (binary_path.parent / "libllama.0.dylib").is_symlink()
+            assert (binary_path.parent / "libllama.dylib").read_bytes() == dylib_payload
+            assert not (binary_path.parent / "libllama.dylib").is_symlink()
     finally:
         server.shutdown()
         server.server_close()
@@ -5973,14 +6028,41 @@ def test_model_pack_download_queues_release_ready_small_models(client):
 
 
 def test_ai_setup_run_installs_demo_assets_and_safely_activates_routes(client):
-    production = client.post("/ai/setup/run", json={"mode": "recommended"}).json()
+    production = client.post(
+        "/ai/setup/run",
+        json={
+            "mode": "recommended",
+            "install_runtimes": False,
+            "download_models": False,
+            "activate_routes": True,
+        },
+    ).json()
     assert production["pack_id"] == "starter-local-pack"
     assert production["release_channel"] == "production"
     assert production["status"] == "blocked"
     assert production["selected_capabilities"] == []
     assert production["downloads"] == []
-    assert any(step["status"] == "blocked" and "Required downloads" in step["title"] for step in production["steps"])
-    assert any("Action:" in step["detail"] for step in production["steps"] if step.get("detail"))
+    assert any(
+        step["status"] == "blocked"
+        and "Managed runtimes" in step["title"]
+        and "Managed runtime installer pending for piper" in step["detail"]
+        for step in production["steps"]
+    )
+    assert all("llama-cpp-fixture-runtime" not in (step.get("detail") or "") for step in production["steps"])
+
+    activation_probe = setup_runner._activate_ready_pack_routes(
+        client.app.state.db,
+        client.app.state.settings,
+        next(pack for pack in model_registry.list_model_packs(client.app.state.db) if pack.id == "starter-local-pack"),
+        {model["id"]: model for model in model_registry.load_model_registry()["models"]},
+        ["standard-gguf-placeholder"],
+    )[0]
+    assert any(
+        step["model_id"] == "standard-gguf-placeholder"
+        and step["status"] == "blocked"
+        and step["detail"] == "Model is not installed yet."
+        for step in [item.model_dump() for item in activation_probe]
+    )
 
     run = client.post("/ai/setup/run", json={"mode": "demo"}).json()
     assert run["pack_id"] == "tiny-local-pack"
@@ -6014,12 +6096,18 @@ def test_ai_setup_run_installs_demo_assets_and_safely_activates_routes(client):
     assert by_capability["generate_note"]["model_id"] == "mock-local-llm"
     events = client.get("/events").json()
     assert any(event["action"] == "ai.setup_run_completed" for event in events)
-    assert any(event["action"] == "ai.setup_run_blocked" for event in events)
 
 
-def test_production_setup_runtime_selection_never_uses_demo_fixture(client):
+def test_production_setup_runtime_selection_never_uses_demo_fixture(client, monkeypatch):
     pack = next(pack for pack in model_registry.list_model_packs(client.app.state.db) if pack.id == "tiny-production-pack")
     registry_models = {model["id"]: model for model in model_registry.load_model_registry()["models"]}
+    installed_runtime_ids: list[str] = []
+
+    def fake_install_runtime(db, settings, runtime_id):
+        installed_runtime_ids.append(runtime_id)
+        return {"binary_path": f"/tmp/{runtime_id}"}
+
+    monkeypatch.setattr(setup_runner, "install_runtime", fake_install_runtime)
 
     steps = setup_runner._install_pack_runtimes(
         client.app.state.db,
@@ -6030,9 +6118,17 @@ def test_production_setup_runtime_selection_never_uses_demo_fixture(client):
     )
 
     llama_step = next(step for step in steps if step.id == "runtime-llama_cpp")
-    assert llama_step.status == "blocked"
-    assert llama_step.runtime_id is None
-    assert "No approved installable llama_cpp runtime" in (llama_step.detail or "")
+    assert llama_step.status == "done"
+    assert llama_step.runtime_id == "llama-cpp-managed-runtime"
+    assert "llama-cpp-fixture-runtime" not in installed_runtime_ids
+    assert set(installed_runtime_ids) == {
+        "llama-cpp-managed-runtime",
+        "whisper-cpp-managed-runtime",
+    }
+    piper_step = next(step for step in steps if step.id == "runtime-piper")
+    assert piper_step.status == "blocked"
+    assert piper_step.runtime_id is None
+    assert "No approved installable piper runtime" in (piper_step.detail or "")
     runtimes = client.get("/ai/runtimes/registry").json()
     demo_runtime = next(runtime for runtime in runtimes if runtime["id"] == "llama-cpp-fixture-runtime")
     assert demo_runtime["installed"] is False

@@ -62,6 +62,15 @@
           "https://github.com/ggml-org/llama.cpp/releases"
         ],
         "rationale": "Latest observed llama.cpp macOS Apple Silicon release asset for the current development date. Archive member, size, checksum, and license URL are pinned; it must still pass source probe, byte verification, smoke, and approval gates."
+      },
+      "smoke_test": {
+        "args": [
+          "--help"
+        ],
+        "allowed_exit_codes": [
+          0
+        ],
+        "timeout_seconds": 30
       }
     },
     {
@@ -141,10 +150,8 @@
         }
       ],
       "approval": {
-        "status": "approved",
-        "approved_by": "Codex release evidence review",
-        "approved_at": "2026-06-22",
-        "evidence": "release-artifacts/model-source-pins-2026-06-22/source-probe.json; source/size/SHA/license checks pass for piper-managed-runtime."
+        "status": "pending",
+        "evidence": "Runtime setup smoke on 2026-06-22 showed piper_macos_aarch64.tar.gz is not self-contained on macOS: piper exits before --version because libespeak-ng.1.dylib is absent from the archive and not available on the host. Publish or select a self-contained Piper runtime package before approval."
       },
       "candidate": {
         "shortlist_id": "piper-macos-arm64",

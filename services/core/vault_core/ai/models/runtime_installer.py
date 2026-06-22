@@ -200,7 +200,12 @@ def install_runtime(db: VaultDatabase, settings: Settings, runtime_id: str) -> d
     if not _path_inside(target_dir.resolve(), target_path.resolve()):
         raise ValueError("Registry runtime target path is invalid")
     target_path.parent.mkdir(parents=True, exist_ok=True)
-    shutil.copyfile(prepared["binary_path"], target_path)
+    if prepared.get("archive_member"):
+        _copy_extracted_runtime_tree(Path(prepared["binary_path"]).parent, target_dir)
+        if Path(prepared["binary_path"]).name != target_filename:
+            shutil.copyfile(prepared["binary_path"], target_path)
+    else:
+        shutil.copyfile(prepared["binary_path"], target_path)
     if first_file.get("executable"):
         target_path.chmod(target_path.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
     size_bytes = target_path.stat().st_size
@@ -832,40 +837,134 @@ def _extract_runtime_archive(
     return target_path
 
 
+def _copy_extracted_runtime_tree(source_dir: Path, target_dir: Path) -> None:
+    source_root = source_dir.resolve()
+    target_root = target_dir.resolve()
+    for source_path in source_root.rglob("*"):
+        if not source_path.is_file():
+            continue
+        rel = source_path.relative_to(source_root)
+        if not _safe_registry_filename(rel.as_posix()):
+            raise ValueError("Runtime archive member path is invalid")
+        target_path = target_root / rel
+        if not _path_inside(target_root, target_path.resolve()):
+            raise ValueError("Runtime archive member path is invalid")
+        target_path.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(source_path, target_path)
+
+
 def _extract_zip_member(archive_path: Path, member: str, target_path: Path) -> None:
+    member_parent = Path(member).parent.as_posix()
     try:
         with zipfile.ZipFile(archive_path) as archive:
-            try:
-                info = archive.getinfo(member)
-            except KeyError as exc:
-                raise ValueError(f"Runtime archive member not found: {member}") from exc
-            if info.is_dir():
-                raise ValueError("Runtime archive member must be a file")
-            mode = (info.external_attr >> 16) & 0o170000
-            if mode == stat.S_IFLNK:
-                raise ValueError("Runtime archive member must not be a symlink")
-            with archive.open(info, "r") as source, target_path.open("wb") as target:
-                shutil.copyfileobj(source, target)
+            infos = archive.infolist()
+            if not any(info.filename == member and not info.is_dir() for info in infos):
+                raise ValueError(f"Runtime archive member not found: {member}")
+            for info in infos:
+                if info.is_dir():
+                    continue
+                if not _archive_entry_under_member_parent(info.filename, member_parent):
+                    continue
+                mode = (info.external_attr >> 16) & 0o170000
+                if mode == stat.S_IFLNK:
+                    raise ValueError("Runtime archive member must not be a symlink")
+                rel = _archive_entry_relative_path(info.filename, member_parent)
+                output_path = target_path.parent / rel
+                if not _path_inside(target_path.parent.resolve(), output_path.resolve()):
+                    raise ValueError("Runtime archive member path is invalid")
+                output_path.parent.mkdir(parents=True, exist_ok=True)
+                with archive.open(info, "r") as source, output_path.open("wb") as target:
+                    shutil.copyfileobj(source, target)
+                mode_bits = (info.external_attr >> 16) & 0o777
+                if mode_bits:
+                    output_path.chmod(mode_bits)
     except zipfile.BadZipFile as exc:
         raise ValueError("Runtime archive is not a valid zip file") from exc
 
 
 def _extract_tar_member(archive_path: Path, member: str, target_path: Path) -> None:
+    member_parent = Path(member).parent.as_posix()
     try:
         with tarfile.open(archive_path) as archive:
-            try:
-                info = archive.getmember(member)
-            except KeyError as exc:
-                raise ValueError(f"Runtime archive member not found: {member}") from exc
-            if not info.isfile() or info.issym() or info.islnk():
-                raise ValueError("Runtime archive member must be a regular file")
-            source = archive.extractfile(info)
-            if source is None:
-                raise ValueError("Runtime archive member could not be read")
-            with source, target_path.open("wb") as target:
-                shutil.copyfileobj(source, target)
+            members = archive.getmembers()
+            members_by_name = {info.name: info for info in members}
+            if not any(info.name == member and info.isfile() for info in members):
+                raise ValueError(f"Runtime archive member not found: {member}")
+            for info in members:
+                if info.isdir():
+                    continue
+                if not _archive_entry_under_member_parent(info.name, member_parent):
+                    continue
+                source_info = info
+                if info.issym() or info.islnk():
+                    source_info = _resolve_tar_link_info(info, members_by_name, member_parent)
+                if not source_info.isfile():
+                    raise ValueError("Runtime archive member must be a regular file")
+                rel = _archive_entry_relative_path(info.name, member_parent)
+                output_path = target_path.parent / rel
+                if not _path_inside(target_path.parent.resolve(), output_path.resolve()):
+                    raise ValueError("Runtime archive member path is invalid")
+                output_path.parent.mkdir(parents=True, exist_ok=True)
+                source = archive.extractfile(source_info)
+                if source is None:
+                    raise ValueError("Runtime archive member could not be read")
+                with source, output_path.open("wb") as target:
+                    shutil.copyfileobj(source, target)
+                output_path.chmod(source_info.mode & 0o777)
     except tarfile.TarError as exc:
         raise ValueError("Runtime archive is not a valid tar file") from exc
+
+
+def _archive_entry_under_member_parent(entry: str, member_parent: str) -> bool:
+    if not _safe_archive_member(entry):
+        raise ValueError("Runtime archive member path is invalid")
+    if member_parent in {"", "."}:
+        return True
+    return entry.startswith(f"{member_parent}/")
+
+
+def _archive_entry_relative_path(entry: str, member_parent: str) -> Path:
+    rel = Path(entry)
+    if member_parent not in {"", "."}:
+        rel = rel.relative_to(member_parent)
+    if not _safe_archive_member(rel.as_posix()):
+        raise ValueError("Runtime archive member path is invalid")
+    return rel
+
+
+def _archive_link_target_name(entry: str, linkname: str) -> str:
+    if not linkname:
+        raise ValueError("Runtime archive link target path is invalid")
+    link_path = Path(linkname)
+    if link_path.is_absolute():
+        raise ValueError("Runtime archive link target path is invalid")
+    target = (Path(entry).parent / link_path).as_posix()
+    if not _safe_archive_member(target):
+        raise ValueError("Runtime archive link target path is invalid")
+    return target
+
+
+def _resolve_tar_link_info(
+    info: tarfile.TarInfo,
+    members_by_name: dict[str, tarfile.TarInfo],
+    member_parent: str,
+    seen: set[str] | None = None,
+) -> tarfile.TarInfo:
+    seen = set(seen or set())
+    if info.name in seen:
+        raise ValueError("Runtime archive link cycle is invalid")
+    seen.add(info.name)
+    source_name = _archive_link_target_name(info.name, info.linkname)
+    if not _archive_entry_under_member_parent(source_name, member_parent):
+        raise ValueError("Runtime archive link target path is invalid")
+    source_info = members_by_name.get(source_name)
+    if source_info is None:
+        raise ValueError("Runtime archive link target must be a regular file")
+    if source_info.issym() or source_info.islnk():
+        return _resolve_tar_link_info(source_info, members_by_name, member_parent, seen)
+    if not source_info.isfile():
+        raise ValueError("Runtime archive link target must be a regular file")
+    return source_info
 
 
 def _runtime_archive_member(source: dict[str, Any]) -> str | None:
