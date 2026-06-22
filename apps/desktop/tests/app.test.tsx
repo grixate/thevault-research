@@ -5106,7 +5106,7 @@ describe("App", () => {
             release_channel: "production",
             status: "partial",
             dry_run: true,
-            selected_capabilities: [],
+            selected_capabilities: ["extract_claims"],
             downloads: [],
             steps: [
               {
@@ -5941,6 +5941,7 @@ describe("App", () => {
       expect(setupRunCalls.at(-1)?.[1]).toEqual(expect.objectContaining({ mode: "recommended", pack_id: "tiny-production-pack", dry_run: true }));
     });
     const setupCheck = await screen.findByLabelText("Setup check");
+    expect(within(setupCheck).getByText("1 routes planned")).toBeTruthy();
     expect(within(setupCheck).getByText("1 downloads planned")).toBeTruthy();
     fireEvent.click(within(setupGuide as HTMLElement).getByRole("button", { name: /^setup$/i }));
     const wizard = await screen.findByRole("dialog", { name: /model setup/i });

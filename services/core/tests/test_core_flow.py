@@ -6036,7 +6036,17 @@ def test_ai_setup_run_dry_run_preflights_recommended_pack_without_side_effects(c
     assert preflight["pack_id"] == "starter-local-pack"
     assert preflight["release_channel"] == "production"
     assert preflight["status"] == "partial"
-    assert preflight["selected_capabilities"] == []
+    assert set(preflight["selected_capabilities"]) == {
+        "extract_objects",
+        "extract_claims",
+        "summarize",
+        "generate_note",
+        "grounded_answer",
+        "create_learning_item",
+        "embed_text",
+        "transcribe_audio",
+        "synthesize_speech",
+    }
     assert preflight["downloads"] == []
     assert any(step["id"] == "runtime-llama_cpp" and step["status"] == "queued" for step in preflight["steps"])
     assert any(step["id"] == "runtime-whisper_cpp" and step["status"] == "queued" for step in preflight["steps"])
@@ -6051,6 +6061,13 @@ def test_ai_setup_run_dry_run_preflights_recommended_pack_without_side_effects(c
         and "activate extract_objects" in (step["detail"] or "")
         for step in preflight["steps"]
     )
+    no_activation_preflight = client.post(
+        "/ai/setup/run",
+        json={"mode": "recommended", "pack_id": "starter-local-pack", "dry_run": True, "activate_routes": False},
+    ).json()
+    assert no_activation_preflight["dry_run"] is True
+    assert no_activation_preflight["selected_capabilities"] == []
+    assert any(step["id"] == "route-activation-skipped" and step["status"] == "skipped" for step in no_activation_preflight["steps"])
 
     after_capabilities = client.get("/ai/capabilities").json()
     after_routes = {

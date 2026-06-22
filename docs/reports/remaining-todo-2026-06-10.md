@@ -29,6 +29,7 @@ Latest completed slice:
 - Readiness reports now include the recommended provider/model target for each blocked capability route, for example `llama_cpp_cli / standard-gguf-placeholder`, `local_embedding / balanced-embedding-placeholder`, `whisper_cpp / standard-whisper-placeholder`, and `piper / tiny-piper-placeholder`.
 - `/ai/setup/run` now accepts `dry_run: true` to preflight recommended setup without installing runtimes, downloading model files, or changing routes.
 - Settings now exposes that dry-run as a quiet recommended setup check from both the compact setup guide and the setup wizard, with separate "Setup check" result language so users can inspect the plan before installing anything.
+- Setup preflight now reports the capabilities it plans to activate, so Settings can show real "routes planned" counts instead of `0 routes planned` while still making no route, runtime, or download changes.
 - Added focused renderer coverage for a successful production setup run that activates approved local routes and shows a clean "Setup result" without mock/blocker language.
 - Updated focused backend coverage for the production-first setup contract.
 

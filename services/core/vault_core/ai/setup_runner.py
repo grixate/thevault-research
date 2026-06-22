@@ -226,8 +226,10 @@ def _dry_run_setup_response(
             )
         )
     if req.activate_routes:
-        steps.extend(_plan_route_activation(pack, registry_models, model_ids))
+        activation_steps, selected_capabilities = _plan_route_activation(pack, registry_models, model_ids)
+        steps.extend(activation_steps)
     else:
+        selected_capabilities = []
         steps.append(
             AISetupRunStep(
                 id="route-activation-skipped",
@@ -259,7 +261,7 @@ def _dry_run_setup_response(
         release_channel=pack.release_channel,
         status=status,
         dry_run=True,
-        selected_capabilities=[],
+        selected_capabilities=selected_capabilities,
         downloads=[],
         steps=steps,
         setup=ai_setup_status(db, settings),
@@ -542,8 +544,9 @@ def _plan_route_activation(
     pack: AIModelPackInfo,
     registry_models: dict[str, dict[str, Any]],
     model_ids: list[str],
-) -> list[AISetupRunStep]:
+) -> tuple[list[AISetupRunStep], list[str]]:
     steps: list[AISetupRunStep] = []
+    selected_capabilities: list[str] = []
     target_capabilities = _setup_capabilities(pack, registry_models, model_ids)
     for model_id in model_ids:
         model = registry_models.get(model_id)
@@ -565,6 +568,7 @@ def _plan_route_activation(
         ]
         if not capabilities:
             continue
+        selected_capabilities.extend(capabilities)
         provider_id = _provider_for_model(model)
         steps.append(
             AISetupRunStep(
@@ -575,7 +579,7 @@ def _plan_route_activation(
                 detail=f"Would smoke-test {provider_id} and activate {', '.join(capabilities)}.",
             )
         )
-    return steps
+    return steps, sorted(set(selected_capabilities))
 
 
 def _activate_ready_pack_routes(
