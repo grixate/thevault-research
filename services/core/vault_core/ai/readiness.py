@@ -40,11 +40,13 @@ def ai_production_readiness_report(db: VaultDatabase, settings: Settings) -> AIP
 
     production_packs = [pack for pack in packs if pack.release_channel == "production"]
     production_runtimes = [runtime for runtime in runtimes if runtime.release_channel == "production"]
+    recommended_pack = next((pack for pack in production_packs if pack.id == setup.recommended_pack_id), None)
+    models_by_id = {model.id: model for model in models}
     sections = [
         _production_pack_section(production_packs),
         _production_runtime_section(production_runtimes),
         _privacy_section(capabilities),
-        _capability_route_section(capabilities, {model.id: model for model in models}),
+        _capability_route_section(capabilities, models_by_id, recommended_pack),
     ]
 
     all_checks = [check for section in sections for check in section.checks]
@@ -320,8 +322,9 @@ def _privacy_detail(binding: object) -> str:
     return f"{getattr(binding, 'capability')} may leave the device."
 
 
-def _capability_route_section(capabilities: list, models_by_id: dict) -> AIReadinessReportSection:
+def _capability_route_section(capabilities: list, models_by_id: dict, recommended_pack: object | None) -> AIReadinessReportSection:
     by_capability = {binding.capability: binding for binding in capabilities}
+    route_targets = _recommended_route_targets(recommended_pack, models_by_id)
     checks: list[AIReadinessCheck] = []
     for capability in [*PRODUCTION_CAPABILITIES, *sorted(OPTIONAL_PRODUCTION_CAPABILITIES)]:
         binding = by_capability.get(capability)
@@ -333,8 +336,8 @@ def _capability_route_section(capabilities: list, models_by_id: dict) -> AIReadi
                     id=f"capability:{capability}",
                     label=label,
                     status="warn" if optional else "blocked",
-                    detail=f"{capability} is not configured.",
-                    action="Configure a local provider and model for this capability.",
+                    detail=_with_route_target(capability, f"{capability} is not configured.", route_targets),
+                    action=_recommended_route_action(capability, route_targets),
                 )
             )
             continue
@@ -345,8 +348,8 @@ def _capability_route_section(capabilities: list, models_by_id: dict) -> AIReadi
                     id=f"capability:{capability}",
                     label=label,
                     status="warn" if optional else "blocked",
-                    detail=f"{capability} uses unknown provider {binding.provider_id}.",
-                    action="Select an approved local provider for this capability.",
+                    detail=_with_route_target(capability, f"{capability} uses unknown provider {binding.provider_id}.", route_targets),
+                    action=_recommended_route_action(capability, route_targets),
                 )
             )
             continue
@@ -356,7 +359,7 @@ def _capability_route_section(capabilities: list, models_by_id: dict) -> AIReadi
                     id=f"capability:{capability}",
                     label=label,
                     status="warn" if optional else "blocked",
-                    detail=f"{capability} has local_only disabled.",
+                    detail=_with_route_target(capability, f"{capability} has local_only disabled.", route_targets),
                     action="Keep production routes local-only unless the user explicitly enables cloud for that action.",
                 )
             )
@@ -367,8 +370,12 @@ def _capability_route_section(capabilities: list, models_by_id: dict) -> AIReadi
                     id=f"capability:{capability}",
                     label=label,
                     status="warn" if optional else "blocked",
-                    detail=f"{capability} is routed to cloud provider {provider.display_name}.",
-                    action="Route this capability to an approved local production model before release.",
+                    detail=_with_route_target(
+                        capability,
+                        f"{capability} is routed to cloud provider {provider.display_name}.",
+                        route_targets,
+                    ),
+                    action=_recommended_route_action(capability, route_targets),
                 )
             )
             continue
@@ -378,8 +385,12 @@ def _capability_route_section(capabilities: list, models_by_id: dict) -> AIReadi
                     id=f"capability:{capability}",
                     label=label,
                     status="warn" if optional else "blocked",
-                    detail=f"{capability} still uses the {binding.provider_id} demo provider.",
-                    action="Route this capability to an approved local production model before release.",
+                    detail=_with_route_target(
+                        capability,
+                        f"{capability} still uses the {binding.provider_id} demo provider.",
+                        route_targets,
+                    ),
+                    action=_recommended_route_action(capability, route_targets),
                 )
             )
             continue
@@ -389,12 +400,12 @@ def _capability_route_section(capabilities: list, models_by_id: dict) -> AIReadi
                     id=f"capability:{capability}",
                     label=label,
                     status="warn" if optional else "blocked",
-                    detail=f"{capability} has no selected model.",
-                    action="Select a tested local model for this capability.",
+                    detail=_with_route_target(capability, f"{capability} has no selected model.", route_targets),
+                    action=_recommended_route_action(capability, route_targets),
                 )
             )
             continue
-        model_check = _production_route_model_check(capability, binding, provider, models_by_id)
+        model_check = _production_route_model_check(capability, binding, provider, models_by_id, route_targets)
         if model_check:
             checks.append(model_check.model_copy(update={"status": "warn" if optional else model_check.status}))
             continue
@@ -416,7 +427,13 @@ def _capability_route_section(capabilities: list, models_by_id: dict) -> AIReadi
     )
 
 
-def _production_route_model_check(capability: str, binding: object, provider: object, models_by_id: dict) -> AIReadinessCheck | None:
+def _production_route_model_check(
+    capability: str,
+    binding: object,
+    provider: object,
+    models_by_id: dict,
+    route_targets: dict[str, dict[str, str]],
+) -> AIReadinessCheck | None:
     model_id = getattr(binding, "model_id", None)
     model = models_by_id.get(model_id)
     label = f"{capability} route"
@@ -425,8 +442,12 @@ def _production_route_model_check(capability: str, binding: object, provider: ob
             id=f"capability:{capability}",
             label=label,
             status="blocked",
-            detail=f"{capability} selected model {model_id} is not in the approved model inventory.",
-            action="Select an installed model from the app-pinned production registry.",
+            detail=_with_route_target(
+                capability,
+                f"{capability} selected model {model_id} is not in the approved model inventory.",
+                route_targets,
+            ),
+            action=_recommended_route_action(capability, route_targets),
         )
     expected_kind = _expected_model_kind(capability)
     if expected_kind and model.kind != expected_kind:
@@ -434,8 +455,12 @@ def _production_route_model_check(capability: str, binding: object, provider: ob
             id=f"capability:{capability}",
             label=label,
             status="blocked",
-            detail=f"{capability} expects a {expected_kind} model but {model.id} is {model.kind}.",
-            action="Select a model whose kind matches this production capability.",
+            detail=_with_route_target(
+                capability,
+                f"{capability} expects a {expected_kind} model but {model.id} is {model.kind}.",
+                route_targets,
+            ),
+            action=_recommended_route_action(capability, route_targets),
         )
     provider_kind = getattr(provider, "kind", None)
     if expected_kind and provider_kind != expected_kind:
@@ -443,42 +468,114 @@ def _production_route_model_check(capability: str, binding: object, provider: ob
             id=f"capability:{capability}",
             label=label,
             status="blocked",
-            detail=f"{capability} uses {provider_kind} provider {getattr(provider, 'display_name', getattr(binding, 'provider_id', 'unknown'))}, expected {expected_kind}.",
-            action="Select an approved local provider that matches this capability.",
+            detail=_with_route_target(
+                capability,
+                f"{capability} uses {provider_kind} provider {getattr(provider, 'display_name', getattr(binding, 'provider_id', 'unknown'))}, expected {expected_kind}.",
+                route_targets,
+            ),
+            action=_recommended_route_action(capability, route_targets),
         )
     if not model.installed:
         return AIReadinessCheck(
             id=f"capability:{capability}",
             label=label,
             status="blocked",
-            detail=f"{capability} selected model {model.id} is not installed.",
-            action="Install and verify the approved production model before routing this capability.",
+            detail=_with_route_target(capability, f"{capability} selected model {model.id} is not installed.", route_targets),
+            action=_recommended_route_action(capability, route_targets),
         )
     if model.source_type in {"local_fixture"} or str(model.trust_level or "").startswith("fixture"):
         return AIReadinessCheck(
             id=f"capability:{capability}",
             label=label,
             status="blocked",
-            detail=f"{capability} selected model {model.id} is a demo fixture.",
-            action="Route this capability to an approved production model, not a fixture.",
+            detail=_with_route_target(capability, f"{capability} selected model {model.id} is a demo fixture.", route_targets),
+            action=_recommended_route_action(capability, route_targets),
         )
     if model.source_type in {"local_import", "installed"} or str(model.trust_level or "").startswith("manual_import"):
         return AIReadinessCheck(
             id=f"capability:{capability}",
             label=label,
             status="blocked",
-            detail=f"{capability} selected model {model.id} is a manual import, not an app-approved production model.",
-            action="Add this model to the app-pinned production registry with source, license, checksum, and size approvals.",
+            detail=_with_route_target(
+                capability,
+                f"{capability} selected model {model.id} is a manual import, not an app-approved production model.",
+                route_targets,
+            ),
+            action=_recommended_route_action(capability, route_targets),
         )
     if model.runtime in {"llama_cpp", "local_embedding", "local_cross_encoder", "whisper_cpp", "piper"} and not model.runtime_tested:
         return AIReadinessCheck(
             id=f"capability:{capability}",
             label=label,
             status="blocked",
-            detail=f"{capability} selected model {model.id} has not passed a local runtime test.",
-            action="Run the model through the setup runner or model test before production routing.",
+            detail=_with_route_target(
+                capability,
+                f"{capability} selected model {model.id} has not passed a local runtime test.",
+                route_targets,
+            ),
+            action=_recommended_route_action(capability, route_targets),
         )
     return None
+
+
+def _recommended_route_targets(recommended_pack: object | None, models_by_id: dict) -> dict[str, dict[str, str]]:
+    if recommended_pack is None:
+        return {}
+    target_model_ids = [
+        *list(getattr(recommended_pack, "required_model_ids", []) or []),
+        *list(getattr(recommended_pack, "optional_model_ids", []) or []),
+    ]
+    targets: dict[str, dict[str, str]] = {}
+    for model_id in target_model_ids:
+        model = models_by_id.get(model_id)
+        if model is None:
+            continue
+        provider_id = _provider_for_route_target(model)
+        provider = PROVIDERS_BY_ID.get(provider_id)
+        for capability in getattr(model, "capabilities", []) or []:
+            targets.setdefault(
+                capability,
+                {
+                    "model_id": getattr(model, "id", model_id),
+                    "model_name": getattr(model, "display_name", model_id),
+                    "provider_id": provider_id,
+                    "provider_name": provider.display_name if provider else provider_id,
+                },
+            )
+    return targets
+
+
+def _provider_for_route_target(model: object) -> str:
+    runtime = getattr(model, "runtime", None)
+    kind = getattr(model, "kind", None)
+    if runtime == "llama_cpp":
+        return "llama_cpp_cli"
+    if runtime == "local_embedding" and kind == "embedding":
+        return "local_embedding"
+    if runtime == "local_cross_encoder" and kind == "reranker":
+        return "local_cross_encoder"
+    if runtime == "whisper_cpp" and kind == "stt":
+        return "whisper_cpp"
+    if runtime == "piper" and kind == "tts":
+        return "piper"
+    return str(runtime or "unknown")
+
+
+def _with_route_target(capability: str, detail: str, route_targets: dict[str, dict[str, str]]) -> str:
+    target = route_targets.get(capability)
+    if not target:
+        return detail
+    return (
+        f"{detail} Recommended route: {target['provider_id']} / "
+        f"{target['model_id']} ({target['model_name']})."
+    )
+
+
+def _recommended_route_action(capability: str, route_targets: dict[str, dict[str, str]]) -> str:
+    target = route_targets.get(capability)
+    if not target:
+        return "Route this capability to an approved local production model before release."
+    return "Run recommended setup to install, test, and activate the approved local model for this route."
 
 
 def _expected_model_kind(capability: str) -> str | None:

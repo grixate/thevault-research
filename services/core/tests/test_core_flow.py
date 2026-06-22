@@ -3136,10 +3136,13 @@ def test_production_readiness_blocks_unapproved_capability_routes(client):
     assert "cloud provider" in privacy_checks["privacy:summarize"]["detail"]
     assert route_checks["capability:summarize"]["status"] == "blocked"
     assert "cloud provider" in route_checks["capability:summarize"]["detail"]
+    assert "Recommended route: llama_cpp_cli / standard-gguf-placeholder" in route_checks["capability:summarize"]["detail"]
     assert route_checks["capability:generate_note"]["status"] == "blocked"
     assert "not installed" in route_checks["capability:generate_note"]["detail"]
+    assert "Recommended route: llama_cpp_cli / standard-gguf-placeholder" in route_checks["capability:generate_note"]["detail"]
     assert route_checks["capability:embed_text"]["status"] == "blocked"
     assert "not in the approved model inventory" in route_checks["capability:embed_text"]["detail"]
+    assert "Recommended route: local_embedding / balanced-embedding-placeholder" in route_checks["capability:embed_text"]["detail"]
 
 
 def test_ai_readiness_cli_blocks_strict_production_until_real_artifacts(tmp_path):

@@ -26,6 +26,7 @@ Latest completed slice:
 - Fixed the setup status route step so default mock bindings no longer count as finished capability routes.
 - Added bounded full-pack setup coverage proving an approved production pack can activate all nine required local routes and clear required route blockers without downloading real multi-GB models.
 - Updated readiness semantics so optional-route warnings do not keep `production_ready` false once all required blockers are cleared.
+- Readiness reports now include the recommended provider/model target for each blocked capability route, for example `llama_cpp_cli / standard-gguf-placeholder`, `local_embedding / balanced-embedding-placeholder`, `whisper_cpp / standard-whisper-placeholder`, and `piper / tiny-piper-placeholder`.
 - Updated focused backend coverage for the production-first setup contract.
 
 Earlier implementation slice built a reproducible macOS arm64 `whisper-cli` package from `whisper.cpp` source, moved the whisper runtime from distribution-decision to release-evidence, verified all production model candidate bytes, and merged the current byte-evidence files into one candidate overlay.
@@ -2899,6 +2900,7 @@ Current good state:
 - `/ai/setup/run` already has the code path for approved production runtime installation, model download, local smoke tests, and route activation.
 - A bounded fake-artifact production pack test now proves all required v1 routes can become local and approved in one setup run.
 - Optional reranking remains a warning, not a production-readiness blocker.
+- `/ai/readiness/report` and Markdown exports now show the exact recommended local route target beside each blocked mock route.
 - Strict readiness honestly remains blocked until the selected local routes replace mock providers.
 
 Remaining tasks:
