@@ -263,7 +263,26 @@ Latest production runtime setup probe on 2026-06-22:
 - Evidence note:
   - `release-artifacts/runtime-setup-probe-2026-06-22/README.md`
 
-Recommended next slice: package or select a self-contained Piper runtime for macOS, verify its byte stream and smoke behavior, apply approval evidence, repin the runtime registry, then rerun production setup and capability-route activation. Do not mark strict production local AI ready until Piper is restored, setup-run has installed/tested the selected pack, routes no longer point at mock providers, and `./scripts/check_ai_readiness.sh` exits zero.
+Latest Piper TTS packaging slice on 2026-06-22:
+
+- Confirmed the `piper-tts==1.4.2` PyPI wheel can run under the app's Python 3.14 environment with vendored dependencies.
+- Added `scripts/package_piper_tts_runtime.sh` to build a reproducible macOS arm64 Piper runtime package with:
+  - `piper-tts==1.4.2`
+  - `onnxruntime==1.27.0`
+  - `numpy==2.5.0`
+  - `pathvalidate==3.3.1`
+  - `flatbuffers==25.12.19`
+  - `packaging==26.2`
+  - `protobuf==7.35.1`
+- Built `piper-tts-1.4.2-macos-arm64.tar.gz` from the script:
+  - SHA-256: `982fd27644cf6fae8657585a81d3a80585b4a4d75f806cabdbc0c3f6f2d6c041`
+  - size: `37760615`
+  - archive member: `piper-tts-1.4.2-macos-arm64/piper`
+  - smoke: `--help` exits 0 and prints Piper CLI usage.
+- Published the package, metadata, and README under `release-artifacts/piper-tts-1.4.2-macos-arm64/`.
+- License note: this package uses `piper-tts` / OHF Piper and is `GPL-3.0-or-later`, not the old archived `rhasspy/piper` MIT binary package. Keep that explicit in runtime approval evidence.
+
+Recommended next slice: commit and push the Piper package artifact, then update `piper-managed-runtime` to the commit-pinned raw package URL, verify its byte stream and smoke behavior, apply approval evidence, repin the runtime registry, then rerun production setup and capability-route activation. Do not mark strict production local AI ready until Piper is restored, setup-run has installed/tested the selected pack, routes no longer point at mock providers, and `./scripts/check_ai_readiness.sh` exits zero.
 
 Note: strict production is still blocked by design, but the blocker is now more precise: Piper runtime packaging/approval first, then production setup plus capability-route activation.
 

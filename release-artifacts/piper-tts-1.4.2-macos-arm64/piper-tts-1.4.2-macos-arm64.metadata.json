@@ -1,0 +1,40 @@
+{
+  "runtime_id": "piper-managed-runtime",
+  "shortlist_id": "piper-tts-macos-arm64",
+  "source_package": "piper-tts",
+  "source_version": "1.4.2",
+  "source_url": "https://pypi.org/project/piper-tts/1.4.2/",
+  "package_filename": "piper-tts-1.4.2-macos-arm64.tar.gz",
+  "package_path": "/tmp/vault-piper-package-script/dist/piper-tts-1.4.2-macos-arm64.tar.gz",
+  "archive_format": "tar.gz",
+  "archive_member": "piper-tts-1.4.2-macos-arm64/piper",
+  "sha256": "982fd27644cf6fae8657585a81d3a80585b4a4d75f806cabdbc0c3f6f2d6c041",
+  "size_bytes": 37760615,
+  "wrapper_sha256": "47f83c6b13d79a7eab4f81f571cc63d50cd1360236f2f53c01f3a28e0942a991",
+  "wrapper_size_bytes": 223,
+  "license_label": "GPL-3.0-or-later",
+  "license_url": "https://github.com/OHF-Voice/piper1-gpl/blob/main/LICENSE",
+  "build": {
+    "system": "Darwin",
+    "machine": "arm64",
+    "python": "/Users/grixate/Documents/Research lab/services/core/.venv/bin/python",
+    "vendored_dependencies": [
+      "piper-tts==1.4.2",
+      "onnxruntime==1.27.0",
+      "numpy==2.5.0",
+      "pathvalidate==3.3.1",
+      "flatbuffers==25.12.19",
+      "packaging==26.2",
+      "protobuf==7.35.1"
+    ]
+  },
+  "smoke_test": {
+    "args": [
+      "--help"
+    ],
+    "allowed_exit_codes": [
+      0
+    ],
+    "first_line": "usage: python -m piper [-h] -m MODEL [-c CONFIG] [-i INPUT_FILE]"
+  }
+}
