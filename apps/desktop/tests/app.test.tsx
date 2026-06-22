@@ -5945,7 +5945,7 @@ describe("App", () => {
     await waitFor(() => {
       const setupRunCalls = request.mock.calls.filter(([route]) => route === "ai.setup.run");
       expect(setupRunCalls.length).toBeGreaterThan(setupRunCallsBeforeGuideCheck);
-      expect(setupRunCalls.at(-1)?.[1]).toEqual(expect.objectContaining({ mode: "recommended", pack_id: "tiny-production-pack", dry_run: true }));
+      expect(setupRunCalls.at(-1)?.[1]).toEqual(expect.objectContaining({ mode: "recommended", pack_id: "tiny-production-pack", dry_run: true, timeout_seconds: 10 }));
     });
     const setupCheck = await screen.findByLabelText("Setup check");
     expect(within(setupCheck).getByText("1 routes planned")).toBeTruthy();
@@ -5974,12 +5974,12 @@ describe("App", () => {
     await waitFor(() => {
       const setupRunCalls = request.mock.calls.filter(([route]) => route === "ai.setup.run");
       expect(setupRunCalls.length).toBeGreaterThan(setupRunCallsBeforeWizardCheck);
-      expect(setupRunCalls.at(-1)?.[1]).toEqual(expect.objectContaining({ mode: "recommended", pack_id: "tiny-production-pack", dry_run: true }));
+      expect(setupRunCalls.at(-1)?.[1]).toEqual(expect.objectContaining({ mode: "recommended", pack_id: "tiny-production-pack", dry_run: true, timeout_seconds: 10 }));
     });
     fireEvent.click(within(wizard).getAllByRole("button", { name: /review setup/i })[0]);
     await waitFor(() => {
       const setupRunCalls = request.mock.calls.filter(([route]) => route === "ai.setup.run");
-      expect(setupRunCalls.at(-1)?.[1]).toEqual(expect.objectContaining({ mode: "recommended", pack_id: "tiny-production-pack" }));
+      expect(setupRunCalls.at(-1)?.[1]).toEqual(expect.objectContaining({ mode: "recommended", pack_id: "tiny-production-pack", timeout_seconds: 120 }));
       expect(setupRunCalls.at(-1)?.[1]?.dry_run).not.toBe(true);
     });
     await waitFor(() => expect(within(wizard).getAllByText("Required downloads").length).toBeGreaterThan(1));
@@ -6237,7 +6237,7 @@ describe("App", () => {
     const wizard = await screen.findByRole("dialog", { name: /model setup/i });
     const recommendedSetupActions = within(wizard).getAllByRole("button", { name: /use recommended setup/i });
     fireEvent.click(recommendedSetupActions[recommendedSetupActions.length - 1]);
-    await waitFor(() => expect(request).toHaveBeenCalledWith("ai.setup.run", expect.objectContaining({ mode: "recommended", pack_id: "tiny-production-pack" })));
+    await waitFor(() => expect(request).toHaveBeenCalledWith("ai.setup.run", expect.objectContaining({ mode: "recommended", pack_id: "tiny-production-pack", timeout_seconds: 120 })));
     const result = await within(wizard).findByLabelText("Setup result");
     expect(within(result).getByText("Trusted model setup")).toBeTruthy();
     expect(within(result).getByText("3 routes activated")).toBeTruthy();

@@ -978,6 +978,7 @@ export type AISetupRunInput = {
   pack_id?: string;
   include_optional_models?: boolean;
   dry_run?: boolean;
+  timeout_seconds?: number;
 };
 
 export type AIRuntimeInfo = {

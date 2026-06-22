@@ -17,6 +17,7 @@ from pathlib import Path
 
 from fastapi.testclient import TestClient
 
+from vault_core.api.schemas import AISetupRunRequest
 from vault_core.ai import setup_runner
 from vault_core.ai.models import downloader as model_downloader
 from vault_core.ai.models import artifact_verification as ai_artifact_verification
@@ -6083,6 +6084,11 @@ def test_ai_setup_run_dry_run_preflights_recommended_pack_without_side_effects(c
     events = client.get("/events").json()
     assert any(event["action"] == "ai.setup_run_planned" for event in events)
     assert not any(event["action"] == "ai.setup_run_completed" for event in events)
+
+
+def test_ai_setup_run_request_defaults_to_real_setup_timeout():
+    req = AISetupRunRequest(mode="recommended")
+    assert req.timeout_seconds == 120
 
 
 def test_ai_setup_run_installs_demo_assets_and_safely_activates_routes(client):

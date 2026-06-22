@@ -10707,8 +10707,9 @@ function SettingsView() {
     }
   });
   const runSetup = useMutation<AISetupRunResult, Error, AISetupRunInput>({
-    mutationFn: (input) =>
-      vaultRequest<AISetupRunResult>("ai.setup.run", {
+    mutationFn: (input) => {
+      const timeoutSeconds = input.timeout_seconds ?? (input.dry_run || input.mode === "demo" ? 10 : 120);
+      return vaultRequest<AISetupRunResult>("ai.setup.run", {
         mode: input.mode,
         pack_id: input.pack_id,
         install_runtimes: true,
@@ -10716,8 +10717,9 @@ function SettingsView() {
         activate_routes: true,
         include_optional_models: Boolean(input.include_optional_models),
         dry_run: Boolean(input.dry_run),
-        timeout_seconds: 10
-      }),
+        timeout_seconds: timeoutSeconds
+      });
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["ai-model-registry"] });
       queryClient.invalidateQueries({ queryKey: ["ai-model-packs"] });

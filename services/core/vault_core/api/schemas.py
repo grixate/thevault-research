@@ -885,7 +885,7 @@ class AISetupRunRequest(BaseModel):
     activate_routes: bool = True
     include_optional_models: bool = False
     dry_run: bool = False
-    timeout_seconds: float = 10
+    timeout_seconds: float = 120
 
 
 class AISetupRunStep(BaseModel):
