@@ -5456,19 +5456,19 @@ describe("App", () => {
     expect((productionPack as HTMLElement).textContent).not.toContain("production-local routes");
     expect((productionPack as HTMLElement).textContent).not.toContain("extract_claims, generate_note");
     fireEvent.click(within(productionPack as HTMLElement).getByRole("button", { name: /check readiness/i }));
-    await waitFor(() => expect(request).toHaveBeenCalledWith("ai.setup.run", expect.objectContaining({ mode: "recommended", pack_id: "tiny-production-pack" })));
+    await waitFor(() => expect(request).toHaveBeenCalledWith("ai.setup.run", expect.objectContaining({ mode: "recommended", pack_id: "tiny-production-pack", dry_run: true, timeout_seconds: 10 })));
     fireEvent.click(within(productionPack as HTMLElement).getByRole("button", { name: /check add-ons/i }));
     await waitFor(() =>
       expect(request).toHaveBeenCalledWith(
         "ai.setup.run",
-        expect.objectContaining({ mode: "recommended", pack_id: "tiny-production-pack", include_optional_models: true })
+        expect.objectContaining({ mode: "recommended", pack_id: "tiny-production-pack", include_optional_models: true, dry_run: true, timeout_seconds: 10 })
       )
     );
-    expect(await screen.findByText("Setup result")).toBeTruthy();
-    const setupResult = await screen.findByLabelText("Setup result");
-    expect(within(setupResult).getAllByText("Needs action").length).toBeGreaterThan(0);
+    expect(await screen.findByText("Setup check")).toBeTruthy();
+    const setupResult = await screen.findByLabelText("Setup check");
+    expect(within(setupResult).getByText("1 routes planned")).toBeTruthy();
     expect(within(setupResult).getByText("Trusted model setup")).toBeTruthy();
-    expect(within(setupResult).getByText("0 downloads checked")).toBeTruthy();
+    expect(within(setupResult).getByText("1 downloads planned")).toBeTruthy();
     expect(setupResult.textContent).not.toContain("tiny-production-pack / production");
     expect(setupResult.textContent).not.toContain("blocked");
     const demoPack = (await screen.findAllByText("Demo Fixture Pack"))
@@ -5565,8 +5565,8 @@ describe("App", () => {
     expect(await screen.findByText("packs ready to trust")).toBeTruthy();
     expect(await screen.findByText("models ready to trust")).toBeTruthy();
     expect(await screen.findByText("runtimes ready to trust")).toBeTruthy();
-    expect(await screen.findByText("Tiny GGUF Local Model")).toBeTruthy();
-    expect(await screen.findByText("Managed llama.cpp Runtime")).toBeTruthy();
+    expect((await screen.findAllByText("Tiny GGUF Local Model")).length).toBeGreaterThan(0);
+    expect((await screen.findAllByText("Managed llama.cpp Runtime")).length).toBeGreaterThan(0);
     fireEvent.click(screen.getByRole("button", { name: /export setup checklist/i }));
     await waitFor(() => expect(request).toHaveBeenCalledWith("ai.registry.releasePlan.export", undefined));
     await waitFor(() =>

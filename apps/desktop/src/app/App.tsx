@@ -11612,6 +11612,7 @@ function SettingsView() {
                       const recommended = pack.id === recommendedProductionPack?.id;
                       const downloadableCount = pack.downloadable_model_ids.length;
                       const optionalDownloadableCount = pack.downloadable_model_ids.filter((modelId) => pack.optional_model_ids.includes(modelId)).length;
+                      const canInstallPack = pack.installed || pack.installable;
                       return (
                         <article key={pack.id} className={`model-pack-card ${pack.release_status === "blocked" ? "blocked" : ""}`}>
                           <div>
@@ -11648,7 +11649,7 @@ function SettingsView() {
                               icon={<TestTube2 size={15} />}
                               variant={packSetupActionTone(pack, recommended)}
                               disabled={setupWizardBusy}
-                              onClick={() => runSetup.mutate({ mode: "recommended", pack_id: pack.id })}
+                              onClick={() => runSetup.mutate({ mode: "recommended", pack_id: pack.id, dry_run: !canInstallPack })}
                             >
                               {packSetupActionLabel(pack)}
                             </Button>
@@ -11665,7 +11666,7 @@ function SettingsView() {
                                 icon={<Sparkles size={15} />}
                                 variant={optionalDownloadableCount > 0 ? "secondary" : "quiet"}
                                 disabled={setupWizardBusy}
-                                onClick={() => runSetup.mutate({ mode: "recommended", pack_id: pack.id, include_optional_models: true })}
+                                onClick={() => runSetup.mutate({ mode: "recommended", pack_id: pack.id, include_optional_models: true, dry_run: optionalDownloadableCount === 0 })}
                               >
                                 {optionalDownloadableCount > 0 ? "Install add-ons" : "Check add-ons"}
                               </Button>

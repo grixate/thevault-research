@@ -33,6 +33,7 @@ Latest completed slice:
 - Setup preflight and activation details now use readable task names such as "Concept suggestions", "Claim suggestions", "Assistant answers", and "Read aloud" instead of raw capability ids.
 - Settings setup checks/results now show compact route chips for the planned or activated local model tasks, making the final route activation step easier to inspect at a glance.
 - Real recommended setup runs now get a longer 120-second setup wait window, while dry-runs and starter/demo setup stay quick. This better supports actual runtime/model verification before route activation.
+- Pack-card `Check readiness` and `Check add-ons` actions now stay dry-run only; only explicit install/test actions can start downloads, runtime setup, or route activation.
 - Added focused renderer coverage for a successful production setup run that activates approved local routes and shows a clean "Setup result" without mock/blocker language.
 - Updated focused backend coverage for the production-first setup contract.
 
