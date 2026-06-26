@@ -44,6 +44,7 @@ Latest completed slice:
 - Verified the actual activated app text route on 2026-06-27. `/ai/generate/text` for `summarize` returned clean local text through `llama_cpp_cli / standard-gguf-placeholder` with `sent_off_device: false`; llama.cpp banner/prompt/timing output is now stripped before the app records or returns generated text.
 - Added a production local-AI smoke profile on 2026-06-27: `./scripts/test_local_ai.sh --profile production --format json` now uses the real app data directory by default, skips demo setup, requires 9 production routes to be active, runs text/JSON/embed/rerank privacy checks, and fails if production readiness is not clear. It passed locally against `/Users/grixate/Library/Application Support/The Vault Research Lab`.
 - Tightened the selected-note editor tools on 2026-06-27: the expanded Note tools area is now a slim command strip with compact visual labels, full accessible command names, small icon-led buttons, and plain model-route disclosure instead of three card-like action sections. Visual evidence: `/tmp/vault-editor-tools-strip.png`.
+- Tightened the Review status switcher on 2026-06-27: the empty queue now uses compact inline Radix tabs instead of a full-width segmented block, so the clear state feels more like a quiet review queue. Visual evidence: `/tmp/vault-review-compact-tabs.png`.
 
 Earlier implementation slice built a reproducible macOS arm64 `whisper-cli` package from `whisper.cpp` source, moved the whisper runtime from distribution-decision to release-evidence, verified all production model candidate bytes, and merged the current byte-evidence files into one candidate overlay.
 
@@ -2973,6 +2974,7 @@ Current good state:
 - Long Storage paths, hashes, source rows, and section titles truncate safely while keeping full values inspectable.
 - Review list rows clamp long local-model titles and summaries while preserving the full text.
 - Review now opens with a calmer evidence-first decision summary.
+- Review status filtering now uses a compact inline switcher instead of a heavy full-width segmented control.
 - Assistant compose now leads with one modern prompt box, footer-scoped evidence controls, icon-only mic/send actions, and compact starter prompts instead of cards.
 - Assistant answers now use one quiet `Answer context` line instead of a diagnostic facts grid.
 - Learning is now framed as `Practice`, with `Current card` and one quiet local-voice privacy line.
