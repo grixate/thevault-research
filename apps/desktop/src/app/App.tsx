@@ -4406,7 +4406,7 @@ function TasksView() {
                 <span>{view === "inbox" ? "Inbox" : "All"}</span>
               </button>
               {lists.isLoading && <span>Loading...</span>}
-              {!lists.isLoading && listRows.length === 0 && <span>No lists</span>}
+              {!lists.isLoading && listRows.length === 0 && <span>No custom lists</span>}
               {listRows.map((list) => (
                 <div key={list.id} className={`task-list-row ${selectedListId === list.id ? "active" : ""}`}>
                   {editingListId === list.id ? (

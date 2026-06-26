@@ -39,6 +39,10 @@ const scenarios = {
     await installEmptyVaultBridge(page);
     await openStorage(page);
   },
+  "tasks-empty": async (page) => {
+    await installEmptyVaultBridge(page);
+    await openTasks(page);
+  },
   "review-loading": async (page) => {
     await openReview(page);
   },
@@ -136,6 +140,12 @@ async function openStorage(page) {
   if (await storage.count()) await storage.first().click();
 }
 
+async function openTasks(page) {
+  await page.goto(baseUrl, { waitUntil: "networkidle" });
+  const tasks = page.locator('.main-nav button[aria-label="Tasks"]');
+  if (await tasks.count()) await tasks.first().click();
+}
+
 async function openReview(page) {
   await page.goto(baseUrl, { waitUntil: "networkidle" });
   const review = page.locator('.main-nav button[aria-label="Review"]');
@@ -196,6 +206,8 @@ async function installEmptyVaultBridge(page) {
         if (route === "notes.list") return [];
         if (route === "sources.list") return [];
         if (route === "claims.list") return [];
+        if (route === "todos.list") return { items: [], total: 0, limit: 100, offset: 0 };
+        if (route === "todoLists.list") return [];
         if (route === "capsules.list") return { items: [] };
         if (route === "learning.items") return [];
         if (route === "tools.list") return [];

@@ -49,6 +49,7 @@ Latest completed slice:
 - Quieted the Evidence graph empty state on 2026-06-27: zero-count dashboard facts are hidden until claims exist, the weak-claim filter now reads `Needs review`, and the empty detail pane uses source-link language instead of repeating setup instructions. Visual evidence: `/tmp/vault-graph-empty-minimal.png`.
 - Quieted the Practice empty state on 2026-06-27: the deck topic label no longer shouts in all caps, the empty deck area is plain workspace copy instead of a dashed card, and review-schedule badges stay hidden until a card exists. Visual evidence: `/tmp/vault-practice-empty-minimal.png`.
 - Quieted the Local tools empty state on 2026-06-27: the empty helper state now belongs to the list pane, while the detail pane stays neutral with trusted-helper setup language instead of repeating the same absence twice. Visual evidence: `/tmp/vault-local-tools-empty-minimal.png`.
+- Added Tasks empty-state visual coverage on 2026-06-27 and tightened the list rail copy: clean workspaces now show `No custom lists` instead of a contradictory `Inbox` plus `No lists`. Visual evidence: `/tmp/vault-tasks-empty-minimal.png`.
 
 Earlier implementation slice built a reproducible macOS arm64 `whisper-cli` package from `whisper.cpp` source, moved the whisper runtime from distribution-decision to release-evidence, verified all production model candidate bytes, and merged the current byte-evidence files into one candidate overlay.
 
@@ -3003,6 +3004,7 @@ Current good state:
 - Clean sessions now open on Notes instead of Home, making the writing workspace the default product center.
 - The resting topbar search no longer exposes `Exact` / `Smart`; mode choice is available only while reviewing active search results.
 - Sidebar local status is reduced to one compact state chip; version and background-task details are no longer visible first-glance footer copy.
+- Tasks empty state has visual coverage and the list rail now distinguishes the default Inbox from custom lists.
 
 Remaining tasks:
 
@@ -3065,6 +3067,7 @@ Current good state:
 - Command palette fast actions now follow the same minimal Spotlight-like row pattern as Quick capture.
 - Search mode selection now uses existing Radix tabs only inside the active search popover instead of permanently occupying the topbar.
 - Sidebar diagnostics are compressed into one quiet local-state indicator instead of a visible operational footer.
+- Tasks has a dedicated empty-state visual smoke scenario for future minimalist regressions.
 
 Remaining tasks:
 
