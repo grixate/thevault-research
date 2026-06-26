@@ -8627,6 +8627,10 @@ describe("App", () => {
     useUIStore.setState({ surface: "settings" });
     renderApp();
     fireEvent.click(await screen.findByRole("tab", { name: /voice/i }));
+    expect(await screen.findByText("Voice model setup")).toBeTruthy();
+    expect(screen.queryByText("Turn spoken notes and recordings into local text.")).toBeNull();
+    expect(screen.queryByText("Create cached local audio from notes, cards, and Assistant answers.")).toBeNull();
+    expect(screen.queryByText("Dictation, voice memos, Assistant questions.")).toBeNull();
     fireEvent.click(await screen.findByRole("button", { name: /import audio/i }));
     await waitFor(() => expect(selectFiles).toHaveBeenCalled());
     await waitFor(() =>

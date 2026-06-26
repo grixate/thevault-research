@@ -12215,13 +12215,12 @@ function SettingsView() {
                 <div>
                   <Badge tone={microphonePermissionTone(microphonePermissionStatus)}>{microphonePermissionLabel(microphonePermissionStatus)}</Badge>
                   <h3>Microphone access</h3>
-                  <p>{microphonePermissionDetail}</p>
+                  {microphonePermissionStatus !== "checking" && microphonePermissionStatus !== "prompt" && <p>{microphonePermissionDetail}</p>}
                 </div>
                 <Mic size={22} />
               </div>
               <div className="embedding-privacy-strip">
                 <Badge tone="good">local capture</Badge>
-                <span>Dictation, voice memos, Assistant questions.</span>
                 <div>
                   <Button icon={<RefreshCw size={15} />} variant="quiet" disabled={microphonePreflightBusy} onClick={() => void refreshMicrophonePermission()}>
                     Refresh
@@ -12232,263 +12231,10 @@ function SettingsView() {
                 </div>
               </div>
             </section>
-            <section className="voice-route-panel">
-              <div className="embedding-config-header">
-                <div>
-                  <Badge tone={voiceRuntime?.state === "ready" ? "good" : voiceRuntime?.state === "mock_only" ? "info" : "warn"} title={String(voiceRuntime?.state ?? "checking")}>
-                    {voiceRuntimeStateLabel(String(voiceRuntime?.state ?? ""))}
-                  </Badge>
-                  <h3>Dictation</h3>
-                  <p title={sttBinding?.model_id ?? undefined}>{savedModelSummary(sttBinding?.model_id, "No saved dictation model")}</p>
-                </div>
-                <SlidersHorizontal size={22} />
-              </div>
-              <div className="voice-route-grid">
-                <label>
-                  <span>Provider</span>
-                  <select aria-label="Dictation provider" value={sttProviderId} onChange={(event) => setSttProviderId(event.target.value)}>
-                    {(providers.data ?? [])
-                      .filter((providerOption) => providerOption.kind === "stt")
-                      .map((providerOption) => (
-                        <option key={providerOption.id} value={providerOption.id}>
-                          {providerOption.display_name}
-                        </option>
-                      ))}
-                  </select>
-                </label>
-                <label>
-                  <span>Model ID</span>
-                  <Input aria-label="Dictation model ID" value={sttModelId} onChange={(event) => setSttModelId(event.target.value)} />
-                </label>
-                <label>
-                  <span>Language</span>
-                  <Input
-                    aria-label="Dictation language"
-                    placeholder="auto"
-                    value={sttLanguage}
-                    onChange={(event) => setSttLanguage(event.target.value)}
-                    disabled={sttProviderId !== "whisper_cpp"}
-                  />
-                </label>
-                <label>
-                  <span>Timeout</span>
-                  <Input
-                    aria-label="Dictation timeout seconds"
-                    inputMode="decimal"
-                    min={1}
-                    type="number"
-                    value={sttTimeout}
-                    onChange={(event) => setSttTimeout(event.target.value)}
-                    disabled={sttProviderId !== "whisper_cpp"}
-                  />
-                </label>
-              </div>
-              {sttProviderId === "whisper_cpp" && (
-                <div className="voice-model-strip">
-                  <label>
-                    <span>Managed dictation model</span>
-                    <select
-                      aria-label="Managed dictation model"
-                      value={sttManagedModelId}
-                      onChange={(event) => selectManagedSttModel(event.target.value)}
-                    >
-                      <option value="">Manual model path</option>
-                      {sttModels.map((model) => (
-                        <option key={model.id} value={model.id}>
-                          {managedDictationModelOptionLabel(model)}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  <div className="voice-model-status">
-                    <Badge tone={selectedManagedSttModel?.installed ? "good" : "warn"} title={selectedManagedSttModel?.download_state ?? "manual"}>
-                      {managedDictationStatusLabel(selectedManagedSttModel)}
-                    </Badge>
-                    <span title={selectedManagedSttModel?.disk_path ?? undefined}>{managedDictationStatusDescription(selectedManagedSttModel)}</span>
-                  </div>
-                  <Button
-                    icon={<Download size={15} />}
-                    variant="quiet"
-                    disabled={!selectedManagedSttModel || selectedManagedSttModel.installed || sttDownloadBusy || downloadModel.isPending}
-                    onClick={() => selectedManagedSttModel && downloadModel.mutate(selectedManagedSttModel.id)}
-                  >
-                    Download dictation model
-                  </Button>
-                </div>
-              )}
-              {sttProviderId === "whisper_cpp" && (
-                <div className="voice-path-grid">
-                  <label>
-                    <span>whisper.cpp binary</span>
-                    <Input
-                      aria-label="whisper.cpp binary path"
-                      placeholder="/usr/local/bin/whisper-cli"
-                      value={sttBinaryPath}
-                      onChange={(event) => setSttBinaryPath(event.target.value)}
-                    />
-                  </label>
-                  <label>
-                    <span>Model file</span>
-                    <Input
-                      aria-label="whisper.cpp model path"
-                      placeholder="~/Library/Application Support/The Vault Research Lab/models/voice/stt/..."
-                      value={sttModelPath}
-                      onChange={(event) => setSttModelPath(event.target.value)}
-                    />
-                  </label>
-                </div>
-              )}
-              {sttProviderCloud && (
-                <label className="voice-cloud-consent">
-                  <input
-                    aria-label="Allow off-device dictation"
-                    type="checkbox"
-                    checked={sttCloudConsent}
-                    onChange={(event) => setSttCloudConsent(event.target.checked)}
-                  />
-                  <span>
-                    <Badge tone="bad">off device</Badge>
-                    Allow dictated audio or transcripts to leave this machine.
-                  </span>
-                </label>
-              )}
-              <div className="embedding-privacy-strip">
-                <Badge tone={sttProvider?.locality === "cloud" ? "bad" : "good"}>
-                  {sttProvider?.privacy_label ?? "No provider selected"}
-                </Badge>
-                <span>
-                  {sttProviderCloud ? "cloud use requires consent" : sttProviderId === "whisper_cpp" ? "local model file" : "local test transcript"}
-                </span>
-                <div>
-                  <Button icon={<Save size={15} />} disabled={!sttCanSave || updateBinding.isPending} onClick={saveSttRoute}>
-                    Save dictation
-                  </Button>
-                </div>
-              </div>
-              {updateBinding.error && <small className="model-test-error">{updateBinding.error.message}</small>}
-              {(voiceRuntime?.warnings ?? []).map((warning: string) => (
-                <small key={warning} className="model-test-error">
-                  {warning}
-                </small>
-              ))}
-            </section>
-            <section className="voice-route-panel">
-              <div className="embedding-config-header">
-                <div>
-                  <Badge
-                    tone={ttsRuntimeState === "ready" ? "good" : ttsRuntimeState === "mock_only" ? "info" : "warn"}
-                    title={String(ttsRuntimeState ?? "checking")}
-                  >
-                    {voiceRuntimeStateLabel(ttsRuntimeState)}
-                  </Badge>
-                  <h3>Read aloud</h3>
-                  <p title={ttsBinding?.model_id ?? undefined}>{savedModelSummary(ttsBinding?.model_id, "No saved read-aloud voice")}</p>
-                </div>
-                <Volume2 size={22} />
-              </div>
-              <div className="voice-route-grid">
-                <label>
-                  <span>Provider</span>
-                  <select aria-label="Read-aloud provider" value={ttsProviderId} onChange={(event) => setTtsProviderId(event.target.value)}>
-                    {(providers.data ?? [])
-                      .filter((providerOption) => providerOption.kind === "tts")
-                      .map((providerOption) => (
-                        <option key={providerOption.id} value={providerOption.id}>
-                          {providerOption.display_name}
-                        </option>
-                      ))}
-                  </select>
-                </label>
-                <label>
-                  <span>Model ID</span>
-                  <Input aria-label="Read-aloud model ID" value={ttsModelId} onChange={(event) => setTtsModelId(event.target.value)} />
-                </label>
-                <label>
-                  <span>Voice ID</span>
-                  <Input aria-label="Read-aloud voice ID" value={ttsVoiceId} onChange={(event) => setTtsVoiceId(event.target.value)} />
-                </label>
-                <label>
-                  <span>Timeout</span>
-                  <Input
-                    aria-label="Read-aloud timeout seconds"
-                    inputMode="decimal"
-                    min={1}
-                    type="number"
-                    value={ttsTimeout}
-                    onChange={(event) => setTtsTimeout(event.target.value)}
-                    disabled={ttsProviderId !== "piper"}
-                  />
-                </label>
-              </div>
-              {ttsProviderId === "piper" && (
-                <div className="voice-path-grid">
-                  <label>
-                    <span>Piper binary</span>
-                    <Input
-                      aria-label="Piper binary path"
-                      placeholder="/usr/local/bin/piper"
-                      value={ttsBinaryPath}
-                      onChange={(event) => setTtsBinaryPath(event.target.value)}
-                    />
-                  </label>
-                  <label>
-                    <span>Voice model</span>
-                    <Input
-                      aria-label="Piper voice model path"
-                      placeholder="~/Library/Application Support/The Vault Research Lab/models/voice/tts/..."
-                      value={ttsModelPath}
-                      onChange={(event) => setTtsModelPath(event.target.value)}
-                    />
-                  </label>
-                  <label>
-                    <span>Voice config</span>
-                    <Input
-                      aria-label="Piper voice config path"
-                      placeholder="optional .json"
-                      value={ttsConfigPath}
-                      onChange={(event) => setTtsConfigPath(event.target.value)}
-                    />
-                  </label>
-                </div>
-              )}
-              {ttsProviderCloud && (
-                <label className="voice-cloud-consent">
-                  <input
-                    aria-label="Allow off-device read aloud"
-                    type="checkbox"
-                    checked={ttsCloudConsent}
-                    onChange={(event) => setTtsCloudConsent(event.target.checked)}
-                  />
-                  <span>
-                    <Badge tone="bad">off device</Badge>
-                    Allow text sent for read-aloud audio to leave this machine.
-                  </span>
-                </label>
-              )}
-              <div className="embedding-privacy-strip">
-                <Badge tone={ttsProvider?.locality === "cloud" ? "bad" : "good"}>
-                  {ttsProvider?.privacy_label ?? "No provider selected"}
-                </Badge>
-                <span>
-                  {ttsProviderCloud ? "cloud use requires consent" : ttsProviderId === "piper" ? "local voice file, cached output" : "local cached audio"}
-                </span>
-                <div>
-                  <Button icon={<Save size={15} />} disabled={!ttsCanSave || updateBinding.isPending} onClick={saveTtsRoute}>
-                    Save read aloud
-                  </Button>
-                </div>
-              </div>
-              {ttsRuntimeWarnings.map((warning: string) => (
-                <small key={warning} className="model-test-error">
-                  {warning}
-                </small>
-              ))}
-            </section>
             <div className="voice-grid">
               <article className="voice-panel">
                 <Mic size={24} />
                 <h3>Dictation</h3>
-                <p>Turn spoken notes and recordings into local text.</p>
                 <div className="voice-actions">
                   <Button icon={<Mic size={15} />} onClick={() => transcribe.mutate()}>
                     Try dictation
@@ -12503,7 +12249,6 @@ function SettingsView() {
               <article className="voice-panel">
                 <Volume2 size={24} />
                 <h3>Read aloud</h3>
-                <p>Create cached local audio from notes, cards, and Assistant answers.</p>
                 <Button icon={<Volume2 size={15} />} onClick={() => synthesize.mutate()}>
                   Speak sample
                 </Button>
@@ -12515,6 +12260,275 @@ function SettingsView() {
                 {synthesize.error && <small className="model-test-error">{synthesize.error.message}</small>}
               </article>
             </div>
+            <details className="settings-route-details voice-setup-details">
+              <summary>
+                <span>
+                  <strong>Voice model setup</strong>
+                </span>
+                <span className="settings-library-counts">
+                  <Badge tone={voiceRuntime?.state === "ready" ? "good" : voiceRuntime?.state === "mock_only" ? "info" : "warn"}>
+                    Dictation
+                  </Badge>
+                  <Badge tone={ttsRuntimeState === "ready" ? "good" : ttsRuntimeState === "mock_only" ? "info" : "warn"}>
+                    Read aloud
+                  </Badge>
+                </span>
+              </summary>
+              <div className="voice-setup-body">
+                <section className="voice-route-panel">
+                  <div className="embedding-config-header">
+                    <div>
+                      <Badge tone={voiceRuntime?.state === "ready" ? "good" : voiceRuntime?.state === "mock_only" ? "info" : "warn"} title={String(voiceRuntime?.state ?? "checking")}>
+                        {voiceRuntimeStateLabel(String(voiceRuntime?.state ?? ""))}
+                      </Badge>
+                      <h3>Dictation</h3>
+                      <p title={sttBinding?.model_id ?? undefined}>{savedModelSummary(sttBinding?.model_id, "No saved dictation model")}</p>
+                    </div>
+                    <SlidersHorizontal size={22} />
+                  </div>
+                  <div className="voice-route-grid">
+                    <label>
+                      <span>Provider</span>
+                      <select aria-label="Dictation provider" value={sttProviderId} onChange={(event) => setSttProviderId(event.target.value)}>
+                        {(providers.data ?? [])
+                          .filter((providerOption) => providerOption.kind === "stt")
+                          .map((providerOption) => (
+                            <option key={providerOption.id} value={providerOption.id}>
+                              {providerOption.display_name}
+                            </option>
+                          ))}
+                      </select>
+                    </label>
+                    <label>
+                      <span>Model ID</span>
+                      <Input aria-label="Dictation model ID" value={sttModelId} onChange={(event) => setSttModelId(event.target.value)} />
+                    </label>
+                    <label>
+                      <span>Language</span>
+                      <Input
+                        aria-label="Dictation language"
+                        placeholder="auto"
+                        value={sttLanguage}
+                        onChange={(event) => setSttLanguage(event.target.value)}
+                        disabled={sttProviderId !== "whisper_cpp"}
+                      />
+                    </label>
+                    <label>
+                      <span>Timeout</span>
+                      <Input
+                        aria-label="Dictation timeout seconds"
+                        inputMode="decimal"
+                        min={1}
+                        type="number"
+                        value={sttTimeout}
+                        onChange={(event) => setSttTimeout(event.target.value)}
+                        disabled={sttProviderId !== "whisper_cpp"}
+                      />
+                    </label>
+                  </div>
+                  {sttProviderId === "whisper_cpp" && (
+                    <div className="voice-model-strip">
+                      <label>
+                        <span>Managed dictation model</span>
+                        <select
+                          aria-label="Managed dictation model"
+                          value={sttManagedModelId}
+                          onChange={(event) => selectManagedSttModel(event.target.value)}
+                        >
+                          <option value="">Manual model path</option>
+                          {sttModels.map((model) => (
+                            <option key={model.id} value={model.id}>
+                              {managedDictationModelOptionLabel(model)}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <div className="voice-model-status">
+                        <Badge tone={selectedManagedSttModel?.installed ? "good" : "warn"} title={selectedManagedSttModel?.download_state ?? "manual"}>
+                          {managedDictationStatusLabel(selectedManagedSttModel)}
+                        </Badge>
+                        <span title={selectedManagedSttModel?.disk_path ?? undefined}>{managedDictationStatusDescription(selectedManagedSttModel)}</span>
+                      </div>
+                      <Button
+                        icon={<Download size={15} />}
+                        variant="quiet"
+                        disabled={!selectedManagedSttModel || selectedManagedSttModel.installed || sttDownloadBusy || downloadModel.isPending}
+                        onClick={() => selectedManagedSttModel && downloadModel.mutate(selectedManagedSttModel.id)}
+                      >
+                        Download dictation model
+                      </Button>
+                    </div>
+                  )}
+                  {sttProviderId === "whisper_cpp" && (
+                    <div className="voice-path-grid">
+                      <label>
+                        <span>whisper.cpp binary</span>
+                        <Input
+                          aria-label="whisper.cpp binary path"
+                          placeholder="/usr/local/bin/whisper-cli"
+                          value={sttBinaryPath}
+                          onChange={(event) => setSttBinaryPath(event.target.value)}
+                        />
+                      </label>
+                      <label>
+                        <span>Model file</span>
+                        <Input
+                          aria-label="whisper.cpp model path"
+                          placeholder="~/Library/Application Support/The Vault Research Lab/models/voice/stt/..."
+                          value={sttModelPath}
+                          onChange={(event) => setSttModelPath(event.target.value)}
+                        />
+                      </label>
+                    </div>
+                  )}
+                  {sttProviderCloud && (
+                    <label className="voice-cloud-consent">
+                      <input
+                        aria-label="Allow off-device dictation"
+                        type="checkbox"
+                        checked={sttCloudConsent}
+                        onChange={(event) => setSttCloudConsent(event.target.checked)}
+                      />
+                      <span>
+                        <Badge tone="bad">off device</Badge>
+                        Allow dictated audio or transcripts to leave this machine.
+                      </span>
+                    </label>
+                  )}
+                  <div className="embedding-privacy-strip">
+                    <Badge tone={sttProvider?.locality === "cloud" ? "bad" : "good"}>
+                      {sttProvider?.privacy_label ?? "No provider selected"}
+                    </Badge>
+                    <span>
+                      {sttProviderCloud ? "cloud use requires consent" : sttProviderId === "whisper_cpp" ? "local model file" : "local test transcript"}
+                    </span>
+                    <div>
+                      <Button icon={<Save size={15} />} disabled={!sttCanSave || updateBinding.isPending} onClick={saveSttRoute}>
+                        Save dictation
+                      </Button>
+                    </div>
+                  </div>
+                  {updateBinding.error && <small className="model-test-error">{updateBinding.error.message}</small>}
+                  {(voiceRuntime?.warnings ?? []).map((warning: string) => (
+                    <small key={warning} className="model-test-error">
+                      {warning}
+                    </small>
+                  ))}
+                </section>
+                <section className="voice-route-panel">
+                  <div className="embedding-config-header">
+                    <div>
+                      <Badge
+                        tone={ttsRuntimeState === "ready" ? "good" : ttsRuntimeState === "mock_only" ? "info" : "warn"}
+                        title={String(ttsRuntimeState ?? "checking")}
+                      >
+                        {voiceRuntimeStateLabel(ttsRuntimeState)}
+                      </Badge>
+                      <h3>Read aloud</h3>
+                      <p title={ttsBinding?.model_id ?? undefined}>{savedModelSummary(ttsBinding?.model_id, "No saved read-aloud voice")}</p>
+                    </div>
+                    <Volume2 size={22} />
+                  </div>
+                  <div className="voice-route-grid">
+                    <label>
+                      <span>Provider</span>
+                      <select aria-label="Read-aloud provider" value={ttsProviderId} onChange={(event) => setTtsProviderId(event.target.value)}>
+                        {(providers.data ?? [])
+                          .filter((providerOption) => providerOption.kind === "tts")
+                          .map((providerOption) => (
+                            <option key={providerOption.id} value={providerOption.id}>
+                              {providerOption.display_name}
+                            </option>
+                          ))}
+                      </select>
+                    </label>
+                    <label>
+                      <span>Model ID</span>
+                      <Input aria-label="Read-aloud model ID" value={ttsModelId} onChange={(event) => setTtsModelId(event.target.value)} />
+                    </label>
+                    <label>
+                      <span>Voice ID</span>
+                      <Input aria-label="Read-aloud voice ID" value={ttsVoiceId} onChange={(event) => setTtsVoiceId(event.target.value)} />
+                    </label>
+                    <label>
+                      <span>Timeout</span>
+                      <Input
+                        aria-label="Read-aloud timeout seconds"
+                        inputMode="decimal"
+                        min={1}
+                        type="number"
+                        value={ttsTimeout}
+                        onChange={(event) => setTtsTimeout(event.target.value)}
+                        disabled={ttsProviderId !== "piper"}
+                      />
+                    </label>
+                  </div>
+                  {ttsProviderId === "piper" && (
+                    <div className="voice-path-grid">
+                      <label>
+                        <span>Piper binary</span>
+                        <Input
+                          aria-label="Piper binary path"
+                          placeholder="/usr/local/bin/piper"
+                          value={ttsBinaryPath}
+                          onChange={(event) => setTtsBinaryPath(event.target.value)}
+                        />
+                      </label>
+                      <label>
+                        <span>Voice model</span>
+                        <Input
+                          aria-label="Piper voice model path"
+                          placeholder="~/Library/Application Support/The Vault Research Lab/models/voice/tts/..."
+                          value={ttsModelPath}
+                          onChange={(event) => setTtsModelPath(event.target.value)}
+                        />
+                      </label>
+                      <label>
+                        <span>Voice config</span>
+                        <Input
+                          aria-label="Piper voice config path"
+                          placeholder="optional .json"
+                          value={ttsConfigPath}
+                          onChange={(event) => setTtsConfigPath(event.target.value)}
+                        />
+                      </label>
+                    </div>
+                  )}
+                  {ttsProviderCloud && (
+                    <label className="voice-cloud-consent">
+                      <input
+                        aria-label="Allow off-device read aloud"
+                        type="checkbox"
+                        checked={ttsCloudConsent}
+                        onChange={(event) => setTtsCloudConsent(event.target.checked)}
+                      />
+                      <span>
+                        <Badge tone="bad">off device</Badge>
+                        Allow text sent for read-aloud audio to leave this machine.
+                      </span>
+                    </label>
+                  )}
+                  <div className="embedding-privacy-strip">
+                    <Badge tone={ttsProvider?.locality === "cloud" ? "bad" : "good"}>
+                      {ttsProvider?.privacy_label ?? "No provider selected"}
+                    </Badge>
+                    <span>
+                      {ttsProviderCloud ? "cloud use requires consent" : ttsProviderId === "piper" ? "local voice file, cached output" : "local cached audio"}
+                    </span>
+                    <div>
+                      <Button icon={<Save size={15} />} disabled={!ttsCanSave || updateBinding.isPending} onClick={saveTtsRoute}>
+                        Save read aloud
+                      </Button>
+                    </div>
+                  </div>
+                  {ttsRuntimeWarnings.map((warning: string) => (
+                    <small key={warning} className="model-test-error">
+                      {warning}
+                    </small>
+                  ))}
+                </section>
+              </div>
+            </details>
             <div className="voice-list">
               {(voices.data ?? []).map((voice) => (
                 <article key={voice.id}>

@@ -7421,6 +7421,42 @@ blockquote span {
   border-radius: var(--radius);
 }
 
+.voice-permission-panel {
+  padding: 12px 0 14px;
+  border-inline: 0;
+  border-block-start: 0;
+  border-block-end: 1px solid var(--line);
+  border-radius: 0;
+  background: transparent;
+}
+
+.voice-setup-details {
+  margin-top: 2px;
+}
+
+.voice-setup-details > summary .badge {
+  min-width: 0;
+}
+
+.voice-setup-body {
+  display: grid;
+  gap: 0;
+  padding: 0 0 14px 19px;
+}
+
+.voice-setup-body .voice-route-panel {
+  padding: 16px 0;
+  border-block-start: 1px solid var(--line);
+  border-inline: 0;
+  border-block-end: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.voice-setup-body .voice-route-panel:first-child {
+  border-block-start: 0;
+}
+
 .voice-permission-panel .embedding-config-header svg {
   color: var(--green);
 }
@@ -7587,6 +7623,10 @@ blockquote span {
   min-width: 0;
 }
 
+.embedding-privacy-strip > .badge {
+  flex: 0 0 auto;
+}
+
 .embedding-privacy-strip > div {
   display: flex;
   margin-left: auto;
@@ -7632,6 +7672,34 @@ blockquote span {
 .voice-panel,
 .privacy-grid article {
   padding: 18px;
+}
+
+.voice-grid {
+  gap: 28px;
+  padding: 4px 0 14px;
+  border-block-end: 1px solid var(--line);
+}
+
+.voice-panel {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px 12px;
+  padding: 8px 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.voice-panel h3 {
+  margin: 0;
+}
+
+.voice-panel .voice-actions,
+.voice-panel > .button,
+.voice-panel > small {
+  grid-column: 2 / -1;
+  justify-self: start;
 }
 
 .voice-list {
@@ -7837,6 +7905,10 @@ blockquote span {
   .voice-path-grid,
   .voice-model-strip {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .voice-setup-body {
+    padding-left: 0;
   }
 
   .voice-model-strip .button {

@@ -51,6 +51,7 @@ Latest completed slice:
 - Quieted the Local tools empty state on 2026-06-27: the empty helper state now belongs to the list pane, while the detail pane stays neutral with trusted-helper setup language instead of repeating the same absence twice. Visual evidence: `/tmp/vault-local-tools-empty-minimal.png`.
 - Added Tasks empty-state visual coverage on 2026-06-27 and tightened the list rail copy: clean workspaces now show `No custom lists` instead of a contradictory `Inbox` plus `No lists`. Visual evidence: `/tmp/vault-tasks-empty-minimal.png`.
 - Tightened generated-note citation coverage on 2026-06-27: local llama note drafts now must cite every supplied evidence marker, and explicit claim-scoped note generation no longer pulls unrelated source blocks just to fill the evidence pack. Focused evidence: `cd services/core && uv run pytest tests/test_core_flow.py -k "local_generated_note"`.
+- Quieted the Settings Voice first glance on 2026-06-27: microphone status, Dictation, and Read aloud are now plain action rows, static explanatory sublines are gone, and provider/model/path routing lives behind a single `Voice model setup` disclosure. Visual evidence: `/tmp/vault-settings-voice-minimal.png`.
 
 Earlier implementation slice built a reproducible macOS arm64 `whisper-cli` package from `whisper.cpp` source, moved the whisper runtime from distribution-decision to release-evidence, verified all production model candidate bytes, and merged the current byte-evidence files into one candidate overlay.
 
@@ -2991,6 +2992,7 @@ Current good state:
 - Evidence graph empty state now hides zero-count facts and uses `Needs review` / source-link language.
 - Settings Search now uses user-facing search/ranking language instead of visible routing jargon.
 - Settings Voice now uses `Dictation`, `Read aloud`, `Import audio`, and local-stay-local language.
+- Settings Voice now keeps model/provider/path routing behind a single `Voice model setup` disclosure and opens with action rows rather than route cards.
 - Settings Privacy and Export now use local-first privacy and backup language.
 - Advanced Search test results now use `stayed on this device`/`left this device` privacy wording.
 - Settings Advanced now gives the settings JSON a clear snapshot heading instead of a raw dump.
@@ -3058,6 +3060,7 @@ Current good state:
 - Settings tabs now show tab-specific panel titles and avoid redundant eyebrow descriptions.
 - Settings disclosure rows now prefer one-line labels over explanatory sublines.
 - Settings Voice now uses user-facing Dictation/Read aloud labels instead of STT/TTS route language.
+- Settings Voice first glance now uses plain action rows and hides provider/model/path controls behind a `Voice model setup` disclosure.
 - Settings Privacy/Export now use workspace-backup and stayed-on-this-device wording.
 - Search index and ranking test results now share the same local-first privacy wording.
 - Settings Advanced replaces the visible `Raw` tab with a labelled settings snapshot.
@@ -3127,6 +3130,7 @@ Current good state:
 
 - Settings Voice now presents transcription as `Dictation`.
 - Settings Voice now presents speech generation as `Read aloud`.
+- Settings Voice now keeps everyday voice actions separate from advanced local model routing.
 - Audio-file intake is labeled `Import audio`.
 - Voice history is grouped as `Audio notes` and `Read-aloud history`.
 - Off-device voice still requires explicit consent.
