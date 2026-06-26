@@ -4951,25 +4951,26 @@ def collect_quote_pack(
                 if terms:
                     clauses.append("(" + " OR ".join("b.text LIKE ?" for _ in terms[:4]) + ")")
                     args.extend(f"%{term}%" for term in terms[:4])
-            where = "WHERE " + " AND ".join(clauses) if clauses else ""
-            rows = conn.execute(
-                f"""
-                SELECT b.id AS source_block_id, b.text, b.locator, s.title
-                FROM source_blocks b JOIN sources s ON s.id=b.source_id
-                {where}
-                ORDER BY b.created_at DESC LIMIT ?
-                """,
-                (*args, limit - len(results)),
-            ).fetchall()
-            for row in rows:
-                results.append(
-                    {
-                        "source_block_id": row["source_block_id"],
-                        "snippet": row["text"][:260],
-                        "title": row["title"],
-                        "locator": row["locator"],
-                    }
-                )
+            if clauses:
+                where = "WHERE " + " AND ".join(clauses)
+                rows = conn.execute(
+                    f"""
+                    SELECT b.id AS source_block_id, b.text, b.locator, s.title
+                    FROM source_blocks b JOIN sources s ON s.id=b.source_id
+                    {where}
+                    ORDER BY b.created_at DESC LIMIT ?
+                    """,
+                    (*args, limit - len(results)),
+                ).fetchall()
+                for row in rows:
+                    results.append(
+                        {
+                            "source_block_id": row["source_block_id"],
+                            "snippet": row["text"][:260],
+                            "title": row["title"],
+                            "locator": row["locator"],
+                        }
+                    )
         if allow_global_fallback and len(results) < limit:
             status_values = claim_statuses or ["supported", "user_confirmed", "verified"]
             placeholders = ",".join("?" for _ in status_values)
@@ -5890,7 +5891,8 @@ def build_generated_note_prompt(req: GeneratedNoteRequest, evidence_bullets: str
         f"Citation policy: {req.citation_policy}\n\n"
         f"Evidence pack:\n{evidence}\n\n"
         "Return concise Markdown with exactly these sections: ## Synthesis, ## Evidence, and ## Uncertainties.\n"
-        "Each section must contain substantive prose or bullets. Do not return headings-only scaffolding."
+        "Each section must contain substantive prose or bullets. Cite every supplied evidence marker at least once.\n"
+        "Do not return headings-only scaffolding."
     )
 
 
@@ -5953,6 +5955,9 @@ def validate_generated_note_citations(provider_id: str, generated_text: str, sou
         return "Local generate_note returned unsupported citation markers: " + ", ".join(f"[{marker}]" for marker in invalid)
     if sources and not markers:
         return "Local generate_note returned no citation markers for the supplied evidence"
+    missing = sorted(allowed - set(markers))
+    if missing:
+        return "Local generate_note did not cite supplied evidence markers: " + ", ".join(f"[{marker}]" for marker in missing)
     return None
 
 

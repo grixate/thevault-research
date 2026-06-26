@@ -50,6 +50,7 @@ Latest completed slice:
 - Quieted the Practice empty state on 2026-06-27: the deck topic label no longer shouts in all caps, the empty deck area is plain workspace copy instead of a dashed card, and review-schedule badges stay hidden until a card exists. Visual evidence: `/tmp/vault-practice-empty-minimal.png`.
 - Quieted the Local tools empty state on 2026-06-27: the empty helper state now belongs to the list pane, while the detail pane stays neutral with trusted-helper setup language instead of repeating the same absence twice. Visual evidence: `/tmp/vault-local-tools-empty-minimal.png`.
 - Added Tasks empty-state visual coverage on 2026-06-27 and tightened the list rail copy: clean workspaces now show `No custom lists` instead of a contradictory `Inbox` plus `No lists`. Visual evidence: `/tmp/vault-tasks-empty-minimal.png`.
+- Tightened generated-note citation coverage on 2026-06-27: local llama note drafts now must cite every supplied evidence marker, and explicit claim-scoped note generation no longer pulls unrelated source blocks just to fill the evidence pack. Focused evidence: `cd services/core && uv run pytest tests/test_core_flow.py -k "local_generated_note"`.
 
 Earlier implementation slice built a reproducible macOS arm64 `whisper-cli` package from `whisper.cpp` source, moved the whisper runtime from distribution-decision to release-evidence, verified all production model candidate bytes, and merged the current byte-evidence files into one candidate overlay.
 
@@ -3102,12 +3103,14 @@ Current good state:
 - Skeletal local generated-note output is rejected before a headings-only review draft can be created.
 - Local generated-note output must include required synthesis/evidence/uncertainty sections with content.
 - Local generated-note citation markers must map to the supplied evidence pack.
+- Local generated-note drafts must cite every supplied evidence marker before entering Review.
+- Explicit claim-scoped generated notes no longer pull unrelated source blocks into their evidence pack.
 - Generated-note approval stays blocked when local claim review produces only quarantined or malformed output.
 
 Remaining tasks:
 
 - Expand richer structured note planning beyond the current required-section validation.
-- Add deeper malformed note-plan tests for citation coverage quality and factual/evidence alignment.
+- Add deeper malformed note-plan tests for factual/evidence alignment beyond citation coverage.
 - Improve contradiction-to-claim relation/status workflows beyond the current non-mutating contradiction node review.
 
 Acceptance evidence:

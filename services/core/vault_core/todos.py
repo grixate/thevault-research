@@ -36,7 +36,7 @@ WEEKDAYS = {
 
 
 def list_todos(db: VaultDatabase, *, view: str = "inbox", list_id: str | None = None, limit: int = 100, offset: int = 0) -> dict[str, Any]:
-    today = date.today().isoformat()
+    today = now_iso()[:10]
     view = normalize_todo_view(view)
     where = ["t.workspace_id=?"]
     params: list[Any] = [db.workspace_id]

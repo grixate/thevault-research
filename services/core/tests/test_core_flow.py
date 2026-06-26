@@ -11,7 +11,7 @@ import tarfile
 import threading
 import time
 import zipfile
-from datetime import UTC, date, datetime, timedelta
+from datetime import date, timedelta
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
@@ -570,7 +570,7 @@ def test_todos_quick_add_views_and_completion(client):
             "origin": "user_written",
         },
     ).json()
-    tomorrow = (datetime.now(UTC).date() + timedelta(days=1)).isoformat()
+    tomorrow = (date.fromisoformat(now_iso()[:10]) + timedelta(days=1)).isoformat()
     created = client.post(
         "/todos",
         json={
@@ -2826,6 +2826,82 @@ def test_local_generated_note_rejects_unsupported_evidence_marker(tmp_path):
         assert len(runtime_client.get("/notes").json()) == note_count_before + 1
         run = runtime_client.get("/ai/runs").json()[0]
         assert run["validation_status"] == "valid"
+
+
+def test_local_generated_note_requires_full_evidence_marker_coverage(tmp_path):
+    cli = tmp_path / "llama-cli"
+    cli.write_text(
+        "#!/usr/bin/env sh\n"
+        "if [ \"$1\" = \"--version\" ]; then echo 'llama.cpp fake runtime'; exit 0; fi\n"
+        "cat <<'MARKDOWN'\n"
+        "## Synthesis\n"
+        "This local draft only cites the first supplied evidence marker [1].\n"
+        "\n"
+        "## Evidence\n"
+        "The evidence section repeats [1] but leaves the second supplied quote uncited.\n"
+        "\n"
+        "## Uncertainties\n"
+        "Reviewer should not receive this draft until every supplied evidence item is covered.\n"
+        "MARKDOWN\n"
+    )
+    cli.chmod(0o755)
+    original_model = tmp_path / "Incomplete Citation Coverage Note Generator.gguf"
+    original_model.write_bytes(b"incomplete citation coverage note generator gguf bytes\n" + (b"3" * (1024 * 1024)))
+    settings = Settings(
+        data_dir=tmp_path / "vault-data",
+        desktop_token=None,
+        port=8897,
+        workspace_name="Local Generated Note Citation Coverage Lab",
+        llama_cpp_cli_path=str(cli),
+    )
+    app = create_app(settings)
+    with TestClient(app) as runtime_client:
+        imported_model = runtime_client.post(
+            "/ai/models/import-local",
+            json={
+                "file_path": str(original_model),
+                "display_name": "Incomplete Citation Coverage Note Generator",
+                "capabilities": ["generate_note"],
+            },
+        ).json()
+        runtime_client.post(f"/ai/models/{imported_model['model_id']}/test").json()
+        runtime_client.post(f"/ai/models/{imported_model['model_id']}/select").json()
+        claim_ids = []
+        for index, text in enumerate(
+            [
+                "The first supplied evidence marker should remain attached to the generated note.",
+                "The second supplied evidence marker must also be cited before review.",
+            ],
+            start=1,
+        ):
+            imported_source = runtime_client.post(
+                "/sources/import-text",
+                json={"title": f"Citation Coverage Source {index}", "type": "text", "text": text},
+            ).json()
+            runtime_client.post(
+                "/extraction/run",
+                json={"target_type": "source", "target_id": imported_source["source"]["id"], "extract": ["claims"]},
+            )
+            review_item = runtime_client.get("/review/items").json()[0]
+            claim_ids.append(runtime_client.post(f"/review/items/{review_item['id']}/approve", json={}).json()["created"]["claim_id"])
+
+        note_count_before = len(runtime_client.get("/notes").json())
+        generated = runtime_client.post(
+            "/notes/generate",
+            json={
+                "title": "Incomplete Citation Coverage Local Note",
+                "prompt": "Draft from all supplied approved evidence.",
+                "claim_ids": claim_ids,
+                "max_tokens": 128,
+            },
+        )
+        assert generated.status_code == 422
+        assert "did not cite supplied evidence markers" in generated.text
+        assert "[2]" in generated.text
+        assert len(runtime_client.get("/notes").json()) == note_count_before
+        run = runtime_client.get("/ai/runs").json()[0]
+        assert run["capability"] == "generate_note"
+        assert run["validation_status"] == "invalid_note_citations"
 
 
 def test_ai_cloud_provider_cannot_be_selected_when_local_only(client):
