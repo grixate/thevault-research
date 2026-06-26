@@ -9636,16 +9636,15 @@ function LearningView() {
           }
         />
         <label className="learning-topic-field">
-          <span>New deck topic</span>
+          <span>Deck topic</span>
           <Input value={topic} onChange={(event) => setTopic(event.target.value)} />
         </label>
         <div className="entity-list learning-card-list">
           {items.isLoading && <div className="entity-list-empty">Loading practice...</div>}
           {!items.isLoading && (items.data ?? []).length === 0 && (
-            <div className="entity-list-empty">
-              <Brain size={18} />
-              <strong>No practice items</strong>
-              <span>Create a deck from approved knowledge. New items wait in Review before practice.</span>
+            <div className="entity-list-empty learning-empty-state">
+              <strong>No cards yet</strong>
+              <span>Create a deck from approved knowledge. New cards wait in Review.</span>
             </div>
           )}
           {learningItems.map((item) => {
@@ -9710,26 +9709,30 @@ function LearningView() {
             ) : undefined
           }
         />
-        <div className="learning-voice-context" aria-label="Practice voice privacy">
-          <Badge tone="good">local voice</Badge>
-          <span>Read aloud and spoken answers stay local.</span>
-        </div>
-        <div className="learning-review-schedule">
-          <Badge tone="warn">again: tomorrow</Badge>
-          <Badge tone="info">good: 3 days</Badge>
-          <Badge tone="good">easy: 7 days</Badge>
-        </div>
-        {selectedLearningItem && (
-          <div className="learning-practice-card">
-            <div className="learning-path-meta">
-              <Badge tone="info">Selected card</Badge>
-              {learningItemPhaseLabel(selectedLearningItem) && <Badge tone="neutral">{learningItemPhaseLabel(selectedLearningItem)}</Badge>}
-              {learningItemScoreLabel(selectedLearningItem) && <Badge tone="good">{learningItemScoreLabel(selectedLearningItem)}</Badge>}
+        {selectedLearningItem ? (
+          <>
+            <div className="learning-voice-context" aria-label="Practice voice privacy">
+              <Badge tone="good">local voice</Badge>
+              <span>Read aloud and spoken answers stay local.</span>
             </div>
-            <strong>{selectedLearningItem.title}</strong>
-            {learningItemPrompt(selectedLearningItem) && <p>{learningItemPrompt(selectedLearningItem)}</p>}
-            {learningItemAnswer(selectedLearningItem) && <small>{learningItemAnswer(selectedLearningItem)}</small>}
-          </div>
+            <div className="learning-review-schedule">
+              <Badge tone="warn">again: tomorrow</Badge>
+              <Badge tone="info">good: 3 days</Badge>
+              <Badge tone="good">easy: 7 days</Badge>
+            </div>
+            <div className="learning-practice-card">
+              <div className="learning-path-meta">
+                <Badge tone="info">Selected card</Badge>
+                {learningItemPhaseLabel(selectedLearningItem) && <Badge tone="neutral">{learningItemPhaseLabel(selectedLearningItem)}</Badge>}
+                {learningItemScoreLabel(selectedLearningItem) && <Badge tone="good">{learningItemScoreLabel(selectedLearningItem)}</Badge>}
+              </div>
+              <strong>{selectedLearningItem.title}</strong>
+              {learningItemPrompt(selectedLearningItem) && <p>{learningItemPrompt(selectedLearningItem)}</p>}
+              {learningItemAnswer(selectedLearningItem) && <small>{learningItemAnswer(selectedLearningItem)}</small>}
+            </div>
+          </>
+        ) : (
+          <p className="empty-copy">Create a deck to choose a practice card.</p>
         )}
         {learningAnswerResult && (
           <div className="workflow-result">

@@ -4545,7 +4545,7 @@ describe("App", () => {
     expect((await screen.findAllByText("Practice")).length).toBeGreaterThan(0);
     expect(screen.queryByText("Cards created from approved knowledge. New cards wait in Review before practice.")).toBeNull();
     expect(screen.queryByText("Practice one card at a time. Voice answers stay local.")).toBeNull();
-    expect(await screen.findByText("New deck topic")).toBeTruthy();
+    expect(await screen.findByText("Deck topic")).toBeTruthy();
     expect(await screen.findByText("Current card")).toBeTruthy();
     expect(await screen.findByLabelText("Practice voice privacy")).toBeTruthy();
     expect((await screen.findAllByText("What is claim provenance?")).length).toBeGreaterThan(0);
