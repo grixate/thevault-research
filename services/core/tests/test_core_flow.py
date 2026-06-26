@@ -21,6 +21,7 @@ from vault_core.api.schemas import AISetupRunRequest
 from vault_core.ai import setup_runner
 from vault_core.ai.models import downloader as model_downloader
 from vault_core.ai.models import artifact_verification as ai_artifact_verification
+from vault_core.ai.models import health as model_health
 from vault_core.ai.models import registry as model_registry
 from vault_core.ai.models import runtime_installer
 from vault_core.ai.models import validation as ai_registry_validation
@@ -8142,10 +8143,34 @@ def test_llama_model_test_runs_configured_cli_for_non_fixture_model(tmp_path):
         assert "--simple-io" in runtime_smoke["message"]
         assert "--no-display-prompt" in runtime_smoke["message"]
         assert "--log-disable" in runtime_smoke["message"]
+        assert "--reasoning off" in runtime_smoke["message"]
         model_smoke = runtime_client.post("/ai/models/fake-real-gguf/test").json()
         assert model_smoke["status"] == "passed"
         assert model_smoke["runtime"] == "llama_cpp"
         assert "FAKE_LLAMA_OK" in model_smoke["message"]
+
+
+def test_llama_cli_output_cleaner_returns_only_generated_text():
+    output = """
+Loading model...
+
+llama.cpp banner
+build      : b9596-18ef86ece
+model      : Qwen3-1.7B-Q8_0.gguf
+
+available commands:
+  /exit or Ctrl+C     stop or exit
+
+> Answer with only: OK
+
+OK
+
+[ Prompt: 258.9 t/s | Generation: 78.2 t/s ]
+
+Exiting...
+"""
+
+    assert model_health._clean_llama_cli_output(output, "Answer with only: OK") == "OK"
 
 
 def test_local_gguf_import_requires_runtime_test_before_selection(tmp_path):

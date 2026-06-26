@@ -394,6 +394,8 @@ def _run_llama_cli(
         "--no-warmup",
         "--no-perf",
         "--log-disable",
+        "--reasoning",
+        "off",
         *grammar_args,
     ]
     try:
@@ -421,16 +423,46 @@ def _run_llama_cli(
             "message": "llama.cpp smoke prompt timed out.",
             "health": health,
         }
-    output = (completed.stdout or completed.stderr).strip()
+    raw_output = (completed.stdout or completed.stderr).strip()
+    output = _clean_llama_cli_output(raw_output, prompt)
     return {
         "runtime": "llama_cpp",
         "status": "passed" if completed.returncode == 0 else "failed",
         "model_id": model["model_id"],
-        "message": output[:4000],
+        "message": (output or raw_output)[:4000],
         "exit_code": completed.returncode,
         "health": health,
         "grammar_mode": grammar_mode,
     }
+
+
+def _clean_llama_cli_output(output: str, prompt: str) -> str:
+    if not output:
+        return ""
+    lines = output.replace("\r", "").splitlines()
+    start_index = 0
+    prompt_line = f"> {prompt}"
+    for index, line in enumerate(lines):
+        if line.strip() == prompt_line:
+            start_index = index + 1
+            break
+    cleaned: list[str] = []
+    for line in lines[start_index:]:
+        stripped = line.strip()
+        if not stripped:
+            if cleaned and cleaned[-1] != "":
+                cleaned.append("")
+            continue
+        if stripped == "Exiting..." or stripped.startswith("[ Prompt:") or stripped.startswith("[Start thinking]"):
+            continue
+        if stripped.startswith("Loading model"):
+            continue
+        cleaned.append(line)
+    while cleaned and cleaned[0] == "":
+        cleaned.pop(0)
+    while cleaned and cleaned[-1] == "":
+        cleaned.pop()
+    return "\n".join(cleaned).strip()
 
 
 def _grammar_args_for_cli(cli_path: str, grammar_path: Path | None) -> tuple[list[str], str | None]:

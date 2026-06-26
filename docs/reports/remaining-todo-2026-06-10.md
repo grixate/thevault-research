@@ -41,6 +41,7 @@ Latest completed slice:
 - Added `./scripts/run_ai_setup.sh` as a repeatable dry-run-by-default setup runner for the final local AI activation path. Use it to inspect the approved runtimes/models/routes first, then pass `--execute` only when doing the real install, smoke test, and route activation run.
 - Completed the first real production local-AI activation on 2026-06-26. `./scripts/run_ai_setup.sh --execute --timeout-seconds 1200 --strict-ready --format text` now reports `ready`, activates all 9 required routes, and `./scripts/check_ai_readiness.sh --format text` exits zero with `Production ready: yes`, 276/277 pass, 1 warning, and 0 blockers.
 - Fixed the activation blockers found during that real run: Piper multi-file voice installs now download and verify the `.onnx.json` sidecar, setup can repair an installed model with a missing sidecar, Piper route settings include `config_path`, and llama.cpp smoke uses `--single-turn` so the CLI exits instead of remaining in chat mode.
+- Verified the actual activated app text route on 2026-06-27. `/ai/generate/text` for `summarize` returned clean local text through `llama_cpp_cli / standard-gguf-placeholder` with `sent_off_device: false`; llama.cpp banner/prompt/timing output is now stripped before the app records or returns generated text.
 
 Earlier implementation slice built a reproducible macOS arm64 `whisper-cli` package from `whisper.cpp` source, moved the whisper runtime from distribution-decision to release-evidence, verified all production model candidate bytes, and merged the current byte-evidence files into one candidate overlay.
 
@@ -333,7 +334,7 @@ Current local-AI gates after Piper restoration:
 
 Recommended next slice: continue product hardening from the now-activated local AI baseline. Keep `./scripts/check_ai_readiness.sh --format text` as the local-AI release gate; it should remain zero-blocker before claiming strict local AI readiness in future slices.
 
-No-prompt operating note: prefer existing project scripts and approved command prefixes over ad hoc shell commands. Keep app-data mutation behind `./scripts/run_ai_setup.sh`, readiness behind `./scripts/check_ai_readiness.sh`, and tests inside the workspace or `/tmp`. Git push is currently separate from sandbox permissions and depends on GitHub credentials; if HTTPS push fails with `could not read Username`, authenticate `gh` or configure a credential helper before expecting autonomous pushes.
+No-prompt operating note: prefer existing project scripts and approved command prefixes over ad hoc shell commands. Keep app-data mutation behind `./scripts/run_ai_setup.sh`, readiness behind `./scripts/check_ai_readiness.sh`, and tests inside the workspace or `/tmp`. The repo-local Git credential helper is now set to `/Applications/Xcode.app/Contents/Developer/usr/libexec/git-core/git-credential-osxkeychain`; `git push` succeeded on 2026-06-27 using the saved Keychain credential.
 
 Note: strict production local AI is no longer blocked. The current local-AI residual is one warning, not a release blocker.
 
