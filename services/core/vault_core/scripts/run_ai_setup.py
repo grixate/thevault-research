@@ -19,9 +19,9 @@ from vault_core.db.session import VaultDatabase
 def main(argv: list[str] | None = None) -> int:
     args = _parse_args(argv)
     settings = _settings_for_args(args)
+    ensure_storage(settings)
     db = VaultDatabase(settings.db_path, settings.workspace_name)
     db.init()
-    ensure_storage(settings)
     ensure_ai_defaults(db)
 
     req = AISetupRunRequest(

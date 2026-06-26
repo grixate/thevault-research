@@ -3229,6 +3229,15 @@ def test_ai_setup_cli_text_output_names_setup_cost(tmp_path):
     assert "Readiness: blocked / production ready: no" in result.stdout
 
 
+def test_ai_setup_cli_creates_missing_data_dir_before_opening_database(tmp_path):
+    data_dir = tmp_path / "missing" / "vault-data"
+    result = run_ai_setup_cli(data_dir)
+
+    assert result.returncode == 0
+    assert "Local AI setup check: partial" in result.stdout
+    assert (data_dir / "vault.db").exists()
+
+
 def test_ai_candidate_shortlist_covers_current_production_placeholders():
     report = build_candidate_shortlist_report()
 
