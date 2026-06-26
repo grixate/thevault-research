@@ -48,6 +48,7 @@ Latest completed slice:
 - Quieted the Settings Models first glance on 2026-06-27: empty/loading readiness counters are now hidden until they contain real setup data, the hardware strip no longer renders placeholder separators, and the zero-count Model library summary collapses to one quiet `empty` badge. Visual evidence: `/tmp/vault-settings-models-quiet-empty.png`.
 - Quieted the Evidence graph empty state on 2026-06-27: zero-count dashboard facts are hidden until claims exist, the weak-claim filter now reads `Needs review`, and the empty detail pane uses source-link language instead of repeating setup instructions. Visual evidence: `/tmp/vault-graph-empty-minimal.png`.
 - Quieted the Practice empty state on 2026-06-27: the deck topic label no longer shouts in all caps, the empty deck area is plain workspace copy instead of a dashed card, and review-schedule badges stay hidden until a card exists. Visual evidence: `/tmp/vault-practice-empty-minimal.png`.
+- Quieted the Local tools empty state on 2026-06-27: the empty helper state now belongs to the list pane, while the detail pane stays neutral with trusted-helper setup language instead of repeating the same absence twice. Visual evidence: `/tmp/vault-local-tools-empty-minimal.png`.
 
 Earlier implementation slice built a reproducible macOS arm64 `whisper-cli` package from `whisper.cpp` source, moved the whisper runtime from distribution-decision to release-evidence, verified all production model candidate bytes, and merged the current byte-evidence files into one candidate overlay.
 
@@ -2983,6 +2984,7 @@ Current good state:
 - Learning is now framed as `Practice`, with `Current card` and one quiet local-voice privacy line.
 - Practice empty state now uses plain workspace copy and hides review-schedule badges until a card exists.
 - Local tools now use helper/result language instead of studio/debug labels.
+- Local tools empty state no longer repeats the same missing-helper message across both panes.
 - Evidence graph now uses a single context line and inline claim strength instead of KPI cards.
 - Evidence graph empty state now hides zero-count facts and uses `Needs review` / source-link language.
 - Settings Search now uses user-facing search/ranking language instead of visible routing jargon.
@@ -3058,6 +3060,7 @@ Current good state:
 - Settings Advanced replaces the visible `Raw` tab with a labelled settings snapshot.
 - Learning and Local tools now share the same quieter language style as the rest of the app.
 - Practice no longer uses all-caps form labels or a dashed empty card on a clean workspace.
+- Local tools now keeps absence copy in the list pane and uses a neutral detail-pane title.
 - Global visual tokens and major Settings panels are calmer and closer to notes-app references.
 - Command palette fast actions now follow the same minimal Spotlight-like row pattern as Quick capture.
 - Search mode selection now uses existing Radix tabs only inside the active search popover instead of permanently occupying the topbar.

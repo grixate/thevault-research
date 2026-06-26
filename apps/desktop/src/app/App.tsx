@@ -9845,6 +9845,7 @@ function ToolsView() {
     }
   });
   const manifest = selected?.manifest ?? {};
+  const toolRows = tools.data ?? [];
   const importedToolNeedsEnable = selected?.status === "disabled" && manifest.imported_from_capsule === true && manifest.import_review_required === true;
   const permissions = Object.entries((manifest.permissions ?? {}) as Record<string, unknown>);
   const output = selectedRun?.output ?? {};
@@ -9867,7 +9868,9 @@ function ToolsView() {
       <Panel className="list-pane">
         <SectionHeader title="Local tools" />
         <div className="entity-list">
-          {(tools.data ?? []).map((tool) => (
+          {tools.isLoading && <p className="empty-copy">Loading helpers...</p>}
+          {!tools.isLoading && toolRows.length === 0 && <p className="empty-copy">No helpers installed.</p>}
+          {toolRows.map((tool) => (
             <button key={tool.id} className={selected?.id === tool.id ? "active" : ""} onClick={() => setSelectedToolId(tool.id)}>
               <strong>{tool.name}</strong>
               <span>{tool.status} · {tool.version}</span>
@@ -9877,7 +9880,7 @@ function ToolsView() {
       </Panel>
       <Panel className="detail-pane">
         <SectionHeader
-          title={selected?.name ?? "No tools installed yet."}
+          title={selected?.name ?? "Tool details"}
           eyebrow={selected?.status}
           actions={
             selected && (
@@ -9998,7 +10001,7 @@ function ToolsView() {
             </section>
           </div>
         ) : (
-          <p className="empty-copy">No local helpers are installed yet.</p>
+          <p className="empty-copy">Install or import a trusted helper to run local checks.</p>
         )}
       </Panel>
     </div>
