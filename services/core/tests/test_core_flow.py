@@ -15,6 +15,7 @@ from datetime import UTC, date, datetime, timedelta
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
+from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from vault_core.api.schemas import AISetupRunRequest
@@ -40,6 +41,7 @@ from vault_core.ai.models.release_plan import build_ai_registry_release_plan
 from vault_core.ai.models.runtime_installer import load_runtime_registry
 from vault_core.ai.models.validation import validate_ai_registries
 from vault_core.scripts import pin_ai_registries as ai_registry_pin_script
+from vault_core.scripts import test_local_ai as local_ai_smoke_script
 from vault_core.app import create_app
 from vault_core.config import Settings
 from vault_core.db.session import dumps, new_id, now_iso
@@ -5304,6 +5306,149 @@ def test_local_ai_smoke_cli_passes_demo_path(tmp_path):
     assert steps["embed_text"]["status"] == "pass"
     assert steps["run_log"]["status"] == "pass"
     assert steps["readiness"]["status"] == "warn"
+
+
+def test_local_ai_smoke_production_profile_uses_existing_routes(monkeypatch, tmp_path):
+    setup_calls = []
+
+    def fake_create_app(settings):
+        app = FastAPI()
+
+        @app.get("/health")
+        def health():
+            return {"ok": True, "version": "test"}
+
+        @app.get("/ai/registry/validation")
+        def registry_validation():
+            return {
+                "status": "pass",
+                "summary": {"model_count": 4, "model_pack_count": 1, "runtime_count": 3, "warning_count": 0},
+            }
+
+        @app.post("/ai/setup/run")
+        def setup_run(payload: dict):
+            setup_calls.append(payload)
+            return {"status": "failed", "steps": []}
+
+        @app.get("/ai/capabilities")
+        def capabilities():
+            llm_capabilities = [
+                "extract_objects",
+                "extract_claims",
+                "summarize",
+                "generate_note",
+                "grounded_answer",
+                "create_learning_item",
+            ]
+            bindings = [
+                {
+                    "capability": capability,
+                    "provider_id": "llama_cpp_cli",
+                    "model_id": "standard-gguf-placeholder",
+                    "local_only": True,
+                    "settings": {},
+                }
+                for capability in llm_capabilities
+            ]
+            return [
+                *bindings,
+                {
+                    "capability": "embed_text",
+                    "provider_id": "local_embedding",
+                    "model_id": "app-managed-local-embedding",
+                    "local_only": True,
+                    "settings": {},
+                },
+                {
+                    "capability": "transcribe_audio",
+                    "provider_id": "whisper_cpp",
+                    "model_id": "whisper-tiny-local",
+                    "local_only": True,
+                    "settings": {},
+                },
+                {
+                    "capability": "synthesize_speech",
+                    "provider_id": "piper",
+                    "model_id": "piper-en-us-local",
+                    "local_only": True,
+                    "settings": {},
+                },
+                {
+                    "capability": "rerank_results",
+                    "provider_id": "mock_reranker",
+                    "model_id": "mock-local-reranker",
+                    "local_only": True,
+                    "settings": {},
+                },
+            ]
+
+        @app.post("/ai/generate/text")
+        def generate_text(payload: dict):
+            return {
+                "run_id": "airun_test",
+                "provider": "llama_cpp_cli",
+                "model_id": "standard-gguf-placeholder",
+                "capability": payload["capability"],
+                "text": "Local model produced a private summary.",
+                "sent_off_device": False,
+            }
+
+        @app.post("/ai/generate/json")
+        def generate_json(payload: dict):
+            return {
+                "run_id": "airun_json",
+                "provider": "llama_cpp_cli",
+                "model_id": "standard-gguf-placeholder",
+                "capability": payload["capability"],
+                "data": {"objects": []},
+                "sent_off_device": False,
+            }
+
+        @app.post("/ai/embed")
+        def embed(payload: dict):
+            return {
+                "run_id": "airun_embed",
+                "provider": "local_embedding",
+                "model_id": "app-managed-local-embedding",
+                "capability": payload["capability"],
+                "dimensions": 4,
+                "vectors": [[1, 0, 0, 0] for _ in payload["texts"]],
+                "sent_off_device": False,
+            }
+
+        @app.post("/ai/rerank")
+        def rerank(payload: dict):
+            return {
+                "run_id": "airun_rerank",
+                "provider": "mock_reranker",
+                "model_id": "mock-local-reranker",
+                "capability": payload["capability"],
+                "results": payload["candidates"],
+                "sent_off_device": False,
+            }
+
+        @app.get("/ai/runs")
+        def runs():
+            return []
+
+        @app.get("/ai/readiness/report")
+        def readiness_report():
+            return {"status": "warn", "production_ready": True, "summary": {"blocked_count": 0}}
+
+        return app
+
+    monkeypatch.setattr(local_ai_smoke_script, "create_app", fake_create_app)
+    args = local_ai_smoke_script._parse_args(["--profile", "production", "--format", "json"])
+
+    report = local_ai_smoke_script.run_local_ai_smoke(tmp_path, args)
+
+    assert setup_calls == []
+    assert report["status"] == "pass"
+    assert report["profile"] == "production"
+    steps = {step["id"]: step for step in report["steps"]}
+    assert steps["production_routes"]["status"] == "pass"
+    assert steps["generate_text"]["detail"] == "llama_cpp_cli / standard-gguf-placeholder"
+    assert steps["readiness"]["status"] == "pass"
 
 
 def test_local_voice_smoke_cli_persists_transcript_and_speech_assets(tmp_path):

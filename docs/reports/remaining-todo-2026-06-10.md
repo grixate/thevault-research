@@ -14,7 +14,7 @@ It is intentionally written as an execution document, not a status memo. Start f
 
 ## Immediate Resume Point
 
-Latest state on 2026-06-22: production model packs and the three production runtimes are approved and release-plan ready, including the restored Piper package. The setup status now points first to the recommended production local setup instead of the starter/demo runtime, and the renderer can execute that `ai.setup.run` action directly. Strict production readiness is still intentionally blocked because the required capabilities still route to mock providers until a recommended setup installs, smoke-tests, and activates the approved local inventory.
+Latest state on 2026-06-27: the first real production local-AI activation is complete on this machine. Production model packs and the three production runtimes are approved, installed, smoke-tested, and routed for the required local capabilities. Strict production readiness now exits zero with `Production ready: yes`; the only remaining readiness warning is the optional reranker route, which does not block the v1 production gate.
 
 Latest completed slice:
 
@@ -42,6 +42,7 @@ Latest completed slice:
 - Completed the first real production local-AI activation on 2026-06-26. `./scripts/run_ai_setup.sh --execute --timeout-seconds 1200 --strict-ready --format text` now reports `ready`, activates all 9 required routes, and `./scripts/check_ai_readiness.sh --format text` exits zero with `Production ready: yes`, 276/277 pass, 1 warning, and 0 blockers.
 - Fixed the activation blockers found during that real run: Piper multi-file voice installs now download and verify the `.onnx.json` sidecar, setup can repair an installed model with a missing sidecar, Piper route settings include `config_path`, and llama.cpp smoke uses `--single-turn` so the CLI exits instead of remaining in chat mode.
 - Verified the actual activated app text route on 2026-06-27. `/ai/generate/text` for `summarize` returned clean local text through `llama_cpp_cli / standard-gguf-placeholder` with `sent_off_device: false`; llama.cpp banner/prompt/timing output is now stripped before the app records or returns generated text.
+- Added a production local-AI smoke profile on 2026-06-27: `./scripts/test_local_ai.sh --profile production --format json` now uses the real app data directory by default, skips demo setup, requires 9 production routes to be active, runs text/JSON/embed/rerank privacy checks, and fails if production readiness is not clear. It passed locally against `/Users/grixate/Library/Application Support/The Vault Research Lab`.
 
 Earlier implementation slice built a reproducible macOS arm64 `whisper-cli` package from `whisper.cpp` source, moved the whisper runtime from distribution-decision to release-evidence, verified all production model candidate bytes, and merged the current byte-evidence files into one candidate overlay.
 
@@ -342,7 +343,7 @@ Note: strict production local AI is no longer blocked. The current local-AI resi
 
 The app is still the intended product: a local-first notes and knowledge base workspace with integrated local models, local voice workflows, immutable Storage, editable Notes, review-gated knowledge, and a private research-lab operating model.
 
-The current v1 base is healthy in demo mode.
+The current v1 base is healthy in demo mode, and the local-AI production route gate now passes on the activated machine state. UI polish, editor integration, mobile cleanup, and remaining production UX hardening are now the larger unfinished surfaces.
 
 Design north star: use Notion, Obsidian, and Apple Notes as the practical reference set. The app should feel like a quiet writing and knowledge workspace, not an Atlassian/Microsoft-style admin console. Keep navigation minimal, captions specific, controls sparse, and user flow obvious: Notes are for editable thinking, Storage is for immutable evidence, Review is the trust gate, Assistant is grounded synthesis, and Settings is for local/private configuration.
 
@@ -362,6 +363,15 @@ Latest full demo gate on 2026-06-10:
 - Local AI smoke: passed with demo fixtures, readiness warning preserved.
 - Local voice smoke: passed.
 - Demo-allowed local AI readiness: command passed while honestly reporting production blockers.
+
+Latest local-AI activated-route gate on 2026-06-27:
+
+- `./scripts/test_local_ai.sh --profile production --format json`: passed against the default app data directory.
+- Production routes: 9 required local routes active.
+- Text generation: passed through `llama_cpp_cli / standard-gguf-placeholder` with clean returned text and `sent_off_device: false`.
+- Embeddings: passed through the activated local embedding route with 768-dimensional vectors.
+- Run log privacy: passed without storing the full private prompt text.
+- `./scripts/check_ai_readiness.sh --format text`: passed with `Production ready: yes`, 276/277 pass, 1 warn, 0 pending, and 0 blocked.
 
 Latest local-AI production candidate verification on 2026-06-12:
 

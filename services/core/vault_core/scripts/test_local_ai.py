@@ -21,14 +21,18 @@ class SmokeFailure(RuntimeError):
 
 def main(argv: list[str] | None = None) -> int:
     args = _parse_args(argv)
+    data_dir_arg = args.data_dir
+    if args.profile == "production" and data_dir_arg is None:
+        data_dir_arg = load_settings().data_dir
     try:
-        with _data_dir_context(args.data_dir, args.keep_data_dir) as data_dir:
+        with _data_dir_context(data_dir_arg, args.keep_data_dir) as data_dir:
             report = run_local_ai_smoke(data_dir, args)
     except SmokeFailure as exc:
         report = {
             "status": "fail",
             "error": str(exc),
-            "data_dir": str(args.data_dir.expanduser()) if args.data_dir else None,
+            "profile": args.profile,
+            "data_dir": str(data_dir_arg.expanduser()) if data_dir_arg else None,
         }
         _print_report(report, args.format)
         return 1
@@ -64,15 +68,19 @@ def run_local_ai_smoke(data_dir: Path, args: argparse.Namespace) -> dict[str, An
             }
         )
 
-        setup = _post(client, "/ai/setup/run", {"mode": "demo", "timeout_seconds": args.timeout_seconds})
-        _require(setup.get("status") not in {"blocked", "failed"}, f"Demo setup failed: {setup.get('status')}")
-        steps.append(
-            {
-                "id": "setup",
-                "status": "pass",
-                "detail": f"Demo setup returned {setup.get('status')} with {len(setup.get('steps', []))} steps.",
-            }
-        )
+        if args.profile == "demo":
+            setup = _post(client, "/ai/setup/run", {"mode": "demo", "timeout_seconds": args.timeout_seconds})
+            _require(setup.get("status") not in {"blocked", "failed"}, f"Demo setup failed: {setup.get('status')}")
+            steps.append(
+                {
+                    "id": "setup",
+                    "status": "pass",
+                    "detail": f"Demo setup returned {setup.get('status')} with {len(setup.get('steps', []))} steps.",
+                }
+            )
+        else:
+            route_detail = _require_production_routes(client)
+            steps.append({"id": "production_routes", "status": "pass", "detail": route_detail})
 
         generated = _post(
             client,
@@ -86,6 +94,10 @@ def run_local_ai_smoke(data_dir: Path, args: argparse.Namespace) -> dict[str, An
         )
         _require(generated.get("sent_off_device") is False, "Text generation left the device.")
         _require(bool(str(generated.get("text") or "").strip()), "Text generation returned no text.")
+        if args.profile == "production":
+            _require(generated.get("provider") in {"llama_cpp_cli", "llama_cpp_server"}, "Production text route is not using llama.cpp.")
+            _require(not str(generated.get("model_id") or "").startswith("mock-"), "Production text route is using a mock model.")
+            _require(_looks_like_clean_text(str(generated.get("text") or "")), "Production text route returned llama.cpp wrapper output.")
         steps.append(
             {
                 "id": "generate_text",
@@ -147,7 +159,7 @@ def run_local_ai_smoke(data_dir: Path, args: argparse.Namespace) -> dict[str, An
         steps.append({"id": "run_log", "status": "pass", "detail": f"{len(runs)} AI runs without full prompt text."})
 
         readiness = _get(client, "/ai/readiness/report")
-        if args.strict_production and not readiness.get("production_ready"):
+        if (args.strict_production or args.profile == "production") and not readiness.get("production_ready"):
             raise SmokeFailure("Strict production mode requested, but local AI production readiness is blocked.")
         steps.append(
             {
@@ -162,6 +174,7 @@ def run_local_ai_smoke(data_dir: Path, args: argparse.Namespace) -> dict[str, An
 
     return {
         "status": "pass",
+        "profile": args.profile,
         "data_dir": str(data_dir),
         "strict_production": bool(args.strict_production),
         "steps": steps,
@@ -170,6 +183,15 @@ def run_local_ai_smoke(data_dir: Path, args: argparse.Namespace) -> dict[str, An
 
 def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Run an in-process local AI smoke check against Vault Core.")
+    parser.add_argument(
+        "--profile",
+        choices=["demo", "production"],
+        default="demo",
+        help=(
+            "Smoke profile. demo installs/uses fixture routes in an isolated data directory; "
+            "production uses existing activated routes and fails unless production readiness is clear."
+        ),
+    )
     parser.add_argument("--data-dir", type=Path, help="Vault data directory to use. Defaults to a temporary directory.")
     parser.add_argument("--keep-data-dir", action="store_true", help="Keep the temporary data directory after the smoke check.")
     parser.add_argument("--format", choices=["text", "json"], default="text", help="Output format.")
@@ -177,6 +199,54 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     parser.add_argument("--timeout-seconds", type=float, default=10.0, help="Setup-run timeout for smoke steps.")
     parser.add_argument("--prompt", default="Summarize this local AI smoke check.", help="Prompt used for local text generation.")
     return parser.parse_args(argv)
+
+
+PRODUCTION_LLM_CAPABILITIES = {
+    "extract_objects",
+    "extract_claims",
+    "summarize",
+    "generate_note",
+    "grounded_answer",
+    "create_learning_item",
+}
+PRODUCTION_REQUIRED_PROVIDERS = {
+    **{capability: {"llama_cpp_cli", "llama_cpp_server"} for capability in PRODUCTION_LLM_CAPABILITIES},
+    "embed_text": {"local_embedding", "llama_cpp_server_embeddings"},
+    "transcribe_audio": {"whisper_cpp"},
+    "synthesize_speech": {"piper"},
+}
+
+
+def _require_production_routes(client: TestClient) -> str:
+    capabilities = _get(client, "/ai/capabilities")
+    _require(isinstance(capabilities, list), "Capability route returned malformed data.")
+    bindings = {str(item.get("capability")): item for item in capabilities if isinstance(item, dict)}
+    missing = sorted(set(PRODUCTION_REQUIRED_PROVIDERS) - set(bindings))
+    _require(not missing, f"Production routes are missing capabilities: {', '.join(missing)}.")
+    inactive: list[str] = []
+    for capability, allowed_providers in PRODUCTION_REQUIRED_PROVIDERS.items():
+        binding = bindings[capability]
+        provider_id = str(binding.get("provider_id") or "")
+        model_id = str(binding.get("model_id") or "")
+        local_only = bool(binding.get("local_only"))
+        if provider_id not in allowed_providers or provider_id.startswith("mock_") or model_id.startswith("mock-") or not local_only:
+            inactive.append(f"{capability} -> {provider_id or '<none>'}/{model_id or '<none>'}")
+    _require(not inactive, "Production routes are not active: " + "; ".join(inactive) + ".")
+    return f"{len(PRODUCTION_REQUIRED_PROVIDERS)} required production routes active."
+
+
+def _looks_like_clean_text(text: str) -> bool:
+    blocked_fragments = [
+        "build:",
+        "system_info:",
+        "sampler seed:",
+        "llama_perf_context",
+        "[ prompt:",
+        "available commands:",
+        "exiting.",
+    ]
+    lowered = text.lower()
+    return all(fragment not in lowered for fragment in blocked_fragments)
 
 
 def _settings_for_data_dir(data_dir: Path) -> Settings:
@@ -223,6 +293,8 @@ def _print_report(report: dict[str, Any], output_format: str) -> None:
         print(json.dumps(report, indent=2))
         return
     print(f"Local AI smoke: {report['status']}")
+    if report.get("profile"):
+        print(f"Profile: {report['profile']}")
     if report.get("data_dir"):
         print(f"Data dir: {report['data_dir']}")
     if report.get("strict_production"):
