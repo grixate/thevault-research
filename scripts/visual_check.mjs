@@ -27,6 +27,11 @@ const scenarios = {
     await installEmptyVaultBridge(page);
     await openNotes(page);
   },
+  "editor-tools": async (page) => {
+    await installNoteVaultBridge(page);
+    await openNotes(page);
+    await page.getByText("Tools", { exact: true }).click();
+  },
   "storage-loading": async (page) => {
     await openStorage(page);
   },
@@ -218,6 +223,70 @@ async function installEmptyVaultBridge(page) {
             uncertainties: []
           };
         }
+        return [];
+      },
+      selectFiles: async () => []
+    };
+  });
+}
+
+async function installNoteVaultBridge(page) {
+  await page.addInitScript(() => {
+    const note = {
+      id: "note_visual_editor",
+      title: "Field synthesis",
+      content: {
+        editor_doc: {
+          type: "doc",
+          content: [
+            {
+              type: "paragraph",
+              content: [{ type: "text", text: "Editable synthesis lives here. Raw excerpts stay in Storage until they are cited." }]
+            },
+            {
+              type: "paragraph",
+              content: [{ type: "text", text: "Use the tools strip only when this note needs review, voice, export, or capsule work." }]
+            }
+          ]
+        }
+      },
+      content_markdown: "Editable synthesis lives here. Raw excerpts stay in Storage until they are cited.\n\nUse the tools strip only when this note needs review, voice, export, or capsule work.",
+      origin: "user_written",
+      status: "active",
+      version: 3,
+      source_id: "src_visual_editor",
+      updated_at: "2026-06-27T00:00:00Z"
+    };
+    window.vault = {
+      request: async (route) => {
+        if (route === "health.get") return { ok: true, version: "0.1.0", db_ready: true, workspace_id: "wrk_default" };
+        if (route === "jobs.list") return [];
+        if (route === "stats.get") {
+          return {
+            sources: 1,
+            source_blocks: 2,
+            notes: 1,
+            claims: 0,
+            claims_without_evidence: 0,
+            contradicted_claims: 0,
+            pending_review_items: 0,
+            generated_notes_pending_review: 0,
+            installed_tools: 0,
+            failed_jobs: 0,
+            learning_items: 0
+          };
+        }
+        if (route === "events.list") return [];
+        if (route === "notes.list") return [note];
+        if (route === "sources.list") return [];
+        if (route === "claims.list") return [];
+        if (route === "capsules.list") return { items: [] };
+        if (route === "ai.capabilities") return [
+          { capability: "extract_claims", provider_id: "llama_cpp_cli", model_id: "standard-gguf-placeholder", local_only: true, settings: {} },
+          { capability: "extract_objects", provider_id: "llama_cpp_cli", model_id: "standard-gguf-placeholder", local_only: true, settings: {} },
+          { capability: "generate_note", provider_id: "llama_cpp_cli", model_id: "standard-gguf-placeholder", local_only: true, settings: {} }
+        ];
+        if (route === "ai.providers") return [];
         return [];
       },
       selectFiles: async () => []

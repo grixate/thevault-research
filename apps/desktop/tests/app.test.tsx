@@ -13,7 +13,7 @@ function renderApp() {
 }
 
 async function openNoteTools() {
-  const summary = (await screen.findByText("Note tools")).closest("summary");
+  const summary = (await screen.findByText("Tools")).closest("summary");
   expect(summary).toBeTruthy();
   fireEvent.click(summary as HTMLElement);
 }
@@ -1000,7 +1000,7 @@ describe("App", () => {
     fireEvent.click(await screen.findByRole("button", { name: "Notes" }));
     await screen.findByDisplayValue("Experiment checklist");
     await openNoteTools();
-    fireEvent.click(await screen.findByRole("button", { name: "Create 2 tasks" }));
+    fireEvent.click(await screen.findByRole("button", { name: "2 tasks" }));
 
     await waitFor(() => expect(createdPayloads).toHaveLength(2));
     expect(createdPayloads[0]).toEqual(
@@ -1039,7 +1039,7 @@ describe("App", () => {
     await waitFor(() => expect(request).toHaveBeenCalledWith("notes.update", expect.objectContaining({ noteId: "note_checkbox_tasks" })));
     expect(updatedContent.task_checkbox_links).toHaveLength(2);
     expect(updatedContent.task_checkbox_links[0]).toEqual(expect.objectContaining({ todo_id: "todo_checkbox_1", title: "Verify the quoted method tomorrow @review", line_number: 1 }));
-    await waitFor(() => expect(screen.queryByRole("button", { name: "Create 2 tasks" })).toBeNull());
+    await waitFor(() => expect(screen.queryByRole("button", { name: "2 tasks" })).toBeNull());
   });
 
   it("creates contextual tasks from Storage sources and exact source blocks", async () => {
@@ -2118,6 +2118,14 @@ describe("App", () => {
 
     expect(await screen.findByDisplayValue("Written synthesis")).toBeTruthy();
     expect(screen.queryByRole("tablist", { name: "Note type" })).toBeNull();
+    await openNoteTools();
+    const tools = await screen.findByLabelText("Note actions");
+    expect(within(tools).getByRole("button", { name: "Propose claims" })).toBeTruthy();
+    expect(within(tools).getByRole("button", { name: "Draft memo" })).toBeTruthy();
+    expect(within(tools).getByRole("button", { name: "Insert audio" })).toBeTruthy();
+    expect(within(tools).getByRole("button", { name: "Open in Storage" })).toBeTruthy();
+    expect(within(tools).queryByText("Make from this note")).toBeNull();
+    expect(within(tools).queryByText("File and history")).toBeNull();
 
     fireEvent.click(screen.getByRole("button", { name: /Shortcut thought/i }));
     expect(await screen.findByDisplayValue("Shortcut thought")).toBeTruthy();

@@ -3172,29 +3172,24 @@ textarea:not(.ui-textarea) {
 }
 
 .note-tools-body {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 14px;
-  padding: 12px 0 6px;
-}
-
-.note-tools-body section {
-  display: grid;
-  gap: 6px;
-  align-content: start;
-  padding: 10px;
-  background: var(--panel-soft);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-}
-
-.note-tools-body h4 {
-  margin: 0;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0;
+  padding: 8px 0 2px;
   color: var(--muted);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0;
-  text-transform: uppercase;
+  border-top: 1px solid hsl(220 10% 92%);
+}
+
+.note-tools-group {
+  min-width: 0;
+  padding: 4px 12px 4px 0;
+}
+
+.note-tools-group + .note-tools-group,
+.note-tools-group + .editor-local-routes {
+  padding-left: 12px;
+  border-left: 1px solid var(--line);
 }
 
 .format-toolbar {
@@ -3236,11 +3231,10 @@ textarea:not(.ui-textarea) {
 
 .editor-local-routes {
   min-width: 0;
-  padding: 7px 0;
+  padding: 4px 0 4px 12px;
   color: var(--muted);
   background: transparent;
   border: 0;
-  border-bottom: 1px solid var(--line);
   border-radius: 0;
 }
 
@@ -3279,7 +3273,8 @@ textarea:not(.ui-textarea) {
   align-items: center;
   flex-wrap: wrap;
   gap: 8px;
-  margin-top: 8px;
+  margin-top: 10px;
+  padding-right: 2px;
 }
 
 .title-input {
@@ -7978,10 +7973,6 @@ blockquote span {
 
   .format-toolbar {
     overflow-x: auto;
-  }
-
-  .note-tools-body {
-    grid-template-columns: 1fr;
   }
 
   .editor-frame {

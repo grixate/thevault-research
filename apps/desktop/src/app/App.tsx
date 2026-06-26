@@ -24,6 +24,7 @@ import {
   FolderOpen,
   GitBranch,
   HardDrive,
+  History,
   Heading1,
   Heading2,
   Import,
@@ -5523,19 +5524,17 @@ function NoteEditor({ note, isLoading, onNewNote, onQuickNote }: { note?: Note; 
         <details className="note-tools-panel">
           <summary>
             <span>
-              <strong>Note tools</strong>
+              <strong>Tools</strong>
             </span>
-            <Badge tone="good">local-first</Badge>
           </summary>
           <div className="note-tools-body" aria-label="Note actions">
-            <section>
-              <h4>Make from this note</h4>
+            <div className="note-tools-group" aria-label="Writing actions">
               <div className="editor-action-row">
-                <Button icon={<Sparkles size={16} />} onClick={() => extract.mutate()}>
-                  Propose claims
+                <Button icon={<Sparkles size={16} />} size="sm" aria-label="Propose claims" onClick={() => extract.mutate()}>
+                  Claims
                 </Button>
-                <Button icon={<Archive size={16} />} onClick={() => generate.mutate()}>
-                  Draft memo
+                <Button icon={<Archive size={16} />} size="sm" aria-label="Draft memo" onClick={() => generate.mutate()}>
+                  Memo
                 </Button>
                 <TaskCreateButton
                   targetType="note"
@@ -5547,24 +5546,25 @@ function NoteEditor({ note, isLoading, onNewNote, onQuickNote }: { note?: Note; 
                   locator={selectedTaskContext?.locator}
                   metadata={selectedTaskContext?.metadata}
                   buttonTitle={selectedTaskContext ? "Create task from selected text" : "Create task from this note"}
+                  buttonSize="sm"
                 />
                 {checkboxTaskCandidates.length > 0 && (
-                  <Button icon={<Check size={16} />} variant="quiet" disabled={createCheckboxTasks.isPending} onClick={() => createCheckboxTasks.mutate()}>
-                    {createCheckboxTasks.isPending ? "Creating" : `Create ${checkboxTaskCandidates.length} task${checkboxTaskCandidates.length === 1 ? "" : "s"}`}
+                  <Button icon={<Check size={16} />} size="sm" variant="quiet" disabled={createCheckboxTasks.isPending} onClick={() => createCheckboxTasks.mutate()}>
+                    {createCheckboxTasks.isPending ? "Creating" : `${checkboxTaskCandidates.length} task${checkboxTaskCandidates.length === 1 ? "" : "s"}`}
                   </Button>
                 )}
-                <CapsuleAttachButton targetType="note" targetId={note.id} targetTitle={title || note.title} defaultRole="core" />
+                <CapsuleAttachButton targetType="note" targetId={note.id} targetTitle={title || note.title} defaultRole="core" buttonSize="sm" />
               </div>
               {createCheckboxTasks.error && <small className="model-test-error">{createCheckboxTasks.error.message}</small>}
-            </section>
-            <section>
-              <h4>Voice</h4>
+            </div>
+            <div className="note-tools-group" aria-label="Voice actions">
               <div className="editor-action-row">
-                <Button icon={<Mic size={16} />} variant="quiet" disabled={dictateFile.isPending} onClick={() => dictateFile.mutate()}>
-                  Insert audio
+                <Button icon={<Mic size={16} />} size="sm" variant="quiet" aria-label="Insert audio" disabled={dictateFile.isPending} onClick={() => dictateFile.mutate()}>
+                  Audio
                 </Button>
                 <Button
                   icon={recordingState === "recording" ? <Pause size={16} /> : <Mic size={16} />}
+                  size="sm"
                   variant={recordingState === "recording" ? "primary" : "quiet"}
                   disabled={recordingState === "processing"}
                   aria-keyshortcuts="Alt+Space"
@@ -5573,31 +5573,32 @@ function NoteEditor({ note, isLoading, onNewNote, onQuickNote }: { note?: Note; 
                 >
                   {recordingState === "recording" ? "Stop" : recordingState === "processing" ? "Saving" : "Record"}
                 </Button>
-                <Button icon={<Volume2 size={16} />} variant="quiet" disabled={speakNote.isPending} onClick={() => speakNote.mutate()}>
-                  Read aloud
+                <Button icon={<Volume2 size={16} />} size="sm" variant="quiet" aria-label="Read aloud" disabled={speakNote.isPending} onClick={() => speakNote.mutate()}>
+                  Read
                 </Button>
               </div>
-            </section>
-            <section>
-              <h4>File and history</h4>
+            </div>
+            <div className="note-tools-group" aria-label="File and history actions">
               <div className="editor-action-row">
                 <Button
                   icon={<HardDrive size={16} />}
+                  size="sm"
                   variant="quiet"
                   disabled={!note.source_id}
+                  aria-label="Open in Storage"
                   title="Open this note's indexed source record in Storage"
                   onClick={openLinkedStorageSource}
                 >
-                  Open in Storage
+                  Storage
                 </Button>
-                <Button icon={<Download size={16} />} variant="quiet" disabled={exportNoteMarkdown.isPending} onClick={() => exportNoteMarkdown.mutate()}>
-                  Export Markdown
+                <Button icon={<Download size={16} />} size="sm" variant="quiet" aria-label="Export Markdown" disabled={exportNoteMarkdown.isPending} onClick={() => exportNoteMarkdown.mutate()}>
+                  Export
                 </Button>
-                <Button variant="quiet" onClick={() => setVersionsOpen(!versionsOpen)}>
+                <Button icon={<History size={16} />} size="sm" variant="quiet" onClick={() => setVersionsOpen(!versionsOpen)}>
                   Versions
                 </Button>
               </div>
-            </section>
+            </div>
             <details className="editor-local-routes">
               <summary>
                 <span>Model routes</span>
@@ -7343,6 +7344,8 @@ type CapsuleAttachButtonProps = {
   targetId: string;
   targetTitle: string;
   buttonLabel?: string;
+  buttonSize?: "default" | "sm" | "icon";
+  buttonVariant?: "primary" | "secondary" | "quiet" | "danger";
   defaultRole?: string;
   showExportPolicy?: boolean;
   autoIncludeEvidence?: boolean;
@@ -7356,6 +7359,8 @@ function CapsuleAttachButton({
   targetId,
   targetTitle,
   buttonLabel = "Capsule",
+  buttonSize = "default",
+  buttonVariant = "quiet",
   defaultRole = "supporting",
   showExportPolicy = false,
   autoIncludeEvidence = targetType === "claim"
@@ -7418,8 +7423,8 @@ function CapsuleAttachButton({
   return (
     <Dialog.Root open={open} onOpenChange={setOpen}>
       <Dialog.Trigger asChild>
-        <Button type="button" icon={<Archive size={15} />} variant="quiet">
-          {buttonLabel}
+        <Button type="button" icon={<Archive size={15} />} variant={buttonVariant} size={buttonSize} aria-label={buttonLabel}>
+          {buttonSize === "icon" ? undefined : buttonLabel}
         </Button>
       </Dialog.Trigger>
       <Dialog.Portal>

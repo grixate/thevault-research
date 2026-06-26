@@ -43,6 +43,7 @@ Latest completed slice:
 - Fixed the activation blockers found during that real run: Piper multi-file voice installs now download and verify the `.onnx.json` sidecar, setup can repair an installed model with a missing sidecar, Piper route settings include `config_path`, and llama.cpp smoke uses `--single-turn` so the CLI exits instead of remaining in chat mode.
 - Verified the actual activated app text route on 2026-06-27. `/ai/generate/text` for `summarize` returned clean local text through `llama_cpp_cli / standard-gguf-placeholder` with `sent_off_device: false`; llama.cpp banner/prompt/timing output is now stripped before the app records or returns generated text.
 - Added a production local-AI smoke profile on 2026-06-27: `./scripts/test_local_ai.sh --profile production --format json` now uses the real app data directory by default, skips demo setup, requires 9 production routes to be active, runs text/JSON/embed/rerank privacy checks, and fails if production readiness is not clear. It passed locally against `/Users/grixate/Library/Application Support/The Vault Research Lab`.
+- Tightened the selected-note editor tools on 2026-06-27: the expanded Note tools area is now a slim command strip with compact visual labels, full accessible command names, small icon-led buttons, and plain model-route disclosure instead of three card-like action sections. Visual evidence: `/tmp/vault-editor-tools-strip.png`.
 
 Earlier implementation slice built a reproducible macOS arm64 `whisper-cli` package from `whisper.cpp` source, moved the whisper runtime from distribution-decision to release-evidence, verified all production model candidate bytes, and merged the current byte-evidence files into one candidate overlay.
 
@@ -2966,6 +2967,7 @@ Current good state:
 - Quick Note now makes the `Thought` versus `Evidence` choice explicit before saving.
 - Storage import can immediately become a cited note.
 - Notes editor save state is visible and human-readable.
+- Selected-note editor tools now expand into a compact command strip instead of a card-like mini-dashboard.
 - Notes and Storage surfaces are flatter and closer to a document/list workspace.
 - The Notes/Storage path strip is now a quiet lane switcher instead of stacked mini-cards.
 - Long Storage paths, hashes, source rows, and section titles truncate safely while keeping full values inspectable.
