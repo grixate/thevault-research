@@ -8670,7 +8670,11 @@ function GraphView() {
   const setSelectedClaimId = useUIStore((state) => state.setSelectedClaimId);
   const [claimQuery, setClaimQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  const claimStatusFilters = ["all", "supported", "weakly_supported"];
+  const claimStatusFilters: Array<{ value: string; label: string }> = [
+    { value: "all", label: "All" },
+    { value: "supported", label: "Supported" },
+    { value: "weakly_supported", label: "Needs review" }
+  ];
   const filteredClaims = useMemo(() => {
     const query = claimQuery.trim().toLowerCase();
     return (claims.data ?? []).filter((claim) => {
@@ -8687,6 +8691,8 @@ function GraphView() {
   });
   const supportedCount = (claims.data ?? []).filter((claim) => ["supported", "verified", "user_confirmed"].includes(claim.status)).length;
   const weakCount = (claims.data ?? []).filter((claim) => ["weakly_supported", "needs_review"].includes(claim.status)).length;
+  const claimCount = claims.data?.length ?? 0;
+  const emptyClaimCopy = claimCount === 0 ? "Approve a claim in Review to start the evidence map." : "No matching claims.";
   function openEvidence(link: ClaimEvidenceLink) {
     if (!link.source_id) return;
     setSelectedSourceId(link.source_id);
@@ -8697,11 +8703,13 @@ function GraphView() {
     <div className="surface graph-layout">
       <Panel className="graph-canvas">
         <SectionHeader title="Evidence graph" />
-        <div className="graph-context-strip" aria-label="Evidence graph context">
-          <span>{claims.data?.length ?? 0} claims</span>
-          <span>{supportedCount} supported</span>
-          <span>{weakCount} need care</span>
-        </div>
+        {claimCount > 0 && (
+          <div className="graph-context-strip" aria-label="Evidence graph context">
+            <span>{claimCount} claims</span>
+            <span>{supportedCount} supported</span>
+            <span>{weakCount} need review</span>
+          </div>
+        )}
         <div className="graph-filters">
           <label className="source-block-search">
             <Search size={15} />
@@ -8710,15 +8718,15 @@ function GraphView() {
           <Tabs value={statusFilter} onValueChange={setStatusFilter} className="review-tabs graph-status-tabs">
             <TabsList aria-label="Claim status filter">
               {claimStatusFilters.map((status) => (
-                <TabsTrigger key={status} value={status} onClick={() => setStatusFilter(status)}>
-                  {status.replace(/_/g, " ")}
+                <TabsTrigger key={status.value} value={status.value} onClick={() => setStatusFilter(status.value)}>
+                  {status.label}
                 </TabsTrigger>
               ))}
             </TabsList>
           </Tabs>
         </div>
         <div className="claim-list" aria-label="Claims">
-          {filteredClaims.length === 0 && <p className="empty-copy">No claims match this filter.</p>}
+          {filteredClaims.length === 0 && <p className="empty-copy">{emptyClaimCopy}</p>}
           {filteredClaims.map((claim) => (
             <button key={claim.id} className={selected?.id === claim.id ? "active" : ""} onClick={() => setSelectedClaimId(claim.id)}>
               <span>
@@ -8736,7 +8744,7 @@ function GraphView() {
       </Panel>
       <Panel className="detail-pane">
         <SectionHeader
-          title={selected?.title ?? "Claim detail"}
+          title={selected?.title ?? "Evidence"}
           eyebrow={selected?.status?.replace(/_/g, " ")}
           actions={
             selected ? (
@@ -8781,7 +8789,7 @@ function GraphView() {
             </div>
           </>
         ) : (
-          <p className="empty-copy">Approve a claim in Review to start building the graph.</p>
+          <p className="empty-copy">Select a claim to inspect its source links.</p>
         )}
       </Panel>
     </div>

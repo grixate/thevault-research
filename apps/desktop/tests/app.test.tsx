@@ -4427,8 +4427,8 @@ describe("App", () => {
     expect(screen.queryByText("A working map of approved claims, their strength, and the exact source blocks behind them.")).toBeNull();
     expect((await screen.findAllByText("Typed claims keep evidence exact")).length).toBeGreaterThan(0);
     const graphStatusTabs = await screen.findByRole("tablist", { name: "Claim status filter" });
-    expect(within(graphStatusTabs).getByRole("tab", { name: "all" }).getAttribute("data-state")).toBe("active");
-    expect(within(graphStatusTabs).getByRole("tab", { name: "weakly supported" })).toBeTruthy();
+    expect(within(graphStatusTabs).getByRole("tab", { name: "All" }).getAttribute("data-state")).toBe("active");
+    expect(within(graphStatusTabs).getByRole("tab", { name: "Needs review" })).toBeTruthy();
     expect((await screen.findByLabelText("Evidence graph context")).textContent).toContain("2 claims");
     fireEvent.change(await screen.findByLabelText("Find claims"), { target: { value: "typed" } });
     expect(screen.queryByText("Loose summaries need review")).toBeNull();

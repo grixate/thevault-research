@@ -46,6 +46,7 @@ Latest completed slice:
 - Tightened the selected-note editor tools on 2026-06-27: the expanded Note tools area is now a slim command strip with compact visual labels, full accessible command names, small icon-led buttons, and plain model-route disclosure instead of three card-like action sections. Visual evidence: `/tmp/vault-editor-tools-strip.png`.
 - Tightened the Review status switcher on 2026-06-27: the empty queue now uses compact inline Radix tabs instead of a full-width segmented block, so the clear state feels more like a quiet review queue. Visual evidence: `/tmp/vault-review-compact-tabs.png`.
 - Quieted the Settings Models first glance on 2026-06-27: empty/loading readiness counters are now hidden until they contain real setup data, the hardware strip no longer renders placeholder separators, and the zero-count Model library summary collapses to one quiet `empty` badge. Visual evidence: `/tmp/vault-settings-models-quiet-empty.png`.
+- Quieted the Evidence graph empty state on 2026-06-27: zero-count dashboard facts are hidden until claims exist, the weak-claim filter now reads `Needs review`, and the empty detail pane uses source-link language instead of repeating setup instructions. Visual evidence: `/tmp/vault-graph-empty-minimal.png`.
 
 Earlier implementation slice built a reproducible macOS arm64 `whisper-cli` package from `whisper.cpp` source, moved the whisper runtime from distribution-decision to release-evidence, verified all production model candidate bytes, and merged the current byte-evidence files into one candidate overlay.
 
@@ -2981,6 +2982,7 @@ Current good state:
 - Learning is now framed as `Practice`, with `Current card` and one quiet local-voice privacy line.
 - Local tools now use helper/result language instead of studio/debug labels.
 - Evidence graph now uses a single context line and inline claim strength instead of KPI cards.
+- Evidence graph empty state now hides zero-count facts and uses `Needs review` / source-link language.
 - Settings Search now uses user-facing search/ranking language instead of visible routing jargon.
 - Settings Voice now uses `Dictation`, `Read aloud`, `Import audio`, and local-stay-local language.
 - Settings Privacy and Export now use local-first privacy and backup language.
@@ -3043,6 +3045,7 @@ Current good state:
 - Assistant prompt starters and composer controls now read as one modern chat prompt instead of a card-like control panel.
 - The mobile top bar no longer forces desktop search width below 760px.
 - Evidence graph uses a compact context line and inline detail metadata instead of card-heavy metrics.
+- Evidence graph no longer renders zero-count dashboard facts on an empty workspace.
 - Evidence graph, Practice, and Local tools no longer use explanatory SectionHeader sublines on first glance.
 - Settings Search keeps raw capability bindings in a `Model task routing` disclosure with user-facing task names.
 - Settings tabs now show tab-specific panel titles and avoid redundant eyebrow descriptions.
