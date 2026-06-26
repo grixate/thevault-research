@@ -6312,9 +6312,13 @@ describe("App", () => {
     fireEvent.click(await screen.findByRole("tab", { name: /^privacy$/i }));
     expect(await screen.findByText("Cloud stays off")).toBeTruthy();
     expect(await screen.findByText("Private prompts")).toBeTruthy();
+    expect(await screen.findByText("Local only")).toBeTruthy();
+    expect(await screen.findByText("Hashes only")).toBeTruthy();
     expect(await screen.findByText("Recent model activity")).toBeTruthy();
     expect(await screen.findByText(/Assistant answers - Local model/i)).toBeTruthy();
     expect(await screen.findByText(/Completed \/ Stayed on this device/i)).toBeTruthy();
+    expect(screen.queryByText("Local-only mode rejects cloud providers unless you explicitly allow them.")).toBeNull();
+    expect(screen.queryByText("Model activity keeps hashes and metadata, not full private prompts.")).toBeNull();
     expect(screen.queryByText(/mock_local/i)).toBeNull();
     expect(screen.queryByText(/grounded_answer - mock_local/i)).toBeNull();
   });
@@ -6382,6 +6386,8 @@ describe("App", () => {
     const backupContents = await screen.findByLabelText("Workspace backup contents");
     expect(backupContents).toBeTruthy();
     expect(within(backupContents).getByText("Capsules")).toBeTruthy();
+    expect(within(backupContents).queryByText("Capsule membership, versions, exports, imports, and dependencies.")).toBeNull();
+    expect(screen.queryByText(/Save a zip in the Vault backups folder/)).toBeNull();
     fireEvent.click(await screen.findByRole("button", { name: /create backup/i }));
 
     await waitFor(() => expect(request).toHaveBeenCalledWith("export.workspace", {}));

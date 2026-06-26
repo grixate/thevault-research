@@ -52,6 +52,7 @@ Latest completed slice:
 - Added Tasks empty-state visual coverage on 2026-06-27 and tightened the list rail copy: clean workspaces now show `No custom lists` instead of a contradictory `Inbox` plus `No lists`. Visual evidence: `/tmp/vault-tasks-empty-minimal.png`.
 - Tightened generated-note citation coverage on 2026-06-27: local llama note drafts now must cite every supplied evidence marker, and explicit claim-scoped note generation no longer pulls unrelated source blocks just to fill the evidence pack. Focused evidence: `cd services/core && uv run pytest tests/test_core_flow.py -k "local_generated_note"`.
 - Quieted the Settings Voice first glance on 2026-06-27: microphone status, Dictation, and Read aloud are now plain action rows, static explanatory sublines are gone, and provider/model/path routing lives behind a single `Voice model setup` disclosure. Visual evidence: `/tmp/vault-settings-voice-minimal.png`.
+- Quieted Settings Privacy and Export on 2026-06-27: Privacy now uses two plain local-state rows instead of explanatory cards, and Export now shows one backup action with compact content chips instead of a tile grid. Visual evidence: `/tmp/vault-settings-privacy-minimal.png` and `/tmp/vault-settings-export-minimal.png`.
 
 Earlier implementation slice built a reproducible macOS arm64 `whisper-cli` package from `whisper.cpp` source, moved the whisper runtime from distribution-decision to release-evidence, verified all production model candidate bytes, and merged the current byte-evidence files into one candidate overlay.
 
@@ -2994,6 +2995,7 @@ Current good state:
 - Settings Voice now uses `Dictation`, `Read aloud`, `Import audio`, and local-stay-local language.
 - Settings Voice now keeps model/provider/path routing behind a single `Voice model setup` disclosure and opens with action rows rather than route cards.
 - Settings Privacy and Export now use local-first privacy and backup language.
+- Settings Privacy and Export now use compact rows/chips instead of explanatory cards or backup-content tiles.
 - Advanced Search test results now use `stayed on this device`/`left this device` privacy wording.
 - Settings Advanced now gives the settings JSON a clear snapshot heading instead of a raw dump.
 - Local-model setup now opens with compact readiness facts and keeps library/approval detail behind disclosures instead of route-card/dashboard language.
@@ -3062,6 +3064,7 @@ Current good state:
 - Settings Voice now uses user-facing Dictation/Read aloud labels instead of STT/TTS route language.
 - Settings Voice first glance now uses plain action rows and hides provider/model/path controls behind a `Voice model setup` disclosure.
 - Settings Privacy/Export now use workspace-backup and stayed-on-this-device wording.
+- Settings Privacy/Export first glance now avoids card grids and static explanatory paragraphs.
 - Search index and ranking test results now share the same local-first privacy wording.
 - Settings Advanced replaces the visible `Raw` tab with a labelled settings snapshot.
 - Learning and Local tools now share the same quieter language style as the rest of the app.

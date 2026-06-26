@@ -12580,12 +12580,12 @@ function SettingsView() {
               <article>
                 <Shield size={24} />
                 <h3>Cloud stays off</h3>
-                <p>Local-only mode rejects cloud providers unless you explicitly allow them.</p>
+                <Badge tone="good">Local only</Badge>
               </article>
               <article>
                 <HardDrive size={24} />
                 <h3>Private prompts</h3>
-                <p>Model activity keeps hashes and metadata, not full private prompts.</p>
+                <Badge tone="neutral">Hashes only</Badge>
               </article>
             </div>
             <h3>Recent model activity</h3>
@@ -12610,10 +12610,6 @@ function SettingsView() {
               <div>
                 <Badge tone="good">Local backup</Badge>
                 <h3>Workspace backup</h3>
-                <p>
-                  Save a zip in the Vault backups folder with notes, sources, claims, review history,
-                  tasks, capsules, files, and a safe database copy.
-                </p>
               </div>
               <Button icon={<Download size={15} />} variant="primary" disabled={createWorkspaceExport.isPending} onClick={() => createWorkspaceExport.mutate()}>
                 {createWorkspaceExport.isPending ? "Creating" : "Create backup"}
@@ -12621,18 +12617,17 @@ function SettingsView() {
             </div>
             <div className="data-export-grid" aria-label="Workspace backup contents">
               {[
-                ["Notes", "One Markdown file per note, with note metadata."],
-                ["Sources", "Source records and source blocks for evidence traceability."],
-                ["Claims", "Claims, evidence links, and graph edges."],
-                ["Tasks", "Lists, tasks, labels, and linked context."],
-                ["Capsules", "Capsule membership, versions, exports, imports, and dependencies."],
-                ["Review history", "Review decisions and pending proposals."],
-                ["Files and database", "Vault files plus a safe SQLite backup."]
-              ].map(([title, body]) => (
+                "Notes",
+                "Sources",
+                "Claims",
+                "Tasks",
+                "Capsules",
+                "Review history",
+                "Files and database"
+              ].map((title) => (
                 <article key={title}>
                   <FileText size={18} />
                   <strong>{title}</strong>
-                  <span>{body}</span>
                 </article>
               ))}
             </div>

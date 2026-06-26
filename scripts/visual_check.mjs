@@ -64,6 +64,16 @@ const scenarios = {
     await openSettings(page);
     await page.getByRole("tab", { name: "Voice" }).click();
   },
+  "settings-privacy": async (page) => {
+    await installEmptyVaultBridge(page);
+    await openSettings(page);
+    await page.getByRole("tab", { name: "Privacy" }).click();
+  },
+  "settings-export": async (page) => {
+    await installEmptyVaultBridge(page);
+    await openSettings(page);
+    await page.getByRole("tab", { name: "Export" }).click();
+  },
   "settings-advanced": async (page) => {
     await installEmptyVaultBridge(page);
     await openSettings(page);
