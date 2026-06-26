@@ -3,6 +3,7 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 MODE="demo"
+export CI="${CI:-true}"
 
 usage() {
   cat <<'USAGE'

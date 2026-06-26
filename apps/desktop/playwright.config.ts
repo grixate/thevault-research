@@ -8,6 +8,10 @@ export default defineConfig({
     reuseExistingServer: true
   },
   use: {
-    baseURL: "http://127.0.0.1:5173"
+    baseURL: "http://127.0.0.1:5173",
+    launchOptions: {
+      chromiumSandbox: false,
+      args: ["--no-sandbox", "--disable-setuid-sandbox"]
+    }
   }
 });

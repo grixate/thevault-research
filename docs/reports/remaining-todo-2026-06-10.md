@@ -269,7 +269,7 @@ Latest production local-AI approval and pinning slice on 2026-06-22:
 Prompt/sandbox note for autonomous work:
 
 - `scripts/lib/core_python.sh` now preserves the caller's working directory while still preferring `services/core/.venv/bin/python`; relative `--output` paths from registry scripts now land where the command was launched, not under `services/core`.
-- For Chromium/Playwright visual QA, keep using the stable helper `node scripts/visual_check.mjs <scenario> <output>`. The `node scripts/visual_check.mjs` prefix is approved; avoid ad-hoc `node -e` Playwright snippets because each unique inline Chromium command shape can trigger another approval prompt.
+- For Chromium/Playwright visual QA, keep using the stable helper `node scripts/visual_check.mjs <scenario> <output>`. It now launches headless Chromium with explicit no-sandbox flags, and the desktop Playwright config uses the same launch settings for renderer e2e.
 
 Latest production runtime setup probe on 2026-06-22:
 
@@ -460,7 +460,7 @@ Latest Settings Models minimalist verification on 2026-06-21:
 - Latest desktop production build after this slice: passed.
 - Latest renderer e2e smoke after this slice: passed.
 - `git diff --check`: passed.
-- Standalone shell-launched Chromium still hits the managed macOS sandbox Mach-port denial. Use the stable helper `node scripts/visual_check.mjs <scenario> <output>` for headless visual QA; the `node scripts/visual_check.mjs` prefix has been approved so repeated screenshot checks do not interrupt autonomous work.
+- Standalone shell-launched Chromium can still hit managed macOS Mach-port denial depending on the host policy. Use the stable helper `node scripts/visual_check.mjs <scenario> <output>` or `pnpm e2e`; both route through explicit no-sandbox Playwright launch settings for autonomous work.
 
 Latest Assistant minimalist chat verification on 2026-06-21:
 
@@ -1159,7 +1159,7 @@ Settings -> Models is closer to the accepted minimalist direction:
 - Removed the redundant local-AI setup dashboard cards and replaced them with one readiness row: current status, essentials, files, runtimes, search, and the relevant actions.
 - Kept runtime test/import available as icon-only controls.
 - Updated tests so the old `Local models`, `Trusted models`, `Starter models`, and `Items to finish` command-center cards do not come back as first-glance UI.
-- Use the stable `node scripts/visual_check.mjs` helper for future headless visual QA because shell-launched Chromium still needs the approved unsandboxed path in this workspace.
+- Use the stable `node scripts/visual_check.mjs` helper for future headless visual QA because it now carries the no-sandbox Chromium launch settings in the repo.
 - Focused Settings/model/runtime/voice/search/privacy/backup tests: 12 passed.
 - Desktop tests: 77 passed.
 - Desktop production build: passed.

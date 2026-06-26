@@ -97,7 +97,11 @@ if (!scenarios[scenario]) {
   process.exit(2);
 }
 
-const browser = await chromium.launch({ headless: true });
+const browser = await chromium.launch({
+  headless: true,
+  chromiumSandbox: false,
+  args: ["--no-sandbox", "--disable-setuid-sandbox"]
+});
 try {
   const page = await browser.newPage({ viewport: { width: 1440, height: 950 } });
   await scenarios[scenario](page);
