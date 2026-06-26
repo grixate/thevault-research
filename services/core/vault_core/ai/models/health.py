@@ -388,14 +388,21 @@ def _run_llama_cli(
         prompt,
         "-n",
         str(max_tokens),
+        "--single-turn",
+        "--simple-io",
+        "--no-display-prompt",
+        "--no-warmup",
+        "--no-perf",
+        "--log-disable",
         *grammar_args,
     ]
     try:
         completed = subprocess.run(
             command,
+            input="",
             capture_output=True,
             text=True,
-            timeout=30,
+            timeout=120,
             check=False,
         )
     except OSError as exc:

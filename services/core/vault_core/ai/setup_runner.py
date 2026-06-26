@@ -3,6 +3,7 @@ from __future__ import annotations
 import tempfile
 import time
 import wave
+from pathlib import Path
 from typing import Any
 
 from vault_core.api.schemas import AIModelPackInfo, AISetupRunRequest, AISetupRunResponse, AISetupRunStep
@@ -546,15 +547,41 @@ def _download_pack_models(
                     )
                 )
             except ValueError as exc:
-                steps.append(
-                    AISetupRunStep(
-                        id=f"model-{model_id}",
-                        title=info.display_name,
-                        status="failed",
-                        model_id=model_id,
-                        detail=str(exc),
+                if info.downloadable:
+                    try:
+                        started = download_model(db, settings, model_id)
+                        finished = _wait_for_download(db, started["id"], timeout_seconds)
+                        downloads.append(finished)
+                        status = "done" if finished["state"] == "installed" else "queued" if finished["state"] in {"queued", "downloading"} else "failed"
+                        steps.append(
+                            AISetupRunStep(
+                                id=f"model-{model_id}",
+                                title=info.display_name,
+                                status=status,
+                                model_id=model_id,
+                                detail=_repair_download_detail(finished),
+                            )
+                        )
+                    except (NotImplementedError, ValueError) as repair_exc:
+                        steps.append(
+                            AISetupRunStep(
+                                id=f"model-{model_id}",
+                                title=info.display_name,
+                                status="failed",
+                                model_id=model_id,
+                                detail=f"{exc}; repair failed: {repair_exc}",
+                            )
+                        )
+                else:
+                    steps.append(
+                        AISetupRunStep(
+                            id=f"model-{model_id}",
+                            title=info.display_name,
+                            status="failed",
+                            model_id=model_id,
+                            detail=str(exc),
+                        )
                     )
-                )
             continue
         if not info or not info.downloadable:
             steps.append(
@@ -824,6 +851,14 @@ def _wait_for_download(db: VaultDatabase, download_id: str, timeout_seconds: flo
     return last
 
 
+def _repair_download_detail(download: dict[str, Any]) -> str:
+    detail = f"Repaired install after verification failed: {download['state']}."
+    error = download.get("error")
+    if error:
+        detail = f"{detail} {error}"
+    return detail
+
+
 def _setup_model_ids(pack: AIModelPackInfo, *, include_optional_models: bool) -> list[str]:
     model_ids = list(pack.required_model_ids)
     if include_optional_models:
@@ -1051,12 +1086,44 @@ def _settings_for_selected_model(
         file_path = model.get("file_path")
         if file_path:
             settings["model_path"] = file_path
+            config_path = _piper_config_path(model, file_path)
+            if config_path:
+                settings["config_path"] = config_path
         binary_path = current_runtime_health.get("voice", {}).get("tts", {}).get("cli", {}).get("path")
         if binary_path:
             settings["binary_path"] = binary_path
         settings.setdefault("format", "wav")
         settings.setdefault("timeout_seconds", 120)
     return settings
+
+
+def _piper_config_path(model: dict[str, Any], model_path: str) -> str | None:
+    primary_path = Path(model_path)
+    direct = Path(f"{model_path}.json")
+    if direct.exists():
+        return str(direct)
+    files = model.get("files") or []
+    if len(files) <= 1:
+        return None
+    primary_filename = str((files[0] or {}).get("filename") or primary_path.name)
+    root = _model_target_root(primary_path, primary_filename)
+    for file_info in files[1:]:
+        filename = str((file_info or {}).get("filename") or "")
+        if filename.endswith(".onnx.json"):
+            candidate = root / filename
+            if candidate.exists():
+                return str(candidate)
+    return None
+
+
+def _model_target_root(primary_path: Path, primary_filename: str) -> Path:
+    parts = Path(primary_filename).parts
+    if not parts:
+        return primary_path.parent
+    try:
+        return primary_path.parents[len(parts) - 1]
+    except IndexError:
+        return primary_path.parent
 
 
 def _run_status(

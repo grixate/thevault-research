@@ -56,10 +56,10 @@ def download_model(db: VaultDatabase, settings: Settings, model_id: str) -> dict
     source = _prepare_download_source(source, first_file)
     download_id = new_id("dl")
     ts = now_iso()
-    target_dir = settings.data_dir / "models" / _model_storage_kind(model["kind"]) / model_id
-    target_dir.mkdir(parents=True, exist_ok=True)
-    target_path = target_dir / filename
-    bytes_total = _source_bytes_total(source, first_file)
+    target_root = settings.data_dir / "models" / _model_storage_kind(model["kind"]) / model_id
+    target_root.mkdir(parents=True, exist_ok=True)
+    target_path = target_root / filename
+    bytes_total = _model_bytes_total(model, source, first_file)
     with db.connect() as conn:
         conn.execute(
             """
@@ -335,6 +335,7 @@ def verify_installed_model(db: VaultDatabase, model_id: str) -> dict[str, Any]:
             raise ValueError(f"Model is not installed: {model_id}")
         data = dict(row)
         file_path = data.get("file_path")
+        manifest = loads(data.get("manifest_json"), {})
         if file_path:
             path = Path(file_path)
             if not path.exists():
@@ -350,6 +351,21 @@ def verify_installed_model(db: VaultDatabase, model_id: str) -> dict[str, Any]:
                     (db.workspace_id, model_id),
                 )
                 raise ValueError("Installed model checksum mismatch")
+            for extra_file in _installed_extra_files(path, manifest):
+                extra_path = extra_file["path"]
+                if not extra_path.exists():
+                    conn.execute(
+                        "UPDATE ai_installed_models SET status='failed' WHERE workspace_id=? AND model_id=?",
+                        (db.workspace_id, model_id),
+                    )
+                    raise ValueError(f"Installed model sidecar is missing: {extra_file['filename']}")
+                expected_extra_sha = str(extra_file.get("sha256") or "")
+                if expected_extra_sha and _file_sha256(extra_path) != expected_extra_sha:
+                    conn.execute(
+                        "UPDATE ai_installed_models SET status='failed' WHERE workspace_id=? AND model_id=?",
+                        (db.workspace_id, model_id),
+                    )
+                    raise ValueError(f"Installed model sidecar checksum mismatch: {extra_file['filename']}")
             verified = now_iso()
             conn.execute(
                 "UPDATE ai_installed_models SET verified_at=?, status='installed' WHERE workspace_id=? AND model_id=?",
@@ -511,6 +527,15 @@ def _source_bytes_total(source: dict[str, Any], first_file: dict[str, Any]) -> i
     return int(size_bytes) if size_bytes else None
 
 
+def _model_bytes_total(model: dict[str, Any], source: dict[str, Any], first_file: dict[str, Any]) -> int | None:
+    if source.get("type") == "local_fixture":
+        return _source_bytes_total(source, first_file)
+    sizes = [file_info.get("size_bytes") for file_info in model.get("files") or []]
+    if sizes and all(size for size in sizes):
+        return sum(int(size) for size in sizes)
+    return _source_bytes_total(source, first_file)
+
+
 def _download_paths(
     settings: Settings,
     model: dict[str, Any],
@@ -555,11 +580,24 @@ def _run_model_download(
             _fail_download(db, download_id, None, str(exc))
             return get_download(db, download_id)
     target_dir, target_path, cache_path = _download_paths(settings, model, download_id, current.get("target_path"))
-    bytes_total = current.get("bytes_total") or _source_bytes_total(source, first_file)
-    bytes_downloaded = cache_path.stat().st_size if cache_path.exists() else 0
-    if bytes_total and bytes_downloaded > bytes_total:
-        cache_path.unlink()
+    bytes_total = current.get("bytes_total") or _model_bytes_total(model, source, first_file)
+    primary_bytes_total = _source_bytes_total(source, first_file)
+    primary_is_installed = False
+    if target_path.exists():
+        target_sha = _file_sha256(target_path)
+        if target_sha == expected_sha:
+            primary_is_installed = True
+            final_size = target_path.stat().st_size
+            actual_sha = target_sha
+            bytes_downloaded = final_size
+        else:
+            bytes_downloaded = cache_path.stat().st_size if cache_path.exists() else 0
+    else:
+        bytes_downloaded = cache_path.stat().st_size if cache_path.exists() else 0
+    if primary_bytes_total and bytes_downloaded > primary_bytes_total:
+        cache_path.unlink(missing_ok=True)
         bytes_downloaded = 0
+        primary_is_installed = False
 
     ts = now_iso()
     with db.connect() as conn:
@@ -575,32 +613,91 @@ def _run_model_download(
     if _download_should_stop(db, download_id):
         return get_download(db, download_id)
 
+    if not primary_is_installed:
+        try:
+            completed = _stream_download_source(db, download_id, source, cache_path, bytes_downloaded, primary_bytes_total)
+        except Exception as exc:
+            _fail_download(db, download_id, None, str(exc))
+            return get_download(db, download_id)
+        if not completed:
+            return get_download(db, download_id)
+        if _download_should_stop(db, download_id):
+            return get_download(db, download_id)
+        if not cache_path.exists():
+            _fail_download(db, download_id, None, "Download cache file was not created")
+            return get_download(db, download_id)
+
+        final_size = cache_path.stat().st_size
+        if primary_bytes_total and final_size < primary_bytes_total:
+            _fail_download(db, download_id, None, f"Incomplete download: {final_size} of {primary_bytes_total} bytes")
+            return get_download(db, download_id)
+        _update_download_progress(db, download_id, final_size, bytes_total or final_size)
+        actual_sha = _file_sha256(cache_path)
+        if actual_sha != expected_sha:
+            _fail_download(db, download_id, actual_sha, f"Checksum mismatch for {model['id']}")
+            return get_download(db, download_id)
+        if _download_should_stop(db, download_id):
+            return get_download(db, download_id)
+        shutil.copyfile(cache_path, target_path)
+    installed_files = [{"filename": str(first_file.get("filename") or target_path.name), "path": str(target_path), "sha256": actual_sha, "size_bytes": final_size}]
     try:
-        completed = _stream_download_source(db, download_id, source, cache_path, bytes_downloaded, bytes_total)
+        installed_files.extend(
+            _download_additional_files(
+                db,
+                settings,
+                download_id,
+                model,
+                target_path,
+                first_file,
+                final_size,
+            )
+        )
     except Exception as exc:
         _fail_download(db, download_id, None, str(exc))
         return get_download(db, download_id)
-    if not completed:
-        return get_download(db, download_id)
-    if _download_should_stop(db, download_id):
-        return get_download(db, download_id)
-    if not cache_path.exists():
-        _fail_download(db, download_id, None, "Download cache file was not created")
-        return get_download(db, download_id)
+    total_size = sum(int(file_info.get("size_bytes") or 0) for file_info in installed_files)
+    return _install_downloaded_model(db, download_id, model, target_dir, target_path, actual_sha, total_size, installed_files)
 
-    final_size = cache_path.stat().st_size
-    if bytes_total and final_size < bytes_total:
-        _fail_download(db, download_id, None, f"Incomplete download: {final_size} of {bytes_total} bytes")
-        return get_download(db, download_id)
-    _update_download_progress(db, download_id, final_size, bytes_total or final_size)
-    actual_sha = _file_sha256(cache_path)
-    if actual_sha != expected_sha:
-        _fail_download(db, download_id, actual_sha, f"Checksum mismatch for {model['id']}")
-        return get_download(db, download_id)
-    if _download_should_stop(db, download_id):
-        return get_download(db, download_id)
-    shutil.copyfile(cache_path, target_path)
-    return _install_downloaded_model(db, download_id, model, target_dir, target_path, actual_sha, final_size)
+
+def _download_additional_files(
+    db: VaultDatabase,
+    settings: Settings,
+    download_id: str,
+    model: dict[str, Any],
+    primary_target_path: Path,
+    first_file: dict[str, Any],
+    primary_size: int,
+) -> list[dict[str, Any]]:
+    source = model.get("source") or {"type": "builtin"}
+    target_root = _model_target_root(primary_target_path, str(first_file.get("filename") or primary_target_path.name))
+    cache_dir = settings.data_dir / "cache" / "model_downloads"
+    additional: list[dict[str, Any]] = []
+    for index, file_info in enumerate((model.get("files") or [])[1:], start=1):
+        filename = str(file_info.get("filename") or "")
+        if not _safe_registry_filename(filename):
+            raise ValueError("Registry model file path is invalid")
+        expected_sha = str(file_info.get("sha256") or "")
+        if not expected_sha or expected_sha == "REQUIRED_BEFORE_RELEASE":
+            raise ValueError(f"Registry model sidecar is missing a release checksum: {filename}")
+        file_source = _prepare_download_source(source, file_info)
+        target_path = target_root / filename
+        if not _path_inside(target_root.resolve(), target_path.resolve()):
+            raise ValueError("Registry model target path is invalid")
+        target_path.parent.mkdir(parents=True, exist_ok=True)
+        cache_path = cache_dir / f"{download_id}-{index}-{Path(filename).name}"
+        cache_path.unlink(missing_ok=True)
+        bytes_total = int(file_info.get("size_bytes") or 0) or None
+        completed = _stream_download_source(db, download_id, file_source, cache_path, 0, bytes_total)
+        if not completed or not cache_path.exists():
+            raise ValueError(f"Download cache file was not created: {filename}")
+        size_bytes = cache_path.stat().st_size
+        actual_sha = _file_sha256(cache_path)
+        if actual_sha != expected_sha:
+            raise ValueError(f"Checksum mismatch for {model['id']} sidecar {filename}")
+        shutil.copyfile(cache_path, target_path)
+        additional.append({"filename": filename, "path": str(target_path), "sha256": actual_sha, "size_bytes": size_bytes})
+        _update_download_progress(db, download_id, primary_size + sum(int(item["size_bytes"]) for item in additional), None)
+    return additional
 
 
 def _stream_download_source(
@@ -731,8 +828,9 @@ def _install_downloaded_model(
     target_path: Path,
     actual_sha: str,
     size_bytes: int,
+    installed_files: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
-    manifest = _write_manifest(target_dir, model, actual_sha, size_bytes)
+    manifest = _write_manifest(target_dir, model, actual_sha, size_bytes, installed_files)
     completed = now_iso()
     with db.connect() as conn:
         conn.execute(
@@ -831,10 +929,43 @@ def _resolve_fixture_path(relative_path: str) -> Path:
     return Path(relative_path).expanduser()
 
 
-def _write_manifest(target_dir: Path, model: dict[str, Any], sha256: str, size_bytes: int) -> dict[str, Any]:
+def _write_manifest(
+    target_dir: Path,
+    model: dict[str, Any],
+    sha256: str,
+    size_bytes: int,
+    installed_files: list[dict[str, Any]] | None = None,
+) -> dict[str, Any]:
     manifest = {**model, "installed_sha256": sha256, "installed_size_bytes": size_bytes}
+    if installed_files is not None:
+        manifest["installed_files"] = installed_files
     (target_dir / "manifest.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
     return manifest
+
+
+def _model_target_root(primary_path: Path, primary_filename: str) -> Path:
+    parts = Path(primary_filename).parts
+    if not parts:
+        return primary_path.parent
+    try:
+        return primary_path.parents[len(parts) - 1]
+    except IndexError:
+        return primary_path.parent
+
+
+def _installed_extra_files(primary_path: Path, manifest: dict[str, Any]) -> list[dict[str, Any]]:
+    files = manifest.get("files") or []
+    if len(files) <= 1:
+        return []
+    primary_filename = str((files[0] or {}).get("filename") or primary_path.name)
+    root = _model_target_root(primary_path, primary_filename)
+    extras: list[dict[str, Any]] = []
+    for file_info in files[1:]:
+        filename = str((file_info or {}).get("filename") or "")
+        if not _safe_registry_filename(filename):
+            continue
+        extras.append({**file_info, "filename": filename, "path": root / filename})
+    return extras
 
 
 def _mark_builtin_installed(db: VaultDatabase, model: dict[str, Any]) -> dict[str, Any]:

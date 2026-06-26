@@ -7852,6 +7852,111 @@ def test_huggingface_registry_download_uses_pinned_allowlisted_file(tmp_path, mo
         server.server_close()
 
 
+def test_huggingface_registry_download_installs_and_verifies_sidecar_files(tmp_path, monkeypatch):
+    model_payload = b"vault-piper-model"
+    sidecar_payload = b'{"audio": {"sample_rate": 22050}}'
+    revision = "b" * 40
+    requested_paths: list[str] = []
+
+    class HuggingFaceSidecarFixtureHandler(BaseHTTPRequestHandler):
+        protocol_version = "HTTP/1.1"
+
+        def do_GET(self) -> None:
+            requested_paths.append(self.path)
+            payloads = {
+                f"/vault/hf-piper/resolve/{revision}/voice.onnx": model_payload,
+                f"/vault/hf-piper/resolve/{revision}/voice.onnx.json": sidecar_payload,
+            }
+            payload = payloads.get(self.path)
+            if payload is None:
+                self.send_error(404)
+                return
+            self.send_response(200)
+            self.send_header("Content-Type", "application/octet-stream")
+            self.send_header("Content-Length", str(len(payload)))
+            self.end_headers()
+            self.wfile.write(payload)
+
+        def log_message(self, format: str, *args: object) -> None:
+            return
+
+    server = ThreadingHTTPServer(("127.0.0.1", 0), HuggingFaceSidecarFixtureHandler)
+    server_thread = threading.Thread(target=server.serve_forever, daemon=True)
+    server_thread.start()
+    try:
+        registry_path = tmp_path / "model_registry.json"
+        registry_path.write_text(
+            json.dumps(
+                {
+                    "schema_version": 1,
+                    "models": [
+                        {
+                            "id": "hf-piper-sidecar",
+                            "display_name": "HF Piper Sidecar",
+                            "family": "fixture",
+                            "kind": "tts",
+                            "capabilities": ["synthesize_speech"],
+                            "runtime": "piper",
+                            "format": "onnx",
+                            "recommended_profile": "tiny",
+                            "license_label": "MIT",
+                            "source": {
+                                "type": "huggingface",
+                                "repo_id": "vault/hf-piper",
+                                "revision": revision,
+                                "allow_patterns": ["voice.onnx", "voice.onnx.json"],
+                            },
+                            "files": [
+                                {
+                                    "filename": "voice.onnx",
+                                    "sha256": content_hash(model_payload),
+                                    "size_bytes": len(model_payload),
+                                },
+                                {
+                                    "filename": "voice.onnx.json",
+                                    "sha256": content_hash(sidecar_payload),
+                                    "size_bytes": len(sidecar_payload),
+                                },
+                            ],
+                        }
+                    ],
+                    "model_packs": [],
+                }
+            ),
+            encoding="utf-8",
+        )
+        monkeypatch.setattr(model_registry, "REGISTRY_PATH", registry_path)
+        monkeypatch.setattr(model_downloader, "HUGGINGFACE_BASE_URL", f"http://127.0.0.1:{server.server_port}")
+        settings = Settings(data_dir=tmp_path / "vault-data", desktop_token=None, port=8877, workspace_name="Test Lab")
+        with TestClient(create_app(settings)) as client:
+            started = client.post("/ai/models/download", json={"model_id": "hf-piper-sidecar"}).json()
+            download = wait_for_download(client, started["id"], {"installed"})
+            model_path = Path(download["target_path"])
+            sidecar_path = model_path.with_suffix(f"{model_path.suffix}.json")
+
+            assert download["state"] == "installed"
+            assert download["bytes_downloaded"] == len(model_payload) + len(sidecar_payload)
+            assert model_path.read_bytes() == model_payload
+            assert sidecar_path.read_bytes() == sidecar_payload
+            assert requested_paths == [
+                f"/vault/hf-piper/resolve/{revision}/voice.onnx",
+                f"/vault/hf-piper/resolve/{revision}/voice.onnx.json",
+            ]
+
+            verified = model_downloader.verify_installed_model(client.app.state.db, "hf-piper-sidecar")
+            assert verified["status"] == "installed"
+            sidecar_path.unlink()
+            try:
+                model_downloader.verify_installed_model(client.app.state.db, "hf-piper-sidecar")
+            except ValueError as exc:
+                assert "sidecar is missing" in str(exc)
+            else:
+                raise AssertionError("missing sidecar should fail installed-model verification")
+    finally:
+        server.shutdown()
+        server.server_close()
+
+
 def test_huggingface_registry_download_rejects_mutable_or_disallowed_files(tmp_path, monkeypatch):
     payload = b"vault-huggingface-rejected-source"
     expected_sha = content_hash(payload)
@@ -8033,6 +8138,10 @@ def test_llama_model_test_runs_configured_cli_for_non_fixture_model(tmp_path):
         ).json()
         assert runtime_smoke["status"] == "passed"
         assert "FAKE_LLAMA_OK" in runtime_smoke["message"]
+        assert "--single-turn" in runtime_smoke["message"]
+        assert "--simple-io" in runtime_smoke["message"]
+        assert "--no-display-prompt" in runtime_smoke["message"]
+        assert "--log-disable" in runtime_smoke["message"]
         model_smoke = runtime_client.post("/ai/models/fake-real-gguf/test").json()
         assert model_smoke["status"] == "passed"
         assert model_smoke["runtime"] == "llama_cpp"
