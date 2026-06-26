@@ -45,6 +45,7 @@ Latest completed slice:
 - Added a production local-AI smoke profile on 2026-06-27: `./scripts/test_local_ai.sh --profile production --format json` now uses the real app data directory by default, skips demo setup, requires 9 production routes to be active, runs text/JSON/embed/rerank privacy checks, and fails if production readiness is not clear. It passed locally against `/Users/grixate/Library/Application Support/The Vault Research Lab`.
 - Tightened the selected-note editor tools on 2026-06-27: the expanded Note tools area is now a slim command strip with compact visual labels, full accessible command names, small icon-led buttons, and plain model-route disclosure instead of three card-like action sections. Visual evidence: `/tmp/vault-editor-tools-strip.png`.
 - Tightened the Review status switcher on 2026-06-27: the empty queue now uses compact inline Radix tabs instead of a full-width segmented block, so the clear state feels more like a quiet review queue. Visual evidence: `/tmp/vault-review-compact-tabs.png`.
+- Quieted the Settings Models first glance on 2026-06-27: empty/loading readiness counters are now hidden until they contain real setup data, the hardware strip no longer renders placeholder separators, and the zero-count Model library summary collapses to one quiet `empty` badge. Visual evidence: `/tmp/vault-settings-models-quiet-empty.png`.
 
 Earlier implementation slice built a reproducible macOS arm64 `whisper-cli` package from `whisper.cpp` source, moved the whisper runtime from distribution-decision to release-evidence, verified all production model candidate bytes, and merged the current byte-evidence files into one candidate overlay.
 
@@ -2986,6 +2987,7 @@ Current good state:
 - Advanced Search test results now use `stayed on this device`/`left this device` privacy wording.
 - Settings Advanced now gives the settings JSON a clear snapshot heading instead of a raw dump.
 - Local-model setup now opens with compact readiness facts and keeps library/approval detail behind disclosures instead of route-card/dashboard language.
+- Settings Models hides empty/loading setup counters and collapses zero-count library badges, keeping the first glance useful even before setup data loads.
 - Quick Note, Storage intake, and generated-draft action rows wrap or stack cleanly at narrow widths.
 - Assistant no longer overflows at 390px; the mobile top bar removes desktop search width and keeps the question flow in view.
 - Assistant citation rows clamp long titles and exact quotes while preserving full evidence text.
@@ -3028,6 +3030,7 @@ Current good state:
 - Settings local-AI command center now reduces competing actions and follows the current blocker.
 - Private setup steps now show one current step plus compact progress.
 - Settings -> Models uses a compact local environment strip and setup-readiness row instead of a hero/card cluster.
+- Settings -> Models now suppresses placeholder readiness facts until real local-model setup data exists.
 - The main app entry point now says `Models` instead of foregrounding `Local AI`.
 - Advanced local-model setup now uses a quiet checklist treatment instead of a promotion-pipeline card grid.
 - Advanced local-model setup now says `ready to trust`, `Top item`, and `Needs action` instead of `pin-ready`, `Top blocker`, and raw stage states.

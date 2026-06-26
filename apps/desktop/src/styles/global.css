@@ -5490,9 +5490,9 @@ blockquote span {
   transform: rotate(45deg);
 }
 
-.settings-advanced-panel > summary > span,
-.settings-library-panel > summary > span,
-.settings-route-details > summary > span {
+.settings-advanced-panel > summary > span:first-of-type,
+.settings-library-panel > summary > span:first-of-type,
+.settings-route-details > summary > span:first-of-type {
   display: grid;
   flex: 1;
   gap: 3px;
@@ -5813,6 +5813,12 @@ blockquote span {
 .local-ai-command-facts dd {
   color: var(--foreground);
   font-weight: 600;
+}
+
+.local-ai-command-note {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.35;
 }
 
 .local-ai-command-actions {

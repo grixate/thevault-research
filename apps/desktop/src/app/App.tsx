@@ -1960,6 +1960,14 @@ function runtimeInstalledModelsLabel(count: number) {
   return `${count} local GGUF models`;
 }
 
+function hardwareSummaryLabel(hardware?: HardwareProfile | null) {
+  const parts: string[] = [];
+  if (hardware?.os) parts.push(hardware.os);
+  if (hardware?.arch) parts.push(hardware.arch);
+  if (typeof hardware?.physical_ram_gb === "number") parts.push(`${hardware.physical_ram_gb} GB RAM`);
+  return parts.length ? parts.join(" / ") : "Hardware check pending";
+}
+
 function runtimeBinaryStatusLabel(binary?: RuntimeHealth["llama_cpp"]["cli"]) {
   if (binary?.configured) return "Ready";
   return "Missing";
@@ -2141,14 +2149,15 @@ function LocalAICommandCenter({
   const nextDetail = topApproval?.next_action ?? blockedSetup?.detail ?? report?.next_actions?.[0] ?? setup?.next_action;
   const nextDetailCopy =
     topApproval?.category === "capability_route" ? "Choose an approved local model for this task before using it." : localAIUserText(nextDetail);
-  const productionGateLabel = productionGateTotal ? `${productionGateReady}/${productionGateTotal} essentials ready` : "setup checks loading";
-  const modelFilesLabel = releasePlan
-    ? `${releaseSummary?.ready_production_model_count ?? 0}/${releaseSummary?.production_model_count ?? 0} files`
-    : "files loading";
-  const runtimesLabel = releasePlan
-    ? `${releaseSummary?.ready_production_runtime_count ?? 0}/${releaseSummary?.production_runtime_count ?? 0} runtimes`
-    : "runtimes loading";
-  const routeLabel = routeSection ? (routeSection.blocked_count ? `${routeSection.blocked_count} unassigned` : "connected") : "checking";
+  const commandFacts: Array<{ label: string; value: string }> = [];
+  if (productionGateTotal > 0) commandFacts.push({ label: "Essentials", value: `${productionGateReady}/${productionGateTotal} essentials ready` });
+  if (releaseSummary?.production_model_count) {
+    commandFacts.push({ label: "Files", value: `${releaseSummary.ready_production_model_count ?? 0}/${releaseSummary.production_model_count} files` });
+  }
+  if (releaseSummary?.production_runtime_count) {
+    commandFacts.push({ label: "Runtimes", value: `${releaseSummary.ready_production_runtime_count ?? 0}/${releaseSummary.production_runtime_count} runtimes` });
+  }
+  if (routeSection) commandFacts.push({ label: "Search", value: routeSection.blocked_count ? `${routeSection.blocked_count} unassigned` : "connected" });
   let primaryActionKey = "wizard";
   let primaryActionLabel = "Setup";
   let primaryActionIcon = <Wrench size={14} />;
@@ -2191,24 +2200,18 @@ function LocalAICommandCenter({
         </Badge>
         <strong>{localAIUserText(nextTitle)}</strong>
       </div>
-      <dl className="local-ai-command-facts" aria-label="Local model readiness">
-        <div>
-          <dt>Essentials</dt>
-          <dd>{productionGateLabel}</dd>
-        </div>
-        <div>
-          <dt>Files</dt>
-          <dd>{modelFilesLabel}</dd>
-        </div>
-        <div>
-          <dt>Runtimes</dt>
-          <dd>{runtimesLabel}</dd>
-        </div>
-        <div>
-          <dt>Search</dt>
-          <dd>{routeLabel}</dd>
-        </div>
-      </dl>
+      {commandFacts.length > 0 ? (
+        <dl className="local-ai-command-facts" aria-label="Local model readiness">
+          {commandFacts.map((fact) => (
+            <div key={fact.label}>
+              <dt>{fact.label}</dt>
+              <dd>{fact.value}</dd>
+            </div>
+          ))}
+        </dl>
+      ) : (
+        <span className="local-ai-command-note">Run setup check to inspect local model files.</span>
+      )}
       <div className="local-ai-command-actions">
         <Button icon={primaryActionIcon} variant={primaryActionVariant} disabled={primaryActionDisabled} onClick={primaryAction}>
           {primaryActionLabel}
@@ -11352,6 +11355,8 @@ function SettingsView() {
     { id: "raw", label: "Advanced" }
   ];
   const activeSettingsTab = settingsTabItems.find((item) => item.id === tab) ?? settingsTabItems[0];
+  const downloadCount = downloads.data?.length ?? 0;
+  const modelLibraryItemCount = models.length + managedRuntimes.length + downloadCount;
 
   return (
     <div className="surface settings-layout">
@@ -11374,9 +11379,7 @@ function SettingsView() {
               <span>
                 <Cpu size={14} />
                 <strong>{hardware.data?.recommended_profile ?? "tiny"} profile</strong>
-                <small>
-                  {hardware.data?.os} / {hardware.data?.arch} / {hardware.data?.physical_ram_gb ?? "?"} GB RAM
-                </small>
+                <small>{hardwareSummaryLabel(hardware.data)}</small>
               </span>
               <span>
                 <Badge tone={runtimeTone} title={llamaRuntime?.state ?? "checking"}>
@@ -11534,11 +11537,15 @@ function SettingsView() {
                 <span>
                   <strong>Model library</strong>
                 </span>
-                <span className="settings-library-counts">
-                  <Badge tone="neutral">{models.length} models</Badge>
-                  <Badge tone="neutral">{managedRuntimes.length} runtimes</Badge>
-                  <Badge tone="info">{downloads.data?.length ?? 0} downloads</Badge>
-                </span>
+                {modelLibraryItemCount === 0 ? (
+                  <Badge tone="neutral">empty</Badge>
+                ) : (
+                  <span className="settings-library-counts">
+                    <Badge tone="neutral">{models.length} models</Badge>
+                    <Badge tone="neutral">{managedRuntimes.length} runtimes</Badge>
+                    <Badge tone="info">{downloadCount} downloads</Badge>
+                  </span>
+                )}
               </summary>
               <div className="settings-library-body">
                 <section className="pack-section">
