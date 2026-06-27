@@ -3982,7 +3982,7 @@ type WorkspacePathStatus = "done" | "ready" | "pending" | "blocked";
 type WorkspacePathStep = {
   id: string;
   title: string;
-  badge: string;
+  badge?: string;
   status: WorkspacePathStatus;
   icon: typeof CircleDot;
   actionLabel: string;
@@ -4016,37 +4016,37 @@ function HomeStartPanel({
     {
       id: "notes",
       title: "Notes",
-      badge: notes ? `${notes} notes` : "empty",
+      badge: notes ? countLabel(notes, "note") : undefined,
       status: notes ? "done" : "ready",
       icon: NotebookPen,
-      actionLabel: notes ? "Open Notes" : "Quick note",
+      actionLabel: notes ? "Open" : "Quick note",
       action: notes ? onOpenNotes : onQuickNote
     },
     {
       id: "storage",
       title: "Storage",
-      badge: sources ? `${sources} sources` : "empty",
+      badge: sources ? countLabel(sources, "source") : undefined,
       status: sources ? "done" : "ready",
       icon: HardDrive,
-      actionLabel: sources ? "Open Storage" : "Add source",
+      actionLabel: sources ? "Open" : "Add source",
       action: onOpenStorage
     },
     {
       id: "review",
       title: "Review",
-      badge: pendingReview ? `${pendingReview} pending` : claims ? `${claims} claims` : "clear",
+      badge: pendingReview ? `${pendingReview} pending` : claims ? countLabel(claims, "claim") : undefined,
       status: pendingReview ? "ready" : claims ? "done" : "pending",
       icon: Check,
-      actionLabel: "Open Review",
+      actionLabel: "Open",
       action: onOpenReview
     },
     {
       id: "local-ai",
       title: "Models",
-      badge: setupReady ? "ready" : setup ? setup.overall_status.replace("_", " ") : "checking",
+      badge: setupReady ? "ready" : setupBlocked ? "needs setup" : undefined,
       status: setupReady ? "done" : setupBlocked ? "blocked" : setup ? "ready" : "pending",
       icon: Cpu,
-      actionLabel: "Models",
+      actionLabel: setupReady ? "Open" : "Setup",
       action: onOpenSettings
     }
   ];
@@ -4062,7 +4062,7 @@ function HomeStartPanel({
               </div>
               <div>
                 <strong>{step.title}</strong>
-                <span>{step.badge}</span>
+                {step.badge && <span>{step.badge}</span>}
               </div>
               <small>{step.actionLabel}</small>
             </button>

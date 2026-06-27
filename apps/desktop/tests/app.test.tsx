@@ -1911,15 +1911,18 @@ describe("App", () => {
     renderApp();
 
     const path = await screen.findByLabelText("Workspace start");
-    expect(within(path).getByRole("button", { name: /notes empty quick note/i })).toBeTruthy();
-    expect(within(path).getByRole("button", { name: /storage empty add source/i })).toBeTruthy();
-    expect(within(path).getByRole("button", { name: /review clear open review/i })).toBeTruthy();
-    expect(within(path).getByRole("button", { name: /models/i })).toBeTruthy();
+    expect(within(path).getByRole("button", { name: /notes quick note/i })).toBeTruthy();
+    expect(within(path).getByRole("button", { name: /storage add source/i })).toBeTruthy();
+    expect(within(path).getByRole("button", { name: /review open/i })).toBeTruthy();
+    expect(within(path).getByRole("button", { name: /models setup/i })).toBeTruthy();
     expect(within(path).queryByText("Start here")).toBeNull();
+    expect(within(path).queryByText("empty")).toBeNull();
+    expect(within(path).queryByText("clear")).toBeNull();
+    expect(within(path).queryByText("checking")).toBeNull();
     expect(within(path).queryByText("Capture a thought without choosing a folder first.")).toBeNull();
     expect(within(path).queryByText("Import source material when it should stay unchanged.")).toBeNull();
     expect(within(path).queryByText("Suggestions wait here before becoming knowledge.")).toBeNull();
-    expect(await within(path).findByText("blocked")).toBeTruthy();
+    expect(await within(path).findByText("needs setup")).toBeTruthy();
 
     fireEvent.click(within(path).getByRole("button", { name: /quick note/i }));
     expect(await screen.findByLabelText("Quick note text")).toBeTruthy();

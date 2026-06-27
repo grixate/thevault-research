@@ -92,6 +92,7 @@ Latest completed slice:
 - Quieted the Graph empty state on 2026-06-27: empty claim graphs now show one claim-search panel with status filters and `No claims`, without the redundant `Evidence graph` heading or inert evidence inspector. Visual evidence: `/tmp/vault-graph-empty-single-panel.png`.
 - Quieted the Learning empty state on 2026-06-27: clean practice workspaces now keep one deck-creation panel and hide the inactive `Current card` inspector until cards exist. Visual evidence: `/tmp/vault-learning-empty-focused-deck.png`.
 - Quieted the Capsules empty state on 2026-06-27: clean capsule workspaces now show one focused `No capsules` panel with `New` and `Import`, without the duplicate list rail, search field, or stale `No capsule selected` detail. Visual evidence: `/tmp/vault-capsules-empty-single-panel.png`.
+- Quieted the Home quick-start path on 2026-06-27: the first-run rows now show direct destinations and actions without filler badges like `empty`, `clear`, or `checking`, and `Models` now resolves to `Setup` instead of repeating itself. Visual evidence: `/tmp/vault-home-empty-minimal-path.png`.
 
 Earlier implementation slice built a reproducible macOS arm64 `whisper-cli` package from `whisper.cpp` source, moved the whisper runtime from distribution-decision to release-evidence, verified all production model candidate bytes, and merged the current byte-evidence files into one candidate overlay.
 

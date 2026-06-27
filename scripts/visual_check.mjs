@@ -10,6 +10,29 @@ const scenarios = {
     await installEmptyVaultBridge(page);
     await page.goto(baseUrl, { waitUntil: "networkidle" });
   },
+  "home-empty": async (page) => {
+    await installEmptyVaultBridge(page);
+    await openHome(page);
+    await page.waitForFunction(() => {
+      const start = document.querySelector("[aria-label='Workspace start']");
+      const text = start?.textContent ?? "";
+      return (
+        Boolean(start) &&
+        text.includes("Notes") &&
+        text.includes("Quick note") &&
+        text.includes("Storage") &&
+        text.includes("Add source") &&
+        text.includes("Review") &&
+        text.includes("Open") &&
+        text.includes("Models") &&
+        text.includes("Setup") &&
+        !text.includes("empty") &&
+        !text.includes("clear") &&
+        !text.includes("checking") &&
+        !text.includes("Start here")
+      );
+    });
+  },
   "assistant-empty": async (page) => {
     await installEmptyVaultBridge(page);
     await openAssistant(page);
@@ -286,6 +309,12 @@ async function openNotes(page) {
   await page.goto(baseUrl, { waitUntil: "networkidle" });
   const notes = page.locator('.main-nav button[aria-label="Notes"]');
   if (await notes.count()) await notes.first().click();
+}
+
+async function openHome(page) {
+  await page.goto(baseUrl, { waitUntil: "networkidle" });
+  const home = page.locator('.main-nav button[aria-label="Home"]');
+  if (await home.count()) await home.first().click();
 }
 
 async function openAssistant(page) {
