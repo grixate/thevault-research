@@ -8485,6 +8485,7 @@ function CapsuleExportDialog({ capsule, open, onOpenChange }: { capsule: Capsule
   });
   const report = preview.data?.privacy_report;
   const blocked = preview.data?.status === "blocked";
+  const previewStateLabel = preview.data ? (blocked ? "Needs review" : "Ready") : null;
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
@@ -8502,7 +8503,7 @@ function CapsuleExportDialog({ capsule, open, onOpenChange }: { capsule: Capsule
           </div>
           <div className="capsule-export-head">
             <strong title={capsule.name}>{capsule.name}</strong>
-            <Badge tone={blocked ? "bad" : preview.data ? "good" : "neutral"}>{blocked ? "blocked" : preview.data ? "ready" : "checking"}</Badge>
+            {previewStateLabel && <Badge tone={blocked ? "bad" : "good"}>{previewStateLabel}</Badge>}
           </div>
           <label className="field">
             <span>Mode</span>

@@ -103,6 +103,7 @@ Latest completed slice:
 - Quieted the Local tools detail header on 2026-06-27: selected helpers no longer repeat `installed` as a header eyebrow; the operational status stays in the helper contract body where it belongs. Visual evidence: `/tmp/vault-local-tools-installed-no-eyebrow.png`.
 - Quieted the Local tools result detail on 2026-06-27: helper results now show the compact status/finding row first and keep raw JSON/log output behind one collapsed `Run details` disclosure instead of separate `Result JSON`, `Stdout`, and `Stderr` rows. Visual evidence: `/tmp/vault-local-tools-run-details-collapsed.png`.
 - Quieted the Local tools permission grid on 2026-06-27: repeated `allowed` / `blocked` permission badges are now compact icon states with accessible labels, leaving the permission names readable without a status wall. Visual evidence: `/tmp/vault-local-tools-permission-icons.png`.
+- Quieted the Capsule export dialog on 2026-06-27: export preview no longer shows a transient `checking` badge or raw lowercase `ready` / `blocked` states; the dialog now stays blank while preview loads, then shows `Ready` or `Needs review`. Visual evidence: `/tmp/vault-capsule-export-dialog-minimal.png`.
 
 Earlier implementation slice built a reproducible macOS arm64 `whisper-cli` package from `whisper.cpp` source, moved the whisper runtime from distribution-decision to release-evidence, verified all production model candidate bytes, and merged the current byte-evidence files into one candidate overlay.
 

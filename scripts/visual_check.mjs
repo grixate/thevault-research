@@ -312,6 +312,26 @@ const scenarios = {
       );
     });
   },
+  "capsule-export-dialog": async (page) => {
+    await installCapsuleExportVaultBridge(page);
+    await openCapsules(page);
+    await page.getByRole("button", { name: "Export capsule" }).click();
+    await page.getByRole("dialog", { name: "Export capsule" }).waitFor();
+    await page.waitForFunction(() => {
+      const dialog = document.querySelector(".capsule-export-dialog");
+      const text = dialog?.textContent ?? "";
+      return Boolean(
+        dialog &&
+          text.includes("Research Pack") &&
+          text.includes("Ready") &&
+          text.includes("4") &&
+          text.includes("records") &&
+          !text.includes("checking") &&
+          !text.includes("blocked") &&
+          !text.includes("ready")
+      );
+    });
+  },
   "command-actions": async (page) => {
     await installEmptyVaultBridge(page);
     await page.goto(baseUrl, { waitUntil: "networkidle" });
@@ -426,6 +446,97 @@ async function openCapsules(page) {
 async function openQuickNote(page) {
   await page.goto(baseUrl, { waitUntil: "networkidle" });
   await page.locator('.topbar button[aria-label="Quick note"]').click();
+}
+
+async function installCapsuleExportVaultBridge(page) {
+  await page.addInitScript(() => {
+    const capsule = {
+      id: "cap_visual_export",
+      name: "Research Pack",
+      slug: "research-pack",
+      description: null,
+      purpose: null,
+      capsule_type: "project",
+      status: "active",
+      version: "v1.0.0",
+      language: "en",
+      domains: [],
+      tags: [],
+      epistemic_strictness: "balanced",
+      default_source_policy: "reference_only",
+      updated_at: "2026-06-27T00:00:00Z",
+      counts: { sources: 1, notes: 1, claims: 2, concepts: 0, tools: 0 },
+      health: { score: 96, status: "healthy", warnings: [] },
+      items: [],
+      versions: [],
+      dependencies: [],
+      activity: [],
+      key_claims: [],
+      core_concepts: []
+    };
+    const exportPreview = {
+      capsule_id: capsule.id,
+      export_mode: "reference_only",
+      status: "ready",
+      filename: "research-pack.vaultcapsule",
+      export_scope: { mode: "reference_only" },
+      manifest: { export_scope: { mode: "reference_only" } },
+      validation_report: {},
+      privacy_report: {
+        status: "ready",
+        export_mode: "reference_only",
+        private_item_count: 0,
+        full_source_private_count: 0,
+        disabled_tool_count: 0,
+        unsupported_claim_count: 0,
+        exact_quote_count: 3,
+        estimated_record_count: 4,
+        checksum_status: "verified",
+        warnings: [],
+        blockers: []
+      }
+    };
+    window.vault = {
+      request: async (route) => {
+        if (route === "health.get") return { ok: true, version: "0.1.0", db_ready: true, workspace_id: "wrk_default" };
+        if (route === "jobs.list") return [];
+        if (route === "stats.get") {
+          return {
+            sources: 1,
+            source_blocks: 1,
+            notes: 1,
+            claims: 2,
+            claims_without_evidence: 0,
+            contradicted_claims: 0,
+            pending_review_items: 0,
+            generated_notes_pending_review: 0,
+            installed_tools: 0,
+            failed_jobs: 0,
+            learning_items: 0
+          };
+        }
+        if (route === "events.list") return [];
+        if (route === "capsules.list") return { items: [capsule], total: 1 };
+        if (route === "capsules.get") return capsule;
+        if (route === "capsules.imports") return { items: [], total: 0 };
+        if (route === "capsules.exportPreview") return exportPreview;
+        if (route === "capsules.exports") return { items: [], total: 0 };
+        if (route === "notes.list") return [];
+        if (route === "sources.list") return [];
+        if (route === "claims.list") return [];
+        if (route === "graph.nodes") return [];
+        if (route === "learning.items") return [];
+        if (route === "tools.list") return [];
+        if (route === "todoLists.list") return [];
+        if (route === "todos.list") return { items: [], total: 0, limit: 100, offset: 0 };
+        if (route === "ai.capabilities") return [];
+        if (route === "ai.providers") return [];
+        if (route === "review.list") return [];
+        return [];
+      },
+      selectFiles: async () => []
+    };
+  });
 }
 
 async function installEmptyVaultBridge(page) {
