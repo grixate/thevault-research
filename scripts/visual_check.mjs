@@ -85,6 +85,19 @@ const scenarios = {
         Array.from(document.querySelectorAll("span")).some((element) => element.textContent === "None selected");
       return hasNeutralDetail && !document.body.textContent?.includes("Select a block.");
     });
+    await page.getByLabel("Storage local analysis tools").waitFor();
+    await page.waitForFunction(() => {
+      const tools = document.querySelector("[aria-label='Storage local analysis tools']");
+      return Boolean(
+        tools &&
+          tools.textContent?.includes("Claim suggestions") &&
+          tools.textContent?.includes("Concept suggestions") &&
+          !tools.textContent?.includes("setup") &&
+          !tools.textContent?.includes("mock local") &&
+          !tools.textContent?.includes("mock-local-llm") &&
+          !tools.textContent?.includes("No model selected")
+      );
+    });
   },
   "tasks-empty": async (page) => {
     await installEmptyVaultBridge(page);
@@ -597,8 +610,21 @@ async function installStorageFilterVaultBridge(page) {
         if (route === "capsules.list") return { items: [] };
         if (route === "learning.items") return [];
         if (route === "tools.list") return [];
-        if (route === "ai.capabilities") return [];
-        if (route === "ai.providers") return [];
+        if (route === "ai.capabilities") return [
+          { capability: "extract_claims", provider_id: "mock_llm", model_id: "mock-local-llm", local_only: true, settings: {} },
+          { capability: "extract_objects", provider_id: "mock_llm", model_id: "mock-local-llm", local_only: true, settings: {} }
+        ];
+        if (route === "ai.providers") return [
+          {
+            id: "mock_llm",
+            display_name: "Mock Local LLM",
+            kind: "llm",
+            locality: "local",
+            enabled: true,
+            configured: true,
+            privacy_label: "Runs on this device"
+          }
+        ];
         return [];
       },
       selectFiles: async () => []

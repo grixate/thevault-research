@@ -1254,26 +1254,33 @@ function formatSearchModes(modes?: string[]): string {
   return ` · ${modes.map(searchModeLabel).join(" + ")}`;
 }
 
-function CapabilityStatus({ capability, compact = false }: { capability: string; compact?: boolean }) {
+function CapabilityStatus({ capability, compact = false, quiet = false }: { capability: string; compact?: boolean; quiet?: boolean }) {
   const capabilities = useQuery({ queryKey: ["ai-capabilities"], queryFn: () => vaultRequest<CapabilityBinding[]>("ai.capabilities") });
   const providers = useQuery({ queryKey: ["ai-providers"], queryFn: () => vaultRequest<AIProviderInfo[]>("ai.providers") });
   const binding = (capabilities.data ?? []).find((item) => item.capability === capability);
   const provider = (providers.data ?? []).find((item) => item.id === binding?.provider_id);
   const llamaCppProvider = binding?.provider_id === "llama_cpp_cli" || binding?.provider_id === "llama_cpp_server";
-  const tone = provider?.locality === "cloud" ? "bad" : provider?.locality === "external_local" || llamaCppProvider ? "good" : "info";
-  const localityLabel =
-    provider?.locality === "cloud"
-      ? "cloud"
-      : provider?.locality === "external_local"
-        ? "local service"
-        : llamaCppProvider
-          ? "local model"
-          : "mock local";
+  const capabilityLabel = capabilityDisplayLabel(capability);
+  const tone = !binding ? "warn" : provider?.locality === "cloud" ? "bad" : provider?.locality === "external_local" || llamaCppProvider ? "good" : "info";
+  let localityLabel = "local";
+  if (!binding) localityLabel = "setup";
+  else if (provider?.locality === "cloud") localityLabel = "cloud";
+  else if (provider?.locality === "external_local") localityLabel = "local service";
+  else if (llamaCppProvider) localityLabel = "local model";
+  const routeTitle = [
+    capabilityLabel,
+    provider?.display_name ?? binding?.provider_id,
+    binding?.model_id
+  ]
+    .filter(Boolean)
+    .join(" / ");
+  const showQuietBadge = quiet && (!binding || provider?.locality === "cloud" || binding.local_only === false);
   return (
-    <div className={compact ? "capability-chip compact" : "capability-chip"}>
-      <Badge tone={tone}>{localityLabel}</Badge>
-      <span title={capability}>{capabilityDisplayLabel(capability)}</span>
-      <small>{binding?.model_id ?? "No model selected"}</small>
+    <div className={["capability-chip", compact ? "compact" : "", quiet ? "quiet" : ""].filter(Boolean).join(" ")} title={routeTitle || `${capabilityLabel} route not configured`}>
+      {!quiet && <Badge tone={tone}>{localityLabel}</Badge>}
+      {showQuietBadge && <Badge tone={binding ? tone : "warn"}>{binding ? localityLabel : "setup"}</Badge>}
+      <span title={capability}>{capabilityLabel}</span>
+      {!quiet && <small>{binding?.model_id ?? "No model selected"}</small>}
     </div>
   );
 }
@@ -6129,9 +6136,9 @@ async function copyBlock(block: SourceBlock) {
               </div>
             )}
             <SourcePipelinePanel pipeline={pipeline.data} loading={pipeline.isLoading} busy={pipelineBusy} onStageAction={runPipelineAction} />
-            <div className="workflow-toolbar">
-              <CapabilityStatus capability="extract_claims" />
-              <CapabilityStatus capability="extract_objects" />
+            <div className="workflow-toolbar storage-capability-toolbar" aria-label="Storage local analysis tools">
+              <CapabilityStatus capability="extract_claims" quiet />
+              <CapabilityStatus capability="extract_objects" quiet />
               {Boolean(extract.data) && (
                 <div className="workflow-result inline">
                   <Badge tone={(extract.data as any).quarantined_items ? "warn" : "good"}>Extraction</Badge>

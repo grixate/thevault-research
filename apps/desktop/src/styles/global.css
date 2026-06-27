@@ -1931,11 +1931,24 @@ textarea:not(.ui-textarea) {
   gap: 5px;
 }
 
+.capability-chip.quiet {
+  padding: 0;
+  background: transparent;
+  border: 0;
+  flex: 0 1 auto;
+  gap: 6px;
+}
+
 .capability-chip.compact span {
   max-width: 108px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.capability-chip.quiet span {
+  color: var(--muted);
+  font-size: 12px;
 }
 
 .capability-chip.compact small {
@@ -2070,6 +2083,11 @@ textarea:not(.ui-textarea) {
 
 .workflow-toolbar {
   margin-bottom: 12px;
+}
+
+.storage-capability-toolbar {
+  gap: 12px;
+  margin: -2px 0 12px;
 }
 
 .job-progress {

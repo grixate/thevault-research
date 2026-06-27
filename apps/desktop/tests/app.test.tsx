@@ -3457,8 +3457,25 @@ describe("App", () => {
       if (route === "sources.list") return sources;
       if (route === "sources.blocks") return blocksBySource[payload.sourceId] ?? [];
       if (route === "notes.list") return [];
-      if (route === "ai.capabilities") return [];
-      if (route === "ai.providers") return [];
+      if (route === "ai.capabilities") {
+        return [
+          { capability: "extract_claims", provider_id: "mock_llm", model_id: "mock-local-llm", local_only: true, settings: {} },
+          { capability: "extract_objects", provider_id: "mock_llm", model_id: "mock-local-llm", local_only: true, settings: {} }
+        ];
+      }
+      if (route === "ai.providers") {
+        return [
+          {
+            id: "mock_llm",
+            display_name: "Mock Local LLM",
+            kind: "llm",
+            locality: "local",
+            enabled: true,
+            configured: true,
+            privacy_label: "Runs on this device"
+          }
+        ];
+      }
       return [];
     });
     window.vault = { request, selectFiles: vi.fn(async () => []) };
@@ -3466,6 +3483,12 @@ describe("App", () => {
     renderApp();
 
     expect((await screen.findAllByText("Dataset export")).length).toBeGreaterThan(0);
+    const analysisTools = await screen.findByLabelText("Storage local analysis tools");
+    expect(within(analysisTools).getByText("Claim suggestions")).toBeTruthy();
+    expect(within(analysisTools).getByText("Concept suggestions")).toBeTruthy();
+    expect(within(analysisTools).queryByText("mock local")).toBeNull();
+    expect(within(analysisTools).queryByText("mock-local-llm")).toBeNull();
+    expect(within(analysisTools).queryByText("No model selected")).toBeNull();
     const compactPath = await screen.findByTitle(longRawPath);
     expect(compactPath.textContent).not.toBe(longRawPath);
     expect(compactPath.textContent).toContain("...");
