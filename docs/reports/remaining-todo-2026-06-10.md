@@ -61,6 +61,7 @@ Latest completed slice:
 - Quieted the Local tools empty/detail state further on 2026-06-27: empty shelves now say `No helpers`, the neutral detail pane says `Helper details` / `None selected`, and empty run/result slots use `No runs` / `No result`. Visual evidence: `/tmp/vault-local-tools-empty-minimal-v2.png`.
 - Quieted Storage filter empty states on 2026-06-27: source search now resolves to `No sources` without a second helper line, and block search resolves to `No blocks`. Visual evidence: `/tmp/vault-storage-filter-empty-minimal.png`.
 - Quieted the Evidence graph empty state further on 2026-06-27: clean workspaces now show `No claims` and `No claim selected` instead of Review/process instructions. Visual evidence: `/tmp/vault-graph-empty-minimal-v2.png`.
+- Quieted the Notes version drawer on 2026-06-27: the panel now says `Versions`, `0 versions`, and `No versions` instead of saved-version status copy. Visual evidence: `/tmp/vault-editor-versions-empty-minimal.png`.
 
 Earlier implementation slice built a reproducible macOS arm64 `whisper-cli` package from `whisper.cpp` source, moved the whisper runtime from distribution-decision to release-evidence, verified all production model candidate bytes, and merged the current byte-evidence files into one candidate overlay.
 
@@ -3024,8 +3025,9 @@ Current good state:
 Remaining tasks:
 
 - Run a screen-by-screen UX reset against Notion, Obsidian, and Apple Notes:
-  - Notes should feel like the primary writing surface.
-  - Storage should feel like an evidence library, not a second notes list.
+- Notes should feel like the primary writing surface.
+- Notes version history now uses compact document-style labels instead of status prose.
+- Storage should feel like an evidence library, not a second notes list.
   - Quick capture should be instant and calm, with a clear Thought versus Evidence choice.
   - Settings should keep release-engineering detail behind advanced disclosures and user-facing setup language.
 - Audit every empty state and caption.

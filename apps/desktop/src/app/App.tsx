@@ -5706,13 +5706,13 @@ function NoteEditor({ note, isLoading, onNewNote, onQuickNote }: { note?: Note; 
         <div className="version-drawer">
           <div className="version-drawer-header">
             <div>
-              <strong>Version history</strong>
-              <span>{versions.isLoading ? "Loading saved versions..." : `${versionRows.length} saved version${versionRows.length === 1 ? "" : "s"}`}</span>
+              <strong>Versions</strong>
+              <span>{versions.isLoading ? "Loading..." : `${versionRows.length} version${versionRows.length === 1 ? "" : "s"}`}</span>
             </div>
             <Button size="icon" variant="quiet" icon={<X size={14} />} aria-label="Close version history" onClick={() => setVersionsOpen(false)} />
           </div>
           {versions.error && <small className="model-test-error">{versions.error.message}</small>}
-          {!versions.isLoading && versionRows.length === 0 && <p className="empty-copy">No saved versions yet.</p>}
+          {!versions.isLoading && versionRows.length === 0 && <p className="empty-copy">No versions</p>}
           {versionRows.length > 0 && (
             <div className="version-drawer-body">
               <div className="version-list" aria-label="Saved note versions">

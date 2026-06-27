@@ -32,6 +32,13 @@ const scenarios = {
     await openNotes(page);
     await page.getByText("Tools", { exact: true }).click();
   },
+  "editor-versions-empty": async (page) => {
+    await installNoteVaultBridge(page);
+    await openNotes(page);
+    await page.getByText("Tools", { exact: true }).click();
+    await page.getByRole("button", { name: "Versions" }).click();
+    await page.getByText("No versions").waitFor();
+  },
   "generated-draft": async (page) => {
     await installGeneratedDraftVaultBridge(page);
     await openNotes(page);

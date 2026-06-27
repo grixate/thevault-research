@@ -2780,8 +2780,10 @@ describe("App", () => {
     expect(await screen.findByDisplayValue("Recoverable Note")).toBeTruthy();
 
     await openNoteTools();
-    fireEvent.click(await screen.findByRole("button", { name: /versions/i }));
-    expect(await screen.findByText("Version history")).toBeTruthy();
+    const tools = document.querySelector(".note-tools-body");
+    expect(tools).toBeTruthy();
+    fireEvent.click(within(tools as HTMLElement).getByRole("button", { name: "Versions" }));
+    expect(await screen.findByText("2 versions")).toBeTruthy();
     fireEvent.click(await screen.findByRole("button", { name: /v1/i }));
     expect(await screen.findByText(/Earlier evidence/)).toBeTruthy();
     fireEvent.click(await screen.findByRole("button", { name: /restore v1/i }));
@@ -2792,6 +2794,67 @@ describe("App", () => {
         version: 1
       })
     );
+  });
+
+  it("keeps empty note version history quiet", async () => {
+    const note = {
+      id: "note_versions_empty",
+      title: "Quiet Version Note",
+      content: {
+        type: "doc",
+        content: [{ type: "paragraph", content: [{ type: "text", text: "Draft without saved versions." }] }]
+      },
+      content_markdown: "Draft without saved versions.\n",
+      origin: "user_written",
+      status: "active",
+      version: 1,
+      updated_at: "2026-06-05T00:00:00Z"
+    };
+    const request = vi.fn(async (route: string, payload?: any) => {
+      if (route === "health.get") return { ok: true, version: "0.1.0", db_ready: true, workspace_id: "wrk_default" };
+      if (route === "jobs.list") return [];
+      if (route === "stats.get") {
+        return {
+          sources: 0,
+          source_blocks: 0,
+          notes: 1,
+          claims: 0,
+          claims_without_evidence: 0,
+          contradicted_claims: 0,
+          pending_review_items: 0,
+          generated_notes_pending_review: 0,
+          installed_tools: 0,
+          failed_jobs: 0,
+          learning_items: 0
+        };
+      }
+      if (route === "events.list") return [];
+      if (route === "notes.list") return [note];
+      if (route === "notes.versions") {
+        expect(payload).toEqual({ noteId: "note_versions_empty" });
+        return [];
+      }
+      if (route === "sources.list") return [];
+      if (route === "claims.list") return [];
+      if (route === "capsules.list") return { items: [] };
+      if (route === "ai.capabilities") return [];
+      if (route === "ai.providers") return [];
+      return [];
+    });
+    window.vault = { request, selectFiles: vi.fn(async () => []) };
+    useUIStore.setState({ surface: "notes", selectedNoteId: "note_versions_empty" });
+    renderApp();
+
+    expect(await screen.findByDisplayValue("Quiet Version Note")).toBeTruthy();
+    await openNoteTools();
+    const tools = document.querySelector(".note-tools-body");
+    expect(tools).toBeTruthy();
+    fireEvent.click(within(tools as HTMLElement).getByRole("button", { name: "Versions" }));
+    expect(await screen.findByText("0 versions")).toBeTruthy();
+    expect(await screen.findByText("No versions")).toBeTruthy();
+    expect(screen.queryByText("Version history")).toBeNull();
+    expect(screen.queryByText("No saved versions yet.")).toBeNull();
+    expect(screen.queryByText("Loading saved versions...")).toBeNull();
   });
 
   it("opens quick note from the Electron app shortcut event", async () => {
