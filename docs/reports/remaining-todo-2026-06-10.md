@@ -297,7 +297,7 @@ Latest production local-AI approval and pinning slice on 2026-06-22:
 Prompt/sandbox note for autonomous work:
 
 - `scripts/lib/core_python.sh` now preserves the caller's working directory while still preferring `services/core/.venv/bin/python`; relative `--output` paths from registry scripts now land where the command was launched, not under `services/core`.
-- For Chromium/Playwright visual QA, use only the stable no-prompt paths: `CI=true pnpm e2e` and `node scripts/visual_check.mjs <scenario> <output>`. Both launch headless Chromium with explicit no-sandbox settings and were verified unattended on 2026-06-27.
+- For Chromium/Playwright visual QA, use only the stable no-prompt paths: `CI=true pnpm e2e` and `node scripts/visual_check.mjs <scenario> <output>`. Both now hard-require Playwright Chrome Headless Shell with explicit no-sandbox settings instead of falling back to prompt-prone regular Chromium. Run `pnpm browser:doctor` before long autonomous UI work to confirm the exact binary can launch unattended.
 
 Latest production runtime setup probe on 2026-06-22:
 
@@ -488,7 +488,7 @@ Latest Settings Models minimalist verification on 2026-06-21:
 - Latest desktop production build after this slice: passed.
 - Latest renderer e2e smoke after this slice: passed.
 - `git diff --check`: passed.
-- Permission-prompt note: do not use ad hoc standalone Chromium launch commands for QA. Use `CI=true pnpm e2e` or `node scripts/visual_check.mjs <scenario> <output>`; both prefer Playwright's Chrome Headless Shell executable when installed and keep explicit no-sandbox launch settings. Quarantine metadata was cleared from the local Playwright browser cache on 2026-06-27.
+- Permission-prompt note: do not use ad hoc standalone Chromium launch commands for QA. Use `CI=true pnpm e2e` or `node scripts/visual_check.mjs <scenario> <output>`; both require Playwright's Chrome Headless Shell executable and keep explicit no-sandbox launch settings. `pnpm browser:doctor` performs the same direct headless launch and reports Gatekeeper assessment separately, so prompt risk is visible before a long run starts.
 
 Latest Assistant minimalist chat verification on 2026-06-21:
 

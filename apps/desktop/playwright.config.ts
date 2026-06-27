@@ -21,7 +21,12 @@ export default defineConfig({
 });
 
 function playwrightHeadlessShellPath() {
-  if (process.env.PW_CHROMIUM_EXECUTABLE_PATH) return process.env.PW_CHROMIUM_EXECUTABLE_PATH;
+  if (process.env.PW_CHROMIUM_EXECUTABLE_PATH) {
+    if (!fs.existsSync(process.env.PW_CHROMIUM_EXECUTABLE_PATH)) {
+      throw new Error(`PW_CHROMIUM_EXECUTABLE_PATH does not exist: ${process.env.PW_CHROMIUM_EXECUTABLE_PATH}`);
+    }
+    return process.env.PW_CHROMIUM_EXECUTABLE_PATH;
+  }
   const cacheRoot = process.env.PLAYWRIGHT_BROWSERS_PATH && process.env.PLAYWRIGHT_BROWSERS_PATH !== "0"
     ? process.env.PLAYWRIGHT_BROWSERS_PATH
     : path.join(os.homedir(), "Library", "Caches", "ms-playwright");
@@ -43,5 +48,7 @@ function playwrightHeadlessShellPath() {
     const executable = candidates.find((candidate) => fs.existsSync(candidate));
     if (executable) return executable;
   }
-  return undefined;
+  throw new Error(
+    `Playwright Chrome Headless Shell was not found in ${cacheRoot}. Run "pnpm exec playwright install chromium" before browser QA.`
+  );
 }

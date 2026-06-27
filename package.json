@@ -11,7 +11,8 @@
     "verify": "./scripts/verify_v1.sh",
     "verify:strict": "./scripts/verify_v1.sh --strict-production",
     "generate:contracts": "./scripts/generate_contracts.sh",
-    "validate:ai-registries": "./scripts/validate_ai_registries.sh"
+    "validate:ai-registries": "./scripts/validate_ai_registries.sh",
+    "browser:doctor": "node scripts/check_browser_qa.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.52.0",
