@@ -6322,7 +6322,8 @@ function StorageEmptyDetail({
   if (hasSources && hasFilter) {
     return (
       <div className="surface-empty-state">
-        <strong>No sources</strong>
+        <strong>Source details</strong>
+        <span>None selected</span>
       </div>
     );
   }

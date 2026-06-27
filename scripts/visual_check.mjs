@@ -68,7 +68,12 @@ const scenarios = {
     await installStorageFilterVaultBridge(page);
     await openStorage(page);
     await page.getByRole("textbox", { name: "Search Storage sources" }).fill("missing archive");
-    await page.waitForFunction(() => Array.from(document.querySelectorAll("strong")).filter((element) => element.textContent === "No sources").length >= 2);
+    await page.waitForFunction(() => {
+      const noSourceCount = Array.from(document.querySelectorAll("strong")).filter((element) => element.textContent === "No sources").length;
+      const hasNeutralDetail = Array.from(document.querySelectorAll("strong")).some((element) => element.textContent === "Source details") &&
+        Array.from(document.querySelectorAll("span")).some((element) => element.textContent === "None selected");
+      return noSourceCount === 1 && hasNeutralDetail;
+    });
   },
   "tasks-empty": async (page) => {
     await installEmptyVaultBridge(page);

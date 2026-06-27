@@ -63,6 +63,7 @@ Latest completed slice:
 - Quieted the Evidence graph empty state further on 2026-06-27: clean workspaces now show `No claims` and `No claim selected` instead of Review/process instructions. Visual evidence: `/tmp/vault-graph-empty-minimal-v2.png`.
 - Quieted the Notes version drawer on 2026-06-27: the panel now says `Versions`, `0 versions`, and `No versions` instead of saved-version status copy. Visual evidence: `/tmp/vault-editor-versions-empty-minimal.png`.
 - Quieted the Assistant answer chrome on 2026-06-27: sent questions now leave the composer ready for the next prompt, and answer evidence is one compact provenance row instead of repeated status/caption copy. Visual evidence: `/tmp/vault-assistant-answer-minimal-provenance.png`.
+- Quieted Storage filtered-empty detail on 2026-06-27: filtered source search now shows `No sources` once in the list, while the detail pane stays neutral with `Source details` / `None selected`. Visual evidence: `/tmp/vault-storage-filter-empty-neutral-detail.png`.
 
 Earlier implementation slice built a reproducible macOS arm64 `whisper-cli` package from `whisper.cpp` source, moved the whisper runtime from distribution-decision to release-evidence, verified all production model candidate bytes, and merged the current byte-evidence files into one candidate overlay.
 
@@ -3018,6 +3019,7 @@ Current good state:
 - Generated-note provenance and Storage import follow-ups now preserve long source/evidence labels without adding visible clutter.
 - Generated-note review gates now use a flat row and user-facing `Check claims` language instead of a static explanatory banner.
 - Storage source status is now a disclosure that opens when review work needs attention.
+- Storage filtered search results no longer duplicate empty-state copy across list and detail panes.
 - Command palette fast actions now show only icon, action name, and shortcut; explanatory action sublines are gone.
 - Clean sessions now open on Notes instead of Home, making the writing workspace the default product center.
 - The resting topbar search no longer exposes `Exact` / `Smart`; mode choice is available only while reviewing active search results.

@@ -3573,6 +3573,11 @@ textarea:not(.ui-textarea) {
   font-size: 15px;
 }
 
+.surface-empty-state span {
+  color: var(--muted);
+  font-size: 13px;
+}
+
 .source-pipeline-panel {
   display: grid;
   gap: 12px;

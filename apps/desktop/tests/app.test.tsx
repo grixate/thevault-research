@@ -3476,7 +3476,10 @@ describe("App", () => {
     await waitFor(() => expect(screen.queryByText("Dataset export")).toBeNull());
     expect(screen.getByText("1/3 shown")).toBeTruthy();
     fireEvent.change(await screen.findByLabelText("Search Storage sources"), { target: { value: "missing archive" } });
-    expect((await screen.findAllByText("No sources")).length).toBeGreaterThanOrEqual(2);
+    expect(await screen.findByText("No sources")).toBeTruthy();
+    expect(screen.getAllByText("No sources")).toHaveLength(1);
+    expect(await screen.findByText("Source details")).toBeTruthy();
+    expect(await screen.findByText("None selected")).toBeTruthy();
     expect(screen.queryByText("No matching sources")).toBeNull();
     expect(screen.queryByText("No matching source")).toBeNull();
     expect(screen.queryByText("Try another search.")).toBeNull();
