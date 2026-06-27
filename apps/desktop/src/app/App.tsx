@@ -11869,7 +11869,6 @@ function SettingsView() {
         {tab === "routing" && (
           <div className="settings-section">
             <div className="workflow-toolbar">
-              <CapabilityStatus capability="embed_text" />
               <Button
                 icon={<Brain size={15} />}
                 variant="quiet"
@@ -11888,240 +11887,238 @@ function SettingsView() {
               />
             )}
             {cancelJob.error && <small className="import-result import-error">{cancelJob.error.message}</small>}
-            <section className="embedding-config-panel">
-              <div className="embedding-config-header">
+            <details className="embedding-config-panel search-route-details">
+              <summary className="embedding-config-header">
                 <div>
-                  <Badge tone={embeddingProvider?.locality === "cloud" ? "bad" : "good"}>
-                    {embeddingProvider?.privacy_label ?? "No provider selected"}
-                  </Badge>
                   <h3>Search index</h3>
                   <p>{embedBinding?.model_id ?? "No saved embedding model"}</p>
                 </div>
                 <SlidersHorizontal size={22} />
-              </div>
-              <div className="embedding-route-grid">
-                <label>
-                  <span>Provider</span>
-                  <select aria-label="Embedding provider" value={embeddingProviderId} onChange={(event) => setEmbeddingProviderId(event.target.value)}>
-                    {(providers.data ?? [])
-                      .filter((providerOption) => providerOption.kind === "embedding")
-                      .map((providerOption) => (
-                        <option key={providerOption.id} value={providerOption.id}>
-                          {providerOption.display_name}
-                        </option>
-                      ))}
-                  </select>
-                </label>
-                <label>
-                  <span>Model ID</span>
-                  <Input aria-label="Embedding model ID" value={embeddingModelId} onChange={(event) => setEmbeddingModelId(event.target.value)} />
-                </label>
-                <label>
-                  <span>Dimensions</span>
-                  <Input
-                    aria-label="Embedding dimensions"
-                    inputMode="numeric"
-                    min={4}
-                    max={1024}
-                    type="number"
-                    value={embeddingDimensions}
-                    onChange={(event) => setEmbeddingDimensions(event.target.value)}
-                  />
-                </label>
-                <label>
-                  <span>Timeout</span>
-                  <Input
-                    aria-label="Embedding timeout seconds"
-                    inputMode="decimal"
-                    min={1}
-                    type="number"
-                    value={embeddingTimeout}
-                    onChange={(event) => setEmbeddingTimeout(event.target.value)}
-                    disabled={!["local_embedding_http", "llama_cpp_server_embeddings"].includes(embeddingProviderId)}
-                  />
-                </label>
-              </div>
-              {embeddingProviderId === "local_embedding" && (
-                <label className="embedding-endpoint-field">
-                  <span>Model path</span>
-                  <div>
-                    <Link2 size={16} />
+              </summary>
+              <div className="search-route-body">
+                <div className="embedding-route-grid">
+                  <label>
+                    <span>Provider</span>
+                    <select aria-label="Embedding provider" value={embeddingProviderId} onChange={(event) => setEmbeddingProviderId(event.target.value)}>
+                      {(providers.data ?? [])
+                        .filter((providerOption) => providerOption.kind === "embedding")
+                        .map((providerOption) => (
+                          <option key={providerOption.id} value={providerOption.id}>
+                            {providerOption.display_name}
+                          </option>
+                        ))}
+                    </select>
+                  </label>
+                  <label>
+                    <span>Model ID</span>
+                    <Input aria-label="Embedding model ID" value={embeddingModelId} onChange={(event) => setEmbeddingModelId(event.target.value)} />
+                  </label>
+                  <label>
+                    <span>Dimensions</span>
                     <Input
-                      aria-label="Local embedding model path"
-                      placeholder="/Users/you/.vault/models/embeddings/model.bin"
-                      value={embeddingModelPath}
-                      onChange={(event) => setEmbeddingModelPath(event.target.value)}
-                    />
-                  </div>
-                </label>
-              )}
-              {embeddingProviderId === "local_embedding_http" && (
-                <label className="embedding-endpoint-field">
-                  <span>Endpoint URL</span>
-                  <div>
-                    <Link2 size={16} />
-                    <Input
-                      aria-label="Local embedding endpoint URL"
-                      placeholder="http://127.0.0.1:8080/v1/embeddings"
-                      value={embeddingEndpoint}
-                      onChange={(event) => setEmbeddingEndpoint(event.target.value)}
-                    />
-                  </div>
-                </label>
-              )}
-              {embeddingProviderId === "llama_cpp_server_embeddings" && (
-                <label className="embedding-endpoint-field">
-                  <span>llama-server port</span>
-                  <div>
-                    <Link2 size={16} />
-                    <Input
-                      aria-label="llama.cpp embedding server port"
+                      aria-label="Embedding dimensions"
                       inputMode="numeric"
-                      min={1}
-                      max={65535}
+                      min={4}
+                      max={1024}
                       type="number"
-                      value={embeddingServerPort}
-                      onChange={(event) => setEmbeddingServerPort(event.target.value)}
+                      value={embeddingDimensions}
+                      onChange={(event) => setEmbeddingDimensions(event.target.value)}
                     />
-                  </div>
-                </label>
-              )}
-              <div className="embedding-privacy-strip">
-                <Badge tone={embeddingEndpointOk && embeddingModelPathOk && embeddingServerPortOk ? "good" : "bad"}>
-                  {embeddingProviderId === "local_embedding_http" || embeddingProviderId === "llama_cpp_server_embeddings" ? "loopback only" : "on device"}
-                </Badge>
-                <span>
-                  {embeddingProviderId === "local_embedding_http"
-                    ? "localhost, 127.0.0.1, or ::1"
-                    : embeddingProviderId === "llama_cpp_server_embeddings"
-                      ? "managed llama.cpp server process"
-                      : embeddingProviderId === "local_embedding"
-                        ? "installed local embedding artifact"
-                        : "deterministic local vectors"}
-                </span>
-                <div>
-                  <Button icon={<Save size={15} />} disabled={!embeddingCanSave || updateBinding.isPending} onClick={saveEmbeddingRoute}>
-                    Save search index
-                  </Button>
-                  <Button icon={<TestTube2 size={15} />} variant="quiet" disabled={testEmbeddingRoute.isPending} onClick={() => testEmbeddingRoute.mutate()}>
-                    Test search index
-                  </Button>
+                  </label>
+                  <label>
+                    <span>Timeout</span>
+                    <Input
+                      aria-label="Embedding timeout seconds"
+                      inputMode="decimal"
+                      min={1}
+                      type="number"
+                      value={embeddingTimeout}
+                      onChange={(event) => setEmbeddingTimeout(event.target.value)}
+                      disabled={!["local_embedding_http", "llama_cpp_server_embeddings"].includes(embeddingProviderId)}
+                    />
+                  </label>
                 </div>
-              </div>
-              {updateBinding.error && <small className="model-test-error">{updateBinding.error.message}</small>}
-              {testEmbeddingRoute.error && <small className="model-test-error">{testEmbeddingRoute.error.message}</small>}
-              {testEmbeddingRoute.data && (
-                <small
-                  className="model-test-result"
-                  title={[
-                    testEmbeddingRoute.data.provider,
-                    testEmbeddingRoute.data.model_id,
-                    testEmbeddingRoute.data.model_fingerprint ? `artifact ${testEmbeddingRoute.data.model_fingerprint}` : ""
-                  ]
-                    .filter(Boolean)
-                    .join(" / ")}
-                >
-                  Search index tested / {testEmbeddingRoute.data.dimensions} dimensions / {routeTestPrivacyLabel(testEmbeddingRoute.data.sent_off_device)}
-                  {testEmbeddingRoute.data.model_fingerprint ? " / Artifact recorded" : ""}
-                </small>
-              )}
-            </section>
-            <section className="embedding-config-panel">
-              <div className="embedding-config-header">
-                <div>
-                  <Badge tone={rerankerProvider?.locality === "cloud" ? "bad" : "good"}>
-                    {rerankerProvider?.privacy_label ?? "No provider selected"}
+                {embeddingProviderId === "local_embedding" && (
+                  <label className="embedding-endpoint-field">
+                    <span>Model path</span>
+                    <div>
+                      <Link2 size={16} />
+                      <Input
+                        aria-label="Local embedding model path"
+                        placeholder="/Users/you/.vault/models/embeddings/model.bin"
+                        value={embeddingModelPath}
+                        onChange={(event) => setEmbeddingModelPath(event.target.value)}
+                      />
+                    </div>
+                  </label>
+                )}
+                {embeddingProviderId === "local_embedding_http" && (
+                  <label className="embedding-endpoint-field">
+                    <span>Endpoint URL</span>
+                    <div>
+                      <Link2 size={16} />
+                      <Input
+                        aria-label="Local embedding endpoint URL"
+                        placeholder="http://127.0.0.1:8080/v1/embeddings"
+                        value={embeddingEndpoint}
+                        onChange={(event) => setEmbeddingEndpoint(event.target.value)}
+                      />
+                    </div>
+                  </label>
+                )}
+                {embeddingProviderId === "llama_cpp_server_embeddings" && (
+                  <label className="embedding-endpoint-field">
+                    <span>llama-server port</span>
+                    <div>
+                      <Link2 size={16} />
+                      <Input
+                        aria-label="llama.cpp embedding server port"
+                        inputMode="numeric"
+                        min={1}
+                        max={65535}
+                        type="number"
+                        value={embeddingServerPort}
+                        onChange={(event) => setEmbeddingServerPort(event.target.value)}
+                      />
+                    </div>
+                  </label>
+                )}
+                <div className="embedding-privacy-strip">
+                  <Badge tone={embeddingEndpointOk && embeddingModelPathOk && embeddingServerPortOk ? "good" : "bad"}>
+                    {embeddingProviderId === "local_embedding_http" || embeddingProviderId === "llama_cpp_server_embeddings" ? "loopback only" : "on device"}
                   </Badge>
+                  <span>
+                    {embeddingProviderId === "local_embedding_http"
+                      ? "localhost, 127.0.0.1, or ::1"
+                      : embeddingProviderId === "llama_cpp_server_embeddings"
+                        ? "managed llama.cpp server process"
+                        : embeddingProviderId === "local_embedding"
+                          ? "installed local embedding artifact"
+                          : "deterministic local vectors"}
+                  </span>
+                  <div>
+                    <Button icon={<Save size={15} />} disabled={!embeddingCanSave || updateBinding.isPending} onClick={saveEmbeddingRoute}>
+                      Save search index
+                    </Button>
+                    <Button icon={<TestTube2 size={15} />} variant="quiet" disabled={testEmbeddingRoute.isPending} onClick={() => testEmbeddingRoute.mutate()}>
+                      Test search index
+                    </Button>
+                  </div>
+                </div>
+                {updateBinding.error && <small className="model-test-error">{updateBinding.error.message}</small>}
+                {testEmbeddingRoute.error && <small className="model-test-error">{testEmbeddingRoute.error.message}</small>}
+                {testEmbeddingRoute.data && (
+                  <small
+                    className="model-test-result"
+                    title={[
+                      testEmbeddingRoute.data.provider,
+                      testEmbeddingRoute.data.model_id,
+                      testEmbeddingRoute.data.model_fingerprint ? `artifact ${testEmbeddingRoute.data.model_fingerprint}` : ""
+                    ]
+                      .filter(Boolean)
+                      .join(" / ")}
+                  >
+                    Search index tested / {testEmbeddingRoute.data.dimensions} dimensions / {routeTestPrivacyLabel(testEmbeddingRoute.data.sent_off_device)}
+                    {testEmbeddingRoute.data.model_fingerprint ? " / Artifact recorded" : ""}
+                  </small>
+                )}
+              </div>
+            </details>
+            <details className="embedding-config-panel search-route-details">
+              <summary className="embedding-config-header">
+                <div>
                   <h3>Result ranking</h3>
                   <p>{rerankBinding?.model_id ?? "No saved reranker model"}</p>
                 </div>
                 <SlidersHorizontal size={22} />
-              </div>
-              <div className="embedding-route-grid">
-                <label>
-                  <span>Provider</span>
-                  <select aria-label="Reranker provider" value={rerankerProviderId} onChange={(event) => setRerankerProviderId(event.target.value)}>
-                    {(providers.data ?? [])
-                      .filter((providerOption) => providerOption.kind === "reranker")
-                      .map((providerOption) => (
-                        <option key={providerOption.id} value={providerOption.id}>
-                          {providerOption.display_name}
-                        </option>
-                      ))}
-                  </select>
-                </label>
-                <label>
-                  <span>Model ID</span>
-                  <Input aria-label="Reranker model ID" value={rerankerModelId} onChange={(event) => setRerankerModelId(event.target.value)} />
-                </label>
-                <label>
-                  <span>Timeout</span>
-                  <Input
-                    aria-label="Reranker timeout seconds"
-                    inputMode="decimal"
-                    min={1}
-                    type="number"
-                    value={rerankerTimeout}
-                    onChange={(event) => setRerankerTimeout(event.target.value)}
-                    disabled={!["local_reranker_http", "local_cross_encoder"].includes(rerankerProviderId)}
-                  />
-                </label>
-              </div>
-              {rerankerProviderId === "local_reranker_http" && (
-                <label className="embedding-endpoint-field">
-                  <span>Endpoint URL</span>
-                  <div>
-                    <Link2 size={16} />
+              </summary>
+              <div className="search-route-body">
+                <div className="embedding-route-grid">
+                  <label>
+                    <span>Provider</span>
+                    <select aria-label="Reranker provider" value={rerankerProviderId} onChange={(event) => setRerankerProviderId(event.target.value)}>
+                      {(providers.data ?? [])
+                        .filter((providerOption) => providerOption.kind === "reranker")
+                        .map((providerOption) => (
+                          <option key={providerOption.id} value={providerOption.id}>
+                            {providerOption.display_name}
+                          </option>
+                        ))}
+                    </select>
+                  </label>
+                  <label>
+                    <span>Model ID</span>
+                    <Input aria-label="Reranker model ID" value={rerankerModelId} onChange={(event) => setRerankerModelId(event.target.value)} />
+                  </label>
+                  <label>
+                    <span>Timeout</span>
                     <Input
-                      aria-label="Local reranker endpoint URL"
-                      placeholder="http://127.0.0.1:8081/rerank"
-                      value={rerankerEndpoint}
-                      onChange={(event) => setRerankerEndpoint(event.target.value)}
+                      aria-label="Reranker timeout seconds"
+                      inputMode="decimal"
+                      min={1}
+                      type="number"
+                      value={rerankerTimeout}
+                      onChange={(event) => setRerankerTimeout(event.target.value)}
+                      disabled={!["local_reranker_http", "local_cross_encoder"].includes(rerankerProviderId)}
                     />
-                  </div>
-                </label>
-              )}
-              {rerankerProviderId === "local_cross_encoder" && (
-                <label className="embedding-endpoint-field">
-                  <span>Model path</span>
-                  <div>
-                    <Link2 size={16} />
-                    <input
-                      aria-label="Local reranker model path"
-                      placeholder="/Users/you/.vault/models/reranker/model.bin"
-                      value={rerankerModelPath}
-                      onChange={(event) => setRerankerModelPath(event.target.value)}
-                    />
-                  </div>
-                </label>
-              )}
-              <div className="embedding-privacy-strip">
-                <Badge tone={rerankerEndpointOk ? "good" : "bad"}>
-                  {rerankerProviderId === "local_reranker_http" ? "loopback only" : "on device"}
-                </Badge>
-                <span>
-                  {rerankerProviderId === "local_reranker_http"
-                    ? "localhost, 127.0.0.1, or ::1"
-                    : rerankerProviderId === "local_cross_encoder"
-                      ? "installed local model artifact"
-                      : "deterministic local rerank"}
-                </span>
-                <div>
-                  <Button icon={<Save size={15} />} disabled={!rerankerCanSave || updateBinding.isPending} onClick={saveRerankerRoute}>
-                    Save ranking
-                  </Button>
-                  <Button icon={<TestTube2 size={15} />} variant="quiet" disabled={testRerankerRoute.isPending} onClick={() => testRerankerRoute.mutate()}>
-                    Test ranking
-                  </Button>
+                  </label>
                 </div>
+                {rerankerProviderId === "local_reranker_http" && (
+                  <label className="embedding-endpoint-field">
+                    <span>Endpoint URL</span>
+                    <div>
+                      <Link2 size={16} />
+                      <Input
+                        aria-label="Local reranker endpoint URL"
+                        placeholder="http://127.0.0.1:8081/rerank"
+                        value={rerankerEndpoint}
+                        onChange={(event) => setRerankerEndpoint(event.target.value)}
+                      />
+                    </div>
+                  </label>
+                )}
+                {rerankerProviderId === "local_cross_encoder" && (
+                  <label className="embedding-endpoint-field">
+                    <span>Model path</span>
+                    <div>
+                      <Link2 size={16} />
+                      <input
+                        aria-label="Local reranker model path"
+                        placeholder="/Users/you/.vault/models/reranker/model.bin"
+                        value={rerankerModelPath}
+                        onChange={(event) => setRerankerModelPath(event.target.value)}
+                      />
+                    </div>
+                  </label>
+                )}
+                <div className="embedding-privacy-strip">
+                  <Badge tone={rerankerEndpointOk ? "good" : "bad"}>
+                    {rerankerProviderId === "local_reranker_http" ? "loopback only" : "on device"}
+                  </Badge>
+                  <span>
+                    {rerankerProviderId === "local_reranker_http"
+                      ? "localhost, 127.0.0.1, or ::1"
+                      : rerankerProviderId === "local_cross_encoder"
+                        ? "installed local model artifact"
+                        : "deterministic local rerank"}
+                  </span>
+                  <div>
+                    <Button icon={<Save size={15} />} disabled={!rerankerCanSave || updateBinding.isPending} onClick={saveRerankerRoute}>
+                      Save ranking
+                    </Button>
+                    <Button icon={<TestTube2 size={15} />} variant="quiet" disabled={testRerankerRoute.isPending} onClick={() => testRerankerRoute.mutate()}>
+                      Test ranking
+                    </Button>
+                  </div>
+                </div>
+                {testRerankerRoute.error && <small className="model-test-error">{testRerankerRoute.error.message}</small>}
+                {testRerankerRoute.data && (
+                  <small className="model-test-result" title={[testRerankerRoute.data.provider, testRerankerRoute.data.model_id].filter(Boolean).join(" / ")}>
+                    Ranking tested / {testRerankerRoute.data.results.length} results / {routeTestPrivacyLabel(testRerankerRoute.data.sent_off_device)}
+                  </small>
+                )}
               </div>
-              {testRerankerRoute.error && <small className="model-test-error">{testRerankerRoute.error.message}</small>}
-              {testRerankerRoute.data && (
-                <small className="model-test-result" title={[testRerankerRoute.data.provider, testRerankerRoute.data.model_id].filter(Boolean).join(" / ")}>
-                  Ranking tested / {testRerankerRoute.data.results.length} results / {routeTestPrivacyLabel(testRerankerRoute.data.sent_off_device)}
-                </small>
-              )}
-            </section>
+            </details>
             <details className="settings-route-details">
               <summary>
                 <span>

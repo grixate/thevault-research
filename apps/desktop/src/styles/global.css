@@ -7490,6 +7490,54 @@ blockquote span {
   border-radius: var(--radius);
 }
 
+.search-route-details {
+  gap: 0;
+  padding: 0;
+  border-inline: 0;
+  border-block-start: 1px solid var(--line);
+  border-block-end: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.search-route-details > summary {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  list-style: none;
+  padding: 14px 0;
+}
+
+.search-route-details > summary::-webkit-details-marker {
+  display: none;
+}
+
+.search-route-details > summary::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  margin-right: 12px;
+  border-right: 1.5px solid var(--muted);
+  border-bottom: 1.5px solid var(--muted);
+  transform: rotate(-45deg);
+  transition: transform 150ms ease;
+}
+
+.search-route-details > summary > div {
+  flex: 1;
+  min-width: 0;
+}
+
+.search-route-details[open] > summary::before {
+  transform: rotate(45deg);
+}
+
+.search-route-body {
+  display: grid;
+  gap: 14px;
+  padding: 0 0 16px 19px;
+}
+
 .voice-route-panel {
   display: grid;
   gap: 14px;

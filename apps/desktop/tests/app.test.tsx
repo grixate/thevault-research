@@ -8374,6 +8374,8 @@ describe("App", () => {
     expect(await screen.findByRole("heading", { name: "Search index" })).toBeTruthy();
     expect(await screen.findByText("Model task routing")).toBeTruthy();
     expect(screen.queryByText("Choose which local provider handles each model-backed task.")).toBeNull();
+    expect(screen.queryByText("No provider selected")).toBeNull();
+    expect(screen.queryByText(/^setup$/i)).toBeNull();
     expect((await screen.findAllByText("Search index")).length).toBeGreaterThan(1);
     expect(await screen.findByLabelText("Provider for Search index")).toBeTruthy();
     expect(await screen.findByText("Embedding reindex")).toBeTruthy();
@@ -8491,6 +8493,7 @@ describe("App", () => {
     useUIStore.setState({ surface: "settings" });
     renderApp();
     fireEvent.click(await screen.findByRole("tab", { name: /search/i }));
+    fireEvent.click(((await screen.findAllByText("Search index")).find((element) => element.closest("summary")) as HTMLElement).closest("summary") as HTMLElement);
     fireEvent.change(await screen.findByLabelText("Embedding provider"), { target: { value: "local_embedding_http" } });
     fireEvent.change(await screen.findByLabelText("Embedding model ID"), { target: { value: "nomic-loopback" } });
     fireEvent.change(await screen.findByLabelText("Embedding dimensions"), { target: { value: "4" } });
@@ -8632,6 +8635,7 @@ describe("App", () => {
     useUIStore.setState({ surface: "settings" });
     renderApp();
     fireEvent.click(await screen.findByRole("tab", { name: /search/i }));
+    fireEvent.click(((await screen.findAllByText("Search index")).find((element) => element.closest("summary")) as HTMLElement).closest("summary") as HTMLElement);
     const modelPathInput = (await screen.findByLabelText("Local embedding model path")) as HTMLInputElement;
     expect(modelPathInput.value).toBe("/tmp/approved-embedding.bin");
     fireEvent.change(screen.getByLabelText("Local embedding model path"), {
@@ -8778,6 +8782,7 @@ describe("App", () => {
     useUIStore.setState({ surface: "settings" });
     renderApp();
     fireEvent.click(await screen.findByRole("tab", { name: /search/i }));
+    fireEvent.click(((await screen.findAllByText("Result ranking")).find((element) => element.closest("summary")) as HTMLElement).closest("summary") as HTMLElement);
     fireEvent.change(await screen.findByLabelText("Reranker provider"), { target: { value: "local_reranker_http" } });
     fireEvent.change(await screen.findByLabelText("Reranker model ID"), { target: { value: "bge-loopback-reranker" } });
     fireEvent.change(await screen.findByLabelText("Reranker timeout seconds"), { target: { value: "3" } });
