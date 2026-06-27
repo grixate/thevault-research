@@ -9427,13 +9427,13 @@ function microphonePermissionTone(status: MicrophonePermissionStatus): "neutral"
 }
 
 function microphonePermissionLabel(status: MicrophonePermissionStatus): string {
-  if (status === "ready") return "ready";
-  if (status === "granted") return "granted";
-  if (status === "prompt") return "needs test";
-  if (status === "denied") return "blocked";
-  if (status === "unsupported") return "unavailable";
-  if (status === "error") return "failed";
-  return "checking";
+  if (status === "ready") return "Ready";
+  if (status === "granted") return "Allowed";
+  if (status === "prompt") return "Test needed";
+  if (status === "denied") return "Blocked";
+  if (status === "unsupported") return "Unavailable";
+  if (status === "error") return "Failed";
+  return "Checking";
 }
 
 function microphonePermissionDetailForStatus(status: "granted" | "prompt" | "denied"): string {
@@ -12223,7 +12223,6 @@ function SettingsView() {
                 <Mic size={22} />
               </div>
               <div className="embedding-privacy-strip">
-                <Badge tone="good">local capture</Badge>
                 <div>
                   <Button icon={<RefreshCw size={15} />} variant="quiet" disabled={microphonePreflightBusy} onClick={() => void refreshMicrophonePermission()}>
                     Refresh

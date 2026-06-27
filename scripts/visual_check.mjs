@@ -174,6 +174,17 @@ const scenarios = {
     await installEmptyVaultBridge(page);
     await openSettings(page);
     await page.getByRole("tab", { name: "Voice" }).click();
+    await page.waitForFunction(() => {
+      const text = document.body.innerText ?? "";
+      return (
+        text.includes("Microphone access") &&
+        text.includes("Test needed") &&
+        text.includes("Dictation") &&
+        text.includes("Read aloud") &&
+        !text.includes("needs test") &&
+        !text.includes("local capture")
+      );
+    });
   },
   "settings-privacy": async (page) => {
     await installEmptyVaultBridge(page);

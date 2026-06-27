@@ -9079,11 +9079,13 @@ describe("App", () => {
     fireEvent.click(await screen.findByRole("tab", { name: /voice/i }));
     expect(await screen.findByLabelText("Microphone permission preflight")).toBeTruthy();
     await waitFor(() => expect(queryPermission).toHaveBeenCalledWith({ name: "microphone" }));
-    expect(await screen.findByText("needs test")).toBeTruthy();
+    expect(await screen.findByText("Test needed")).toBeTruthy();
+    expect(screen.queryByText("needs test")).toBeNull();
+    expect(screen.queryByText("local capture")).toBeNull();
     fireEvent.click(await screen.findByRole("button", { name: /check microphone/i }));
     await waitFor(() => expect(getUserMedia).toHaveBeenCalledWith({ audio: true }));
     expect(stopTrack).toHaveBeenCalled();
-    expect(await screen.findByText("ready")).toBeTruthy();
+    expect(await screen.findByText("Ready")).toBeTruthy();
     expect(await screen.findByText("Microphone ready for local dictation and voice questions.")).toBeTruthy();
   });
 
