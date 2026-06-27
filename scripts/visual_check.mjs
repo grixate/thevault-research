@@ -283,6 +283,8 @@ const scenarios = {
       return (
         text.includes("Claim Citation Checker") &&
         text.includes("History") &&
+        text.includes("Result JSON") &&
+        !text.includes('"findings"') &&
         runRowHeight > 0 &&
         runRowHeight < 90 &&
         !document.querySelector(".tool-studio-view .detail-pane .eyebrow")

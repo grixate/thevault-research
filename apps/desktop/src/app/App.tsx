@@ -10019,7 +10019,7 @@ function ToolsView() {
                     <span>{toolRunReviewLabel(selectedRun)}</span>
                   </div>
                   {selectedRun.error && <small className="model-test-error">{selectedRun.error}</small>}
-                  <details className="payload-view" open>
+                  <details className="payload-view">
                     <summary>Result JSON</summary>
                     <pre>{JSON.stringify(output, null, 2)}</pre>
                   </details>
