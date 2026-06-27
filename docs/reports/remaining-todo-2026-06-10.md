@@ -65,6 +65,7 @@ Latest completed slice:
 - Quieted the Assistant answer chrome on 2026-06-27: sent questions now leave the composer ready for the next prompt, and answer evidence is one compact provenance row instead of repeated status/caption copy. Visual evidence: `/tmp/vault-assistant-answer-minimal-provenance.png`.
 - Quieted Storage filtered-empty detail on 2026-06-27: filtered source search now shows `No sources` once in the list, while the detail pane stays neutral with `Source details` / `None selected`. Visual evidence: `/tmp/vault-storage-filter-empty-neutral-detail.png`.
 - Quieted empty claim evidence on 2026-06-27: selected claims with no source links now say `No evidence` instead of procedural attachment copy. Visual evidence: `/tmp/vault-graph-claim-no-evidence-minimal.png`.
+- Quieted Graph claim detail status on 2026-06-27: selected claims no longer repeat status as an uppercase detail-pane eyebrow; the inline status badge owns that state. Visual evidence: `/tmp/vault-graph-claim-no-evidence-no-eyebrow.png`.
 
 Earlier implementation slice built a reproducible macOS arm64 `whisper-cli` package from `whisper.cpp` source, moved the whisper runtime from distribution-decision to release-evidence, verified all production model candidate bytes, and merged the current byte-evidence files into one candidate overlay.
 
@@ -3004,6 +3005,7 @@ Current good state:
 - Evidence graph now uses a single context line and inline claim strength instead of KPI cards.
 - Evidence graph empty state now hides zero-count facts and uses `Needs review` / source-link language.
 - Evidence graph selected claims now use `No evidence` for empty evidence lists.
+- Evidence graph claim details no longer duplicate status in an uppercase header eyebrow.
 - Settings Search now uses user-facing search/ranking language instead of visible routing jargon.
 - Settings Voice now uses `Dictation`, `Read aloud`, `Import audio`, and local-stay-local language.
 - Settings Voice now keeps model/provider/path routing behind a single `Voice model setup` disclosure and opens with action rows rather than route cards.

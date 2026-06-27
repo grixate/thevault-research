@@ -8759,7 +8759,6 @@ function GraphView() {
       <Panel className="detail-pane">
         <SectionHeader
           title={selected?.title ?? "Evidence"}
-          eyebrow={selected?.status?.replace(/_/g, " ")}
           actions={
             selected ? (
               <>

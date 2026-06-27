@@ -123,6 +123,7 @@ const scenarios = {
     await installGraphClaimNoEvidenceVaultBridge(page);
     await openGraph(page);
     await page.getByText("No evidence", { exact: true }).waitFor();
+    await page.waitForFunction(() => !document.querySelector(".detail-pane .eyebrow"));
   },
   "practice-empty": async (page) => {
     await installEmptyVaultBridge(page);

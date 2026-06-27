@@ -4645,6 +4645,7 @@ describe("App", () => {
 
     expect(await screen.findByRole("heading", { name: "Unlinked claim", level: 2 })).toBeTruthy();
     expect(await screen.findByText("No evidence")).toBeTruthy();
+    expect(document.querySelector(".detail-pane .eyebrow")).toBeNull();
     expect(screen.queryByText("No evidence links are attached to this claim yet.")).toBeNull();
   });
 
