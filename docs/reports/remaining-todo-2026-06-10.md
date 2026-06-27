@@ -77,6 +77,7 @@ Latest completed slice:
 - Quieted command palette fast actions further on 2026-06-27: the visible `Fast actions` header is gone, shortcut copy uses compact key glyphs, and action rows now read like Spotlight suggestions rather than an admin command list. Visual evidence: `/tmp/vault-command-actions-spotlight-v1.png`.
 - Hardened browser QA launches further on 2026-06-27: e2e, visual checks, and the browser doctor now share one fail-closed Chrome Headless Shell resolver, preventing prompt-prone default Chromium fallback when the safe executable is missing. Verification evidence: `node scripts/check_browser_qa.mjs`, `node scripts/visual_check.mjs command-actions /tmp/vault-browser-prompt-guard-command-actions.png`, `CI=true pnpm e2e`, and a negative missing-cache check.
 - Hardened browser QA autonomy again on 2026-06-27: the shared headless-shell launch path now removes quarantine attributes opportunistically and passes non-interactive Chromium flags for first-run, keychain, media, and default-browser prompts. Verification: `pnpm browser:doctor`, `CI=true pnpm e2e`, and `node scripts/visual_check.mjs practice-empty /tmp/vault-permission-check-practice.png`.
+- Hardened browser QA env overrides on 2026-06-27: `PW_CHROMIUM_EXECUTABLE_PATH` now fails closed unless it points at Chrome Headless Shell, preventing accidental full Chrome/Chromium launches that can request interactive approvals during autonomous work. Verification: `pnpm browser:doctor`, `CI=true pnpm e2e`, and a negative custom-browser override check.
 - Quieted the Settings Models tab row on 2026-06-27: the first tab now reads `Local` instead of repeating `Models`, leaving the app destination as `Models` and the install/check action as `Setup`. Visual evidence: `/tmp/vault-settings-local-tab-minimal.png`.
 - Tightened Assistant answer hierarchy on 2026-06-27: task/save/review actions now sit after the answer context line as response actions instead of floating under the user question. Visual evidence: `/tmp/vault-assistant-answer-actions-footer.png`.
 - Quieted Assistant citation metadata on 2026-06-27: approved-claim footnotes now show `approved claim · <id>` instead of duplicating `claim claim_<id>` in the citation line. Visual evidence: `/tmp/vault-assistant-citation-meta-minimal.png`.
@@ -316,7 +317,7 @@ Latest production local-AI approval and pinning slice on 2026-06-22:
 Prompt/sandbox note for autonomous work:
 
 - `scripts/lib/core_python.sh` now preserves the caller's working directory while still preferring `services/core/.venv/bin/python`; relative `--output` paths from registry scripts now land where the command was launched, not under `services/core`.
-- For Chromium/Playwright visual QA, use only the stable no-prompt paths: `CI=true pnpm e2e` and `node scripts/visual_check.mjs <scenario> <output>`. Both now hard-require Playwright Chrome Headless Shell with explicit no-sandbox settings instead of falling back to prompt-prone regular Chromium. Run `pnpm browser:doctor` before long autonomous UI work to confirm the exact binary can launch unattended.
+- For Chromium/Playwright visual QA, use only the stable no-prompt paths: `CI=true pnpm e2e` and `node scripts/visual_check.mjs <scenario> <output>`. Both now hard-require Playwright Chrome Headless Shell with explicit no-sandbox settings instead of falling back to prompt-prone regular Chromium. If `PW_CHROMIUM_EXECUTABLE_PATH` is set, it must point at `chrome-headless-shell` or `headless_shell`; otherwise the helper fails before launching a prompt-prone browser. Run `pnpm browser:doctor` before long autonomous UI work to confirm the exact binary can launch unattended.
 
 Latest production runtime setup probe on 2026-06-22:
 
@@ -507,7 +508,7 @@ Latest Settings Models minimalist verification on 2026-06-21:
 - Latest desktop production build after this slice: passed.
 - Latest renderer e2e smoke after this slice: passed.
 - `git diff --check`: passed.
-- Permission-prompt note: do not use ad hoc standalone Chromium launch commands for QA. Use `CI=true pnpm e2e` or `node scripts/visual_check.mjs <scenario> <output>`; both require Playwright's Chrome Headless Shell executable and keep explicit no-sandbox launch settings. `pnpm browser:doctor` performs the same direct headless launch and reports Gatekeeper assessment separately, so prompt risk is visible before a long run starts.
+- Permission-prompt note: do not use ad hoc standalone Chromium launch commands for QA. Use `CI=true pnpm e2e` or `node scripts/visual_check.mjs <scenario> <output>`; both require Playwright's Chrome Headless Shell executable and keep explicit no-sandbox launch settings. `PW_CHROMIUM_EXECUTABLE_PATH` is guarded so accidental full-browser overrides fail fast. `pnpm browser:doctor` performs the same direct headless launch and reports Gatekeeper assessment separately, so prompt risk is visible before a long run starts.
 
 Latest Assistant minimalist chat verification on 2026-06-21:
 

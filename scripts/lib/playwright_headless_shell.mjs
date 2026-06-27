@@ -12,6 +12,8 @@ const HEADLESS_SHELL_NAMES = [
   ["chrome-win", "chrome-headless-shell.exe"]
 ];
 
+const HEADLESS_SHELL_EXECUTABLE_NAMES = new Set(HEADLESS_SHELL_NAMES.map(([, file]) => file));
+
 export function playwrightChromiumLaunchOptions() {
   const executablePath = playwrightHeadlessShellPath();
   preparePlaywrightHeadlessShell(executablePath);
@@ -36,7 +38,7 @@ export function playwrightChromiumLaunchOptions() {
 
 export function playwrightHeadlessShellPath() {
   if (process.env.PW_CHROMIUM_EXECUTABLE_PATH) {
-    return requireExecutable(process.env.PW_CHROMIUM_EXECUTABLE_PATH, "PW_CHROMIUM_EXECUTABLE_PATH");
+    return requireHeadlessShellExecutable(process.env.PW_CHROMIUM_EXECUTABLE_PATH, "PW_CHROMIUM_EXECUTABLE_PATH");
   }
 
   const cacheRoot = playwrightBrowserCacheRoot();
@@ -76,6 +78,20 @@ function requireExecutable(executablePath, envName) {
     throw new Error(`${envName} does not exist: ${executablePath}`);
   }
   return executablePath;
+}
+
+function requireHeadlessShellExecutable(executablePath, envName) {
+  const resolved = requireExecutable(executablePath, envName);
+  if (process.env.VAULT_BROWSER_QA_ALLOW_CUSTOM_CHROMIUM === "1") return resolved;
+
+  if (!HEADLESS_SHELL_EXECUTABLE_NAMES.has(path.basename(resolved))) {
+    throw new Error(
+      `${envName} must point to Playwright Chrome Headless Shell for unattended browser QA: ${resolved}. ` +
+        "Unset it to use the repo resolver, or set VAULT_BROWSER_QA_ALLOW_CUSTOM_CHROMIUM=1 to opt into a custom browser."
+    );
+  }
+
+  return resolved;
 }
 
 export function preparePlaywrightHeadlessShell(executablePath = playwrightHeadlessShellPath()) {
