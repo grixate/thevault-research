@@ -8893,9 +8893,8 @@ function AssistantView() {
   const assistantCapsules = capsules.data?.items ?? [];
   const submittedCapsule = answer?.capsule ?? assistantCapsules.find((capsule) => capsule.id === submittedContextId);
   const answerEvidencePolicy = assistantEvidencePolicies[answer ? submittedEvidenceMode : evidenceMode];
-  const AnswerEvidencePolicyIcon = answerEvidencePolicy.icon;
   const validationStatus = answer?.citation_validation?.status ? citationValidationLabel(String(answer.citation_validation.status)) : undefined;
-  const groundingTitle = assistantGroundingTitle(answer, answerEvidencePolicy, ask.isPending);
+  const showCitationValidation = validationStatus && validationStatus !== "citations valid";
   const localityLabel = assistantLocalityLabel(answer);
   const contextLabel = assistantContextLabel(answer, submittedContextId, submittedCapsule);
   const submittedQuestionText = submittedQuestion.trim();
@@ -9095,19 +9094,12 @@ function AssistantView() {
                   {ask.isPending ? "Working locally..." : answer?.answer_markdown}
                 </div>
                 <div className="assistant-grounding-panel" aria-label="Assistant answer grounding">
-                  <div className="assistant-grounding-main">
-                    <Badge tone={answerEvidencePolicy.tone}>
-                      <AnswerEvidencePolicyIcon size={12} />
-                      {answerEvidencePolicy.label}
-                    </Badge>
-                  </div>
                   <div className="assistant-grounding-meta" aria-label="Answer context">
-                    <strong>{groundingTitle}</strong>
-                    {answer?.evidence_quality && <span>{evidenceQualityLabel(answer.evidence_quality)}</span>}
+                    <span>{answerEvidencePolicy.label}</span>
                     <span>{contextLabel}</span>
                     <span>{assistantCitationCountLabel(citations.length)}</span>
                     <span title={String(answer?.model_id ?? "")}>{localityLabel}</span>
-                    {validationStatus && <span>{validationStatus}</span>}
+                    {showCitationValidation && <span>{validationStatus}</span>}
                   </div>
                 </div>
                 {saveAssistantAnswer.error && <small className="model-test-error">{saveAssistantAnswer.error.message}</small>}
@@ -9125,27 +9117,24 @@ function AssistantView() {
                   <div className="citation-row" aria-label="Assistant citations">
                     {citations.map((citation: any) => (
                       <article key={`${citation.marker}-${citation.source_block_id}-${citation.claim_id ?? "source"}`}>
-                        <div>
-                          <Badge tone={citation.evidence_kind === "approved_claim_evidence" ? "good" : "info"}>{citation.marker}</Badge>
-                          <Badge tone={citation.evidence_kind === "approved_claim_evidence" ? "good" : "warn"}>
-                            {citationEvidenceLabel(citation.evidence_kind)}
-                          </Badge>
-                        </div>
-                        <strong title={citation.title ?? citation.source_block_id}>{citation.title ?? citation.source_block_id}</strong>
-                        <span title={citation.exact_quote}>{citation.exact_quote}</span>
-                        <div className="citation-record-footer">
+                        <span className="citation-marker">{citation.marker}</span>
+                        <div className="citation-record-body">
+                          <strong title={citation.title ?? citation.source_block_id}>{citation.title ?? citation.source_block_id}</strong>
+                          <span title={citation.exact_quote}>{citation.exact_quote}</span>
                           <small title={citation.claim_id ? `claim ${citation.claim_id}` : citation.source_block_id}>
-                            {citation.claim_id ? `claim ${citation.claim_id}` : citation.source_block_id}
+                            {[
+                              citationEvidenceLabel(citation.evidence_kind),
+                              citation.locator,
+                              citation.claim_id ? `claim ${citation.claim_id}` : citation.source_block_id
+                            ]
+                              .filter(Boolean)
+                              .join(" · ")}
                           </small>
-                          <div className="assistant-citation-actions">
-                            <AssistantCitationTaskButton citation={citation} answer={answer} questionText={submittedQuestionText} />
-                            <Button icon={<Network size={14} />} variant="quiet" disabled={!citation.claim_id} onClick={() => openCitationClaim(citation)}>
-                              Open claim
-                            </Button>
-                            <Button icon={<Link2 size={14} />} variant="quiet" disabled={!citation.source_id} onClick={() => openCitationSource(citation)}>
-                              Open source
-                            </Button>
-                          </div>
+                        </div>
+                        <div className="assistant-citation-actions">
+                          <AssistantCitationTaskButton citation={citation} answer={answer} questionText={submittedQuestionText} />
+                          <Button icon={<Network size={14} />} size="icon" variant="quiet" aria-label="Open claim" title="Open claim" disabled={!citation.claim_id} onClick={() => openCitationClaim(citation)} />
+                          <Button icon={<Link2 size={14} />} size="icon" variant="quiet" aria-label="Open source" title="Open source" disabled={!citation.source_id} onClick={() => openCitationSource(citation)} />
                         </div>
                       </article>
                     ))}
@@ -9245,22 +9234,6 @@ function evidenceQualityTone(value?: string): "neutral" | "good" | "warn" | "bad
   if (value === "source_blocks") return "warn";
   if (value === "missing") return "bad";
   return "neutral";
-}
-
-function evidenceQualityLabel(value?: string): string {
-  if (value === "approved_claims") return "approved evidence";
-  if (value === "source_blocks") return "source evidence";
-  if (value === "missing") return "missing evidence";
-  return "not asked";
-}
-
-function assistantGroundingTitle(answer: any, policy: (typeof assistantEvidencePolicies)[AssistantEvidenceMode], pending: boolean): string {
-  if (pending) return "Looking through local knowledge";
-  if (!answer) return "Local answer";
-  if (answer.evidence_quality === "approved_claims") return "Answered from approved claims";
-  if (answer.evidence_quality === "source_blocks") return "Answered with Storage evidence";
-  if (answer.evidence_quality === "missing") return "Not enough approved evidence";
-  return `Answered with ${policy.label.toLowerCase()}`;
 }
 
 function assistantCitationCountLabel(count: number): string {

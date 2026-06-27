@@ -7083,16 +7083,17 @@ describe("App", () => {
     const answerContext = await screen.findByLabelText("Answer context");
     expect(await screen.findByText("How do typed claims help?")).toBeTruthy();
     expect((screen.getByLabelText("Assistant question") as HTMLTextAreaElement).value).toBe("");
-    expect(await screen.findByText("source evidence")).toBeTruthy();
-    expect(await screen.findAllByText("Answered with Storage evidence")).toHaveLength(1);
     expect(within(grounding).getByText("Claims + Storage")).toBeTruthy();
-    expect(within(grounding).getByText("Answered with Storage evidence")).toBeTruthy();
     expect(within(answerContext).getByText("1 citation")).toBeTruthy();
     expect(within(answerContext).getByText("on device")).toBeTruthy();
+    expect(within(answerContext).getByText("Vault")).toBeTruthy();
     expect(within(answerContext).queryByText("Local model")).toBeNull();
+    expect(within(grounding).queryByText("source evidence")).toBeNull();
+    expect(within(grounding).queryByText("Answered with Storage evidence")).toBeNull();
     expect(within(grounding).queryByText(/Answers may cite reviewed claims and raw source blocks/)).toBeNull();
     expect(within(answerContext).queryByText("mock-local-llm")).toBeNull();
-    expect(await screen.findByText("source block")).toBeTruthy();
+    const citationsList = await screen.findByLabelText("Assistant citations");
+    expect(within(citationsList).getByText(/source block/)).toBeTruthy();
     expect(await screen.findByTitle(longCitationTitle)).toBeTruthy();
     expect(await screen.findByTitle(longCitationQuote)).toBeTruthy();
     expect(await screen.findByText(longCitationQuote)).toBeTruthy();
@@ -7161,9 +7162,11 @@ describe("App", () => {
     });
     fireEvent.click(await screen.findByRole("button", { name: /^ask$/i }));
 
-    expect(await screen.findByText("missing evidence")).toBeTruthy();
     expect((await screen.findAllByText("Approved claims")).length).toBeGreaterThan(0);
     expect(await screen.findByText("I do not have enough approved source evidence to answer that as fact.")).toBeTruthy();
+    const answerContext = await screen.findByLabelText("Answer context");
+    expect(within(answerContext).getByText("none")).toBeTruthy();
+    expect(screen.queryByText("missing evidence")).toBeNull();
     expect(await screen.findByText("No matching source block or approved claim evidence was found.")).toBeTruthy();
   });
 

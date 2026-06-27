@@ -5061,13 +5061,6 @@ blockquote span {
   border-top: 1px solid var(--line);
 }
 
-.assistant-grounding-main {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  min-width: 0;
-}
-
 .assistant-grounding-panel strong,
 .assistant-grounding-panel span {
   min-width: 0;
@@ -5139,26 +5132,20 @@ blockquote span {
 }
 
 .citation-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+  display: grid;
+  gap: 0;
+  margin-top: 2px;
+  border-top: 1px solid var(--line);
 }
 
 .citation-row article {
-  flex: 1 1 220px;
   min-width: 0;
-  max-width: 100%;
-  padding: 10px 12px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: var(--panel-soft);
-}
-
-.citation-row article > div:first-child {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-bottom: 8px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
 }
 
 .citation-row strong,
@@ -5168,8 +5155,20 @@ blockquote span {
   display: block;
 }
 
+.citation-marker {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.citation-record-body {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
 .citation-row strong {
-  margin-bottom: 4px;
   font-size: 13px;
   overflow: hidden;
   color: var(--foreground);
@@ -5180,11 +5179,18 @@ blockquote span {
 .citation-row span {
   display: -webkit-box;
   overflow: hidden;
-  color: var(--text);
+  color: var(--muted);
   font-size: 13px;
   line-height: 1.45;
   -webkit-box-orient: vertical;
-  -webkit-line-clamp: 3;
+  -webkit-line-clamp: 2;
+}
+
+.citation-row .citation-marker {
+  display: inline-flex;
+  overflow: visible;
+  white-space: nowrap;
+  -webkit-line-clamp: unset;
 }
 
 .citation-row small {

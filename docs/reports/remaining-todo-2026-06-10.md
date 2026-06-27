@@ -68,6 +68,7 @@ Latest completed slice:
 - Quieted Graph claim detail status on 2026-06-27: selected claims no longer repeat status as an uppercase detail-pane eyebrow; the inline status badge owns that state. Visual evidence: `/tmp/vault-graph-claim-no-evidence-no-eyebrow.png`.
 - Quieted Storage block-filter detail on 2026-06-27: filtered-out source blocks now leave a neutral `Block details` / `None selected` inspector instead of telling the user to select a block. Visual evidence: `/tmp/vault-storage-block-filter-empty-neutral-detail.png`.
 - Quieted Storage capability chips on 2026-06-27: the source detail toolbar now shows user-facing `Claim suggestions` and `Concept suggestions` without visible mock-provider or model-fallback text. Visual evidence: `/tmp/vault-storage-capability-chips-minimal.png`.
+- Quieted Assistant citations on 2026-06-27: answer grounding now reads as one provenance line and citations render as compact footnotes with icon-only actions instead of report-card status blocks. Visual evidence: `/tmp/vault-assistant-footnote-citations-minimal.png`.
 
 Earlier implementation slice built a reproducible macOS arm64 `whisper-cli` package from `whisper.cpp` source, moved the whisper runtime from distribution-decision to release-evidence, verified all production model candidate bytes, and merged the current byte-evidence files into one candidate overlay.
 

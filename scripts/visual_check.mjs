@@ -22,6 +22,22 @@ const scenarios = {
     await page.getByRole("textbox", { name: "Assistant question" }).fill("What should I verify next?");
     await page.getByRole("button", { name: "Ask", exact: true }).click();
     await page.getByText("Approved claims point to two review priorities.").waitFor();
+    await page.waitForFunction(() => {
+      const grounding = document.querySelector("[aria-label='Assistant answer grounding']");
+      const citations = document.querySelector("[aria-label='Assistant citations']");
+      const text = document.body.textContent ?? "";
+      return Boolean(
+        grounding &&
+          citations &&
+          grounding.textContent?.includes("Approved claims") &&
+          grounding.textContent?.includes("Vault") &&
+          grounding.textContent?.includes("1 citation") &&
+          grounding.textContent?.includes("on device") &&
+          !text.includes("Answered from approved claims") &&
+          !text.includes("approved evidence") &&
+          !text.includes("citations valid")
+      );
+    });
   },
   "notes-loading": async (page) => {
     await openNotes(page);
