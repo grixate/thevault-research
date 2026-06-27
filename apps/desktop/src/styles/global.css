@@ -5400,6 +5400,7 @@ blockquote span {
 
 .tool-run-list {
   display: grid;
+  align-content: start;
   gap: 0;
   max-height: 420px;
   overflow: auto;
@@ -5409,8 +5410,10 @@ blockquote span {
 .tool-run-list button {
   min-width: 0;
   display: grid;
-  gap: 7px;
-  padding: 9px 0;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 3px 10px;
+  padding: 10px;
   color: var(--text);
   text-align: left;
   background: transparent;
@@ -5418,6 +5421,7 @@ blockquote span {
   border-bottom: 1px solid var(--line);
   border-radius: 0;
   cursor: pointer;
+  align-self: start;
 }
 
 .tool-run-list button.active,
@@ -5427,9 +5431,27 @@ blockquote span {
   box-shadow: inset 2px 0 0 var(--primary);
 }
 
+.tool-run-list button > .badge {
+  grid-row: 1 / span 2;
+  align-self: start;
+  justify-self: start;
+}
+
 .tool-run-list strong,
 .tool-run-list small {
-  overflow-wrap: anywhere;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tool-run-list strong {
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.tool-run-list small {
+  font-size: 12px;
 }
 
 .tool-run-summary {

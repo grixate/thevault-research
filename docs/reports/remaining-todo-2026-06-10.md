@@ -100,6 +100,7 @@ Latest completed slice:
 - Added `Promptless browser QA` to `scripts/verify_v1.sh` on 2026-06-27, so the full v1 verifier checks the no-prompt Chrome Headless Shell path before Playwright e2e.
 - Quieted the rejected Review archive state on 2026-06-27: rejected-only views no longer show a green `clear` summary, and the proposal detail no longer repeats the proposal type badge inside the body. Visual evidence: `/tmp/vault-review-rejected-type-deduped.png`.
 - Quieted the Review detail header on 2026-06-27: selected proposals no longer repeat the item kind as an uppercase eyebrow; the list card owns the kind label and the detail pane starts with the proposal title. Visual evidence: `/tmp/vault-review-rejected-no-eyebrow.png`.
+- Quieted the Local tools detail header on 2026-06-27: selected helpers no longer repeat `installed` as a header eyebrow; the operational status stays in the helper contract body where it belongs. Visual evidence: `/tmp/vault-local-tools-installed-no-eyebrow.png`.
 
 Earlier implementation slice built a reproducible macOS arm64 `whisper-cli` package from `whisper.cpp` source, moved the whisper runtime from distribution-decision to release-evidence, verified all production model candidate bytes, and merged the current byte-evidence files into one candidate overlay.
 

@@ -272,6 +272,23 @@ const scenarios = {
     await installEmptyVaultBridge(page);
     await openLocalTools(page);
   },
+  "local-tools-installed": async (page) => {
+    await installToolVaultBridge(page);
+    await openLocalTools(page);
+    await page.getByText("Claim Citation Checker").first().waitFor();
+    await page.waitForFunction(() => {
+      const text = document.body.innerText ?? "";
+      const runRow = document.querySelector(".tool-run-list button");
+      const runRowHeight = runRow?.getBoundingClientRect().height ?? 0;
+      return (
+        text.includes("Claim Citation Checker") &&
+        text.includes("History") &&
+        runRowHeight > 0 &&
+        runRowHeight < 90 &&
+        !document.querySelector(".tool-studio-view .detail-pane .eyebrow")
+      );
+    });
+  },
   "capsules-empty": async (page) => {
     await installEmptyVaultBridge(page);
     await openCapsules(page);
@@ -811,6 +828,73 @@ async function installStorageFilterVaultBridge(page) {
             privacy_label: "Runs on this device"
           }
         ];
+        return [];
+      },
+      selectFiles: async () => []
+    };
+  });
+}
+
+async function installToolVaultBridge(page) {
+  await page.addInitScript(() => {
+    const tool = {
+      id: "tool_claim_citation_checker",
+      name: "Claim Citation Checker",
+      slug: "claim-citation-checker",
+      version: "0.1.0",
+      status: "installed",
+      manifest: {
+        runtime: "python",
+        timeout_ms: 120000,
+        description: "Checks selected claims against cited source blocks.",
+        permissions: {
+          read_sources: true,
+          read_claims: true,
+          write_review: true,
+          write_canonical_graph: false,
+          network: false,
+          shell: false
+        }
+      }
+    };
+    const run = {
+      id: "run_visual_tool",
+      tool_id: tool.id,
+      status: "completed",
+      input: { claim_ids: ["clm_visual"] },
+      output: {
+        findings: [{ claim_id: "clm_visual", status: "supported" }],
+        review_items: [],
+        warnings: []
+      },
+      stdout: "checked 1 claim",
+      stderr: "",
+      started_at: "2026-06-27T00:00:00Z",
+      finished_at: "2026-06-27T00:00:01Z"
+    };
+    window.vault = {
+      request: async (route) => {
+        if (route === "health.get") return { ok: true, version: "0.1.0", db_ready: true, workspace_id: "wrk_default" };
+        if (route === "jobs.list") return [];
+        if (route === "stats.get") {
+          return {
+            sources: 1,
+            source_blocks: 1,
+            notes: 0,
+            claims: 1,
+            claims_without_evidence: 0,
+            contradicted_claims: 0,
+            pending_review_items: 0,
+            generated_notes_pending_review: 0,
+            installed_tools: 1,
+            failed_jobs: 0,
+            learning_items: 0
+          };
+        }
+        if (route === "events.list") return [];
+        if (route === "tools.list") return [tool];
+        if (route === "tools.runs") return [run];
+        if (route === "review.list") return [];
         return [];
       },
       selectFiles: async () => []

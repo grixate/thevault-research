@@ -9919,7 +9919,6 @@ function ToolsView() {
       <Panel className="detail-pane">
         <SectionHeader
           title={selected?.name ?? "Helper details"}
-          eyebrow={selected?.status}
           actions={
             selected && (
               <>
