@@ -4750,7 +4750,10 @@ describe("App", () => {
     renderApp();
 
     expect(await screen.findByText("No cards")).toBeTruthy();
-    expect(await screen.findByText("Create a deck.")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Create deck" })).toBeTruthy();
+    expect(screen.getByLabelText("Deck topic")).toBeTruthy();
+    expect(screen.queryByRole("heading", { name: "Current card", level: 2 })).toBeNull();
+    expect(screen.queryByText("Create a deck.")).toBeNull();
     expect(screen.queryByText("No cards yet")).toBeNull();
     expect(screen.queryByText("Create a deck from approved knowledge. New cards wait in Review.")).toBeNull();
     expect(screen.queryByText("Create a deck to choose a practice card.")).toBeNull();

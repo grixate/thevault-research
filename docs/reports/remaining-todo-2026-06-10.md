@@ -80,6 +80,7 @@ Latest completed slice:
 - Quieted the Local tools empty state on 2026-06-27: empty helper shelves now collapse to one calm panel with `No helpers`, removing the duplicate `Local tools` list heading and inert `Helper details` inspector. Visual evidence: `/tmp/vault-local-tools-empty-single-panel.png`.
 - Quieted the Tasks empty state on 2026-06-27: clean task workspaces now keep the quick-entry panel and hide the unused custom-list rail until tasks or lists exist. Visual evidence: `/tmp/vault-tasks-empty-focused-entry.png`.
 - Quieted the Graph empty state on 2026-06-27: empty claim graphs now show one claim-search panel with status filters and `No claims`, without the redundant `Evidence graph` heading or inert evidence inspector. Visual evidence: `/tmp/vault-graph-empty-single-panel.png`.
+- Quieted the Learning empty state on 2026-06-27: clean practice workspaces now keep one deck-creation panel and hide the inactive `Current card` inspector until cards exist. Visual evidence: `/tmp/vault-learning-empty-focused-deck.png`.
 
 Earlier implementation slice built a reproducible macOS arm64 `whisper-cli` package from `whisper.cpp` source, moved the whisper runtime from distribution-decision to release-evidence, verified all production model candidate bytes, and merged the current byte-evidence files into one candidate overlay.
 
@@ -3045,6 +3046,7 @@ Current good state:
 - Empty Local tools shelves now collapse to one quiet panel instead of showing a redundant split-pane scaffold.
 - Empty Tasks workspaces hide the custom-list rail and keep focus on quick entry.
 - Empty Graph workspaces hide the unused evidence inspector and keep focus on claim search.
+- Empty Learning workspaces hide the inactive current-card inspector and keep focus on deck creation.
 - Clean sessions now open on Notes instead of Home, making the writing workspace the default product center.
 - The resting topbar search no longer exposes `Exact` / `Smart`; mode choice is available only while reviewing active search results.
 - Sidebar local status is reduced to one compact state chip; version and background-task details are no longer visible first-glance footer copy.

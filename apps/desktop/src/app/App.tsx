@@ -9449,6 +9449,8 @@ function LearningView() {
   const items = useQuery({ queryKey: ["learning"], queryFn: () => vaultRequest<LearningItem[]>("learning.items") });
   const learningItems = useMemo(() => items.data ?? [], [items.data]);
   const selectedLearningItem = learningItems.find((item) => item.id === selectedLearningItemId) ?? learningItems[0];
+  const showLearningDetail = items.isLoading || learningItems.length > 0;
+  const learningLayoutClassName = ["surface", "learning-layout", !showLearningDetail ? "learning-layout-empty" : ""].filter(Boolean).join(" ");
   const generate = useMutation({
     mutationFn: () => vaultRequest("learning.generateDeck", { topic, deck_size: 6 }),
     onSuccess: () => {
@@ -9617,7 +9619,7 @@ function LearningView() {
   }
 
   return (
-    <div className="surface learning-layout">
+    <div className={learningLayoutClassName}>
       <Panel>
         <SectionHeader
           title="Practice"
@@ -9671,80 +9673,82 @@ function LearningView() {
           })}
         </div>
       </Panel>
-      <Panel className="wide-panel">
-        <SectionHeader
-          title="Current card"
-          actions={
-            selectedLearningItem ? (
-              <>
-                <TaskCreateButton
-                  targetType="learning_item"
-                  targetId={selectedLearningItem.id}
-                  targetTitle={selectedLearningItem.title}
-                  defaultTitle={`Follow up on ${selectedLearningItem.title}`}
-                  relation="follow_up_practice"
-                  metadata={learningItemTaskMetadata(selectedLearningItem)}
-                  buttonAriaLabel="Create task from practice card"
-                  buttonTitle="Create task from practice card"
-                  buttonSize="icon"
-                />
-                <Button
-                  icon={learningAnswerRecordingState === "recording" ? <Pause size={16} /> : <Mic size={16} />}
-                  variant={learningAnswerRecordingState === "recording" ? "primary" : "quiet"}
-                  disabled={learningAnswerRecordingState === "processing"}
-                  onClick={() => (learningAnswerRecordingState === "recording" ? stopLearningAnswerRecording() : void startLearningAnswerRecording())}
-                >
-                  {learningAnswerRecordingState === "recording" ? "Stop answer" : learningAnswerRecordingState === "processing" ? "Saving" : "Answer by voice"}
-                </Button>
-              </>
-            ) : undefined
-          }
-        />
-        {selectedLearningItem ? (
-          <>
-            <div className="learning-voice-context" aria-label="Practice voice privacy">
-              <Badge tone="good">local voice</Badge>
-              <span>Read aloud and spoken answers stay local.</span>
-            </div>
-            <div className="learning-review-schedule">
-              <Badge tone="warn">again: tomorrow</Badge>
-              <Badge tone="info">good: 3 days</Badge>
-              <Badge tone="good">easy: 7 days</Badge>
-            </div>
-            <div className="learning-practice-card">
-              <div className="learning-path-meta">
-                <Badge tone="info">Selected card</Badge>
-                {learningItemPhaseLabel(selectedLearningItem) && <Badge tone="neutral">{learningItemPhaseLabel(selectedLearningItem)}</Badge>}
-                {learningItemScoreLabel(selectedLearningItem) && <Badge tone="good">{learningItemScoreLabel(selectedLearningItem)}</Badge>}
+      {showLearningDetail && (
+        <Panel className="wide-panel">
+          <SectionHeader
+            title="Current card"
+            actions={
+              selectedLearningItem ? (
+                <>
+                  <TaskCreateButton
+                    targetType="learning_item"
+                    targetId={selectedLearningItem.id}
+                    targetTitle={selectedLearningItem.title}
+                    defaultTitle={`Follow up on ${selectedLearningItem.title}`}
+                    relation="follow_up_practice"
+                    metadata={learningItemTaskMetadata(selectedLearningItem)}
+                    buttonAriaLabel="Create task from practice card"
+                    buttonTitle="Create task from practice card"
+                    buttonSize="icon"
+                  />
+                  <Button
+                    icon={learningAnswerRecordingState === "recording" ? <Pause size={16} /> : <Mic size={16} />}
+                    variant={learningAnswerRecordingState === "recording" ? "primary" : "quiet"}
+                    disabled={learningAnswerRecordingState === "processing"}
+                    onClick={() => (learningAnswerRecordingState === "recording" ? stopLearningAnswerRecording() : void startLearningAnswerRecording())}
+                  >
+                    {learningAnswerRecordingState === "recording" ? "Stop answer" : learningAnswerRecordingState === "processing" ? "Saving" : "Answer by voice"}
+                  </Button>
+                </>
+              ) : undefined
+            }
+          />
+          {selectedLearningItem ? (
+            <>
+              <div className="learning-voice-context" aria-label="Practice voice privacy">
+                <Badge tone="good">local voice</Badge>
+                <span>Read aloud and spoken answers stay local.</span>
               </div>
-              <strong>{selectedLearningItem.title}</strong>
-              {learningItemPrompt(selectedLearningItem) && <p>{learningItemPrompt(selectedLearningItem)}</p>}
-              {learningItemAnswer(selectedLearningItem) && <small>{learningItemAnswer(selectedLearningItem)}</small>}
+              <div className="learning-review-schedule">
+                <Badge tone="warn">again: tomorrow</Badge>
+                <Badge tone="info">good: 3 days</Badge>
+                <Badge tone="good">easy: 7 days</Badge>
+              </div>
+              <div className="learning-practice-card">
+                <div className="learning-path-meta">
+                  <Badge tone="info">Selected card</Badge>
+                  {learningItemPhaseLabel(selectedLearningItem) && <Badge tone="neutral">{learningItemPhaseLabel(selectedLearningItem)}</Badge>}
+                  {learningItemScoreLabel(selectedLearningItem) && <Badge tone="good">{learningItemScoreLabel(selectedLearningItem)}</Badge>}
+                </div>
+                <strong>{selectedLearningItem.title}</strong>
+                {learningItemPrompt(selectedLearningItem) && <p>{learningItemPrompt(selectedLearningItem)}</p>}
+                {learningItemAnswer(selectedLearningItem) && <small>{learningItemAnswer(selectedLearningItem)}</small>}
+              </div>
+            </>
+          ) : (
+            <p className="empty-copy">Create a deck.</p>
+          )}
+          {learningAnswerResult && (
+            <div className="workflow-result">
+              <Badge tone={learningAnswerResult.sent_off_device ? "bad" : "good"}>Spoken answer</Badge>
+              <span title={String(learningAnswerResult.model_id ?? "mock-local-stt")}>{speechAssetPrivacyLabel(learningAnswerResult)}</span>
+              <small>{learningAnswerTranscript}</small>
+              {learningAnswerSession?.next_review && <small>Next review: {String(learningAnswerSession.next_review)}</small>}
             </div>
-          </>
-        ) : (
-          <p className="empty-copy">Create a deck.</p>
-        )}
-        {learningAnswerResult && (
-          <div className="workflow-result">
-            <Badge tone={learningAnswerResult.sent_off_device ? "bad" : "good"}>Spoken answer</Badge>
-            <span title={String(learningAnswerResult.model_id ?? "mock-local-stt")}>{speechAssetPrivacyLabel(learningAnswerResult)}</span>
-            <small>{learningAnswerTranscript}</small>
-            {learningAnswerSession?.next_review && <small>Next review: {String(learningAnswerSession.next_review)}</small>}
-          </div>
-        )}
-        {learningAnswerError && <small className="model-test-error">{learningAnswerError}</small>}
-        {speechResult && (
-          <div className="workflow-result">
-            <Badge tone={speechResult.sent_off_device ? "bad" : "good"}>{speechResult.cached ? "Audio ready" : "Audio saved"}</Badge>
-            <span title={String(speechResult.model_id ?? "")}>{speechAssetPrivacyLabel(speechResult)}</span>
-            <small title={String(speechResult.speech_asset_id ?? "")}>Ready to play</small>
-            {speechAudioUrl && <audio className="speech-player" src={speechAudioUrl} controls />}
-          </div>
-        )}
-        {speakItem.error && <small className="model-test-error">{speakItem.error.message}</small>}
-        {speechError && <small className="model-test-error">{speechError}</small>}
-      </Panel>
+          )}
+          {learningAnswerError && <small className="model-test-error">{learningAnswerError}</small>}
+          {speechResult && (
+            <div className="workflow-result">
+              <Badge tone={speechResult.sent_off_device ? "bad" : "good"}>{speechResult.cached ? "Audio ready" : "Audio saved"}</Badge>
+              <span title={String(speechResult.model_id ?? "")}>{speechAssetPrivacyLabel(speechResult)}</span>
+              <small title={String(speechResult.speech_asset_id ?? "")}>Ready to play</small>
+              {speechAudioUrl && <audio className="speech-player" src={speechAudioUrl} controls />}
+            </div>
+          )}
+          {speakItem.error && <small className="model-test-error">{speakItem.error.message}</small>}
+          {speechError && <small className="model-test-error">{speechError}</small>}
+        </Panel>
+      )}
     </div>
   );
 }

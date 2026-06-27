@@ -4630,6 +4630,10 @@ blockquote span {
   grid-template-columns: minmax(0, 760px);
 }
 
+.learning-layout-empty {
+  grid-template-columns: minmax(0, 760px);
+}
+
 .learning-topic-field {
   display: grid;
   gap: 6px;
