@@ -9657,8 +9657,7 @@ function LearningView() {
           {items.isLoading && <div className="entity-list-empty">Loading practice...</div>}
           {!items.isLoading && (items.data ?? []).length === 0 && (
             <div className="entity-list-empty learning-empty-state">
-              <strong>No cards yet</strong>
-              <span>Create a deck from approved knowledge. New cards wait in Review.</span>
+              <strong>No cards</strong>
             </div>
           )}
           {learningItems.map((item) => {
@@ -9746,7 +9745,7 @@ function LearningView() {
             </div>
           </>
         ) : (
-          <p className="empty-copy">Create a deck to choose a practice card.</p>
+          <p className="empty-copy">Create a deck.</p>
         )}
         {learningAnswerResult && (
           <div className="workflow-result">
