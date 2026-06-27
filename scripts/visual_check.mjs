@@ -57,6 +57,12 @@ const scenarios = {
       return Boolean(startNote && !startNote.disabled);
     });
   },
+  "storage-filter-empty": async (page) => {
+    await installStorageFilterVaultBridge(page);
+    await openStorage(page);
+    await page.getByRole("textbox", { name: "Search Storage sources" }).fill("missing archive");
+    await page.waitForFunction(() => Array.from(document.querySelectorAll("strong")).filter((element) => element.textContent === "No sources").length >= 2);
+  },
   "tasks-empty": async (page) => {
     await installEmptyVaultBridge(page);
     await openTasks(page);
@@ -482,6 +488,80 @@ async function installStorageImportVaultBridge(page) {
           return { source: importedSource, duplicate: false };
         }
         if (route === "sources.extract") return { created_review_items: 1, quarantined_items: 0 };
+        if (route === "claims.list") return [];
+        if (route === "todos.list") return { items: [], total: 0, limit: 100, offset: 0 };
+        if (route === "todoLists.list") return [];
+        if (route === "capsules.list") return { items: [] };
+        if (route === "learning.items") return [];
+        if (route === "tools.list") return [];
+        if (route === "ai.capabilities") return [];
+        if (route === "ai.providers") return [];
+        return [];
+      },
+      selectFiles: async () => []
+    };
+  });
+}
+
+async function installStorageFilterVaultBridge(page) {
+  await page.addInitScript(() => {
+    const source = {
+      id: "src_storage_filter_visual",
+      type: "text",
+      title: "Interview transcript",
+      metadata: { capture_context: "storage_dialog_paste" },
+      created_at: "2026-06-27T00:00:00Z",
+      updated_at: "2026-06-27T00:00:00Z"
+    };
+    const sourceBlock = {
+      id: "block_storage_filter_visual",
+      source_id: source.id,
+      block_index: 0,
+      locator: "p1",
+      text: "Transcript evidence belongs in Storage."
+    };
+    window.vault = {
+      request: async (route) => {
+        if (route === "health.get") return { ok: true, version: "0.1.0", db_ready: true, workspace_id: "wrk_default" };
+        if (route === "jobs.list") return [];
+        if (route === "stats.get") {
+          return {
+            sources: 1,
+            source_blocks: 1,
+            notes: 0,
+            claims: 0,
+            claims_without_evidence: 0,
+            contradicted_claims: 0,
+            pending_review_items: 0,
+            generated_notes_pending_review: 0,
+            installed_tools: 0,
+            failed_jobs: 0,
+            learning_items: 0
+          };
+        }
+        if (route === "events.list") return [];
+        if (route === "notes.list") return [];
+        if (route === "sources.list") return [source];
+        if (route === "sources.blocks") return [sourceBlock];
+        if (route === "sources.pipeline") {
+          return {
+            source_id: source.id,
+            source_title: source.title,
+            source_type: source.type,
+            source_status: "active",
+            block_count: 1,
+            embedded_block_count: 0,
+            pending_review_items: 0,
+            needs_edit_review_items: 0,
+            approved_review_items: 0,
+            rejected_review_items: 0,
+            quarantined_items: 0,
+            approved_claims: 0,
+            evidence_links: 0,
+            latest_extraction_job: null,
+            stages: []
+          };
+        }
         if (route === "claims.list") return [];
         if (route === "todos.list") return { items: [], total: 0, limit: 100, offset: 0 };
         if (route === "todoLists.list") return [];

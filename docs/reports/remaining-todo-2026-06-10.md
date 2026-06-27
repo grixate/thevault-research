@@ -59,6 +59,7 @@ Latest completed slice:
 - Re-verified the no-prompt browser QA path on 2026-06-27: `CI=true pnpm e2e` and `node scripts/visual_check.mjs storage-import-followup /tmp/vault-storage-import-followup-minimal.png` both ran unattended with explicit no-sandbox Playwright launch settings.
 - Quieted the Practice empty state further on 2026-06-27: the empty list now says only `No cards`, and the empty detail pane uses the direct `Create a deck.` cue instead of repeating Review/process guidance. Visual evidence: `/tmp/vault-practice-empty-minimal-v2.png`.
 - Quieted the Local tools empty/detail state further on 2026-06-27: empty shelves now say `No helpers`, the neutral detail pane says `Helper details` / `None selected`, and empty run/result slots use `No runs` / `No result`. Visual evidence: `/tmp/vault-local-tools-empty-minimal-v2.png`.
+- Quieted Storage filter empty states on 2026-06-27: source search now resolves to `No sources` without a second helper line, and block search resolves to `No blocks`. Visual evidence: `/tmp/vault-storage-filter-empty-minimal.png`.
 
 Earlier implementation slice built a reproducible macOS arm64 `whisper-cli` package from `whisper.cpp` source, moved the whisper runtime from distribution-decision to release-evidence, verified all production model candidate bytes, and merged the current byte-evidence files into one candidate overlay.
 
@@ -3039,6 +3040,7 @@ Acceptance evidence:
 
 - No primary workflow depends on explanatory walls of text.
 - Notes and Storage purpose is clear at capture, list, and detail levels.
+- Storage search/filter empty states now use short result labels instead of instructive helper copy.
 - Browser screenshots show a quiet document/list workspace rather than a card-heavy dashboard.
 - Desktop tests and browser checks cover quick capture paths.
 

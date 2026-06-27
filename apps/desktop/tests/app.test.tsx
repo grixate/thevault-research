@@ -3412,6 +3412,11 @@ describe("App", () => {
     expect((await screen.findAllByText("Transcript evidence belongs in Storage.")).length).toBeGreaterThan(0);
     await waitFor(() => expect(screen.queryByText("Dataset export")).toBeNull());
     expect(screen.getByText("1/3 shown")).toBeTruthy();
+    fireEvent.change(await screen.findByLabelText("Search Storage sources"), { target: { value: "missing archive" } });
+    expect((await screen.findAllByText("No sources")).length).toBeGreaterThanOrEqual(2);
+    expect(screen.queryByText("No matching sources")).toBeNull();
+    expect(screen.queryByText("No matching source")).toBeNull();
+    expect(screen.queryByText("Try another search.")).toBeNull();
   });
 
   it("opens the editable note from a note-backed Storage source", async () => {
@@ -3669,6 +3674,10 @@ describe("App", () => {
     fireEvent.change(await screen.findByLabelText("Filter source blocks"), { target: { value: "handwritten" } });
     expect(screen.queryByText("The observation setup was calibrated before the session.")).toBeNull();
     expect((await screen.findAllByText("Participants returned to handwritten notes when synthesis felt uncertain.")).length).toBeGreaterThan(0);
+    fireEvent.change(await screen.findByLabelText("Filter source blocks"), { target: { value: "missing block" } });
+    expect(await screen.findByText("No blocks")).toBeTruthy();
+    expect(screen.queryByText("No source blocks match this filter.")).toBeNull();
+    fireEvent.change(await screen.findByLabelText("Filter source blocks"), { target: { value: "handwritten" } });
     fireEvent.click(await screen.findByRole("button", { name: /new note from block/i }));
 
     await waitFor(() =>

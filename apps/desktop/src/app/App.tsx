@@ -6037,8 +6037,7 @@ async function copyBlock(block: SourceBlock) {
           {!sources.isLoading && sourceRows.length > 0 && filteredSources.length === 0 && (
             <div className="entity-list-empty">
               <Search size={18} />
-              <strong>No matching sources</strong>
-              <span>Try another search.</span>
+              <strong>No sources</strong>
             </div>
           )}
           {filteredSources.map((source) => (
@@ -6155,7 +6154,7 @@ async function copyBlock(block: SourceBlock) {
                   </small>
                 </div>
                 <div className="block-list">
-                  {filteredBlocks.length === 0 && <p className="empty-copy">No source blocks match this filter.</p>}
+                  {filteredBlocks.length === 0 && <p className="empty-copy">No blocks</p>}
                   {filteredBlocks.map((block) => (
                     <button key={block.id} className={block.id === selectedBlock?.id ? "active" : ""} onClick={() => setSelectedSourceBlockId(block.id)}>
                       <span>
@@ -6323,7 +6322,7 @@ function StorageEmptyDetail({
   if (hasSources && hasFilter) {
     return (
       <div className="surface-empty-state">
-        <strong>No matching source</strong>
+        <strong>No sources</strong>
       </div>
     );
   }
