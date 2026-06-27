@@ -80,6 +80,7 @@ Latest completed slice:
 - Quieted the Settings Models tab row on 2026-06-27: the first tab now reads `Local` instead of repeating `Models`, leaving the app destination as `Models` and the install/check action as `Setup`. Visual evidence: `/tmp/vault-settings-local-tab-minimal.png`.
 - Tightened Assistant answer hierarchy on 2026-06-27: task/save/review actions now sit after the answer context line as response actions instead of floating under the user question. Visual evidence: `/tmp/vault-assistant-answer-actions-footer.png`.
 - Quieted Assistant citation metadata on 2026-06-27: approved-claim footnotes now show `approved claim · <id>` instead of duplicating `claim claim_<id>` in the citation line. Visual evidence: `/tmp/vault-assistant-citation-meta-minimal.png`.
+- Quieted Storage local-analysis labels on 2026-06-27: missing local routes no longer render `setup` badges beside `Claim suggestions` and `Concept suggestions` on everyday source detail screens. Visual evidence: `/tmp/vault-storage-capability-labels-no-setup.png`.
 - Quieted the Review empty state on 2026-06-27: empty queues now use one calm panel with the status switch and clear-state copy, instead of a duplicate `Review` list rail plus an empty detail pane. Visual evidence: `/tmp/vault-review-empty-single-panel.png`.
 - Quieted the Local tools empty state on 2026-06-27: empty helper shelves now collapse to one calm panel with `No helpers`, removing the duplicate `Local tools` list heading and inert `Helper details` inspector. Visual evidence: `/tmp/vault-local-tools-empty-single-panel.png`.
 - Quieted the Tasks empty state on 2026-06-27: clean task workspaces now keep the quick-entry panel and hide the unused custom-list rail until tasks or lists exist. Visual evidence: `/tmp/vault-tasks-empty-focused-entry.png`.
@@ -3047,6 +3048,7 @@ Current good state:
 - Storage source status is now a disclosure that opens when review work needs attention.
 - Storage filtered search results no longer duplicate empty-state copy across list and detail panes.
 - Storage block filtering now keeps the evidence inspector neutral when no block matches.
+- Storage source detail local-analysis labels no longer show setup badges for absent model routes.
 - Command palette fast actions now show only icon, action name, and shortcut; explanatory action sublines are gone.
 - Browser QA launch paths now fail closed through a shared Playwright Chrome Headless Shell resolver, so visual checks and e2e cannot silently fall back to prompt-prone default Chromium when the headless shell cache is missing.
 - Browser QA/e2e/visual checks now prepare the Playwright headless-shell cache and use non-interactive flags to avoid first-run, keychain, media, and default-browser permission prompts.

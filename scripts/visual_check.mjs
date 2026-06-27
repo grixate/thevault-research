@@ -93,6 +93,15 @@ const scenarios = {
       const startNote = Array.from(document.querySelectorAll("button")).find((button) => button.textContent?.includes("Start cited note"));
       return Boolean(startNote && !startNote.disabled);
     });
+    await page.waitForFunction(() => {
+      const tools = document.querySelector("[aria-label='Storage local analysis tools']");
+      return Boolean(
+        tools &&
+          tools.textContent?.includes("Claim suggestions") &&
+          tools.textContent?.includes("Concept suggestions") &&
+          !tools.textContent?.includes("setup")
+      );
+    });
   },
   "storage-filter-empty": async (page) => {
     await installStorageFilterVaultBridge(page);

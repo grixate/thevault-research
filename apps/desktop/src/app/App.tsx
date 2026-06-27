@@ -1275,11 +1275,11 @@ function CapabilityStatus({ capability, compact = false, quiet = false }: { capa
   ]
     .filter(Boolean)
     .join(" / ");
-  const showQuietBadge = quiet && (!binding || provider?.locality === "cloud" || binding.local_only === false);
+  const showQuietBadge = quiet && Boolean(binding) && (provider?.locality === "cloud" || binding?.local_only === false);
   return (
     <div className={["capability-chip", compact ? "compact" : "", quiet ? "quiet" : ""].filter(Boolean).join(" ")} title={routeTitle || `${capabilityLabel} route not configured`}>
       {!quiet && <Badge tone={tone}>{localityLabel}</Badge>}
-      {showQuietBadge && <Badge tone={binding ? tone : "warn"}>{binding ? localityLabel : "setup"}</Badge>}
+      {showQuietBadge && <Badge tone={tone}>{localityLabel}</Badge>}
       <span title={capability}>{capabilityLabel}</span>
       {!quiet && <small>{binding?.model_id ?? "No model selected"}</small>}
     </div>

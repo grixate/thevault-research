@@ -3525,6 +3525,7 @@ describe("App", () => {
     const analysisTools = await screen.findByLabelText("Storage local analysis tools");
     expect(within(analysisTools).getByText("Claim suggestions")).toBeTruthy();
     expect(within(analysisTools).getByText("Concept suggestions")).toBeTruthy();
+    expect(within(analysisTools).queryByText("setup")).toBeNull();
     expect(within(analysisTools).queryByText("mock local")).toBeNull();
     expect(within(analysisTools).queryByText("mock-local-llm")).toBeNull();
     expect(within(analysisTools).queryByText("No model selected")).toBeNull();
