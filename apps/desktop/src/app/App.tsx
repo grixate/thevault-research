@@ -5803,6 +5803,7 @@ function SourcesView() {
   const [blockQuery, setBlockQuery] = useState("");
   const [copiedBlockId, setCopiedBlockId] = useState("");
   const [lastImportedSourceId, setLastImportedSourceId] = useState("");
+  const [sourceReviewOpen, setSourceReviewOpen] = useState(false);
   const sources = useQuery({ queryKey: ["sources"], queryFn: () => vaultRequest<Source[]>("sources.list") });
   const sourceRows = sources.data ?? [];
   const filteredSources = useMemo(() => {
@@ -5854,6 +5855,7 @@ function SourcesView() {
         setSelectedSourceId(sourceId);
         setSelectedSourceBlockId(undefined);
         setLastImportedSourceId(sourceId);
+        setSourceReviewOpen(false);
       }
       setSourceDialogOpen(false);
       setTitle("");
@@ -5881,6 +5883,7 @@ function SourcesView() {
         setSelectedSourceId(sourceId);
         setSelectedSourceBlockId(undefined);
         setLastImportedSourceId(sourceId);
+        setSourceReviewOpen(false);
       }
       if (results.length > 0) setSourceDialogOpen(false);
       queryClient.invalidateQueries({ queryKey: ["sources"] });
@@ -5914,6 +5917,7 @@ function SourcesView() {
         setSelectedSourceId(sourceId);
         setSelectedSourceBlockId(undefined);
         setLastImportedSourceId(sourceId);
+        setSourceReviewOpen(false);
       }
       if (results.length > 0) setSourceDialogOpen(false);
       queryClient.invalidateQueries({ queryKey: ["sources"] });
@@ -6081,9 +6085,11 @@ async function copyBlock(block: SourceBlock) {
                     }}
                   />
                   <CapsuleAttachButton targetType="source" targetId={selected.id} targetTitle={selected.title} defaultRole="primary_source" showExportPolicy />
-                  <Button icon={<Sparkles size={16} />} disabled={!selected} onClick={() => extract.mutate()}>
-                    Find claims
-                  </Button>
+                  {!showImportFollowup && (
+                    <Button icon={<Sparkles size={16} />} disabled={!selected} onClick={() => extract.mutate()}>
+                      Check claims
+                    </Button>
+                  )}
                 </>
               }
             />
@@ -6108,9 +6114,18 @@ async function copyBlock(block: SourceBlock) {
                   >
                     Start cited note
                   </Button>
-                  <Button icon={<Sparkles size={15} />} variant="secondary" disabled={pipelineBusy} onClick={() => extract.mutate()}>
-                    Find claims
-                  </Button>
+                  <div className="source-import-review">
+                    <Button variant="quiet" aria-expanded={sourceReviewOpen} onClick={() => setSourceReviewOpen((open) => !open)}>
+                      Review source
+                    </Button>
+                    {sourceReviewOpen && (
+                      <div>
+                        <Button icon={<Sparkles size={15} />} variant="secondary" disabled={pipelineBusy} onClick={() => extract.mutate()}>
+                          Check claims
+                        </Button>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             )}

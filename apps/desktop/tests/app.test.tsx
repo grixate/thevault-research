@@ -3722,6 +3722,7 @@ describe("App", () => {
         };
         return { source: importedSource, duplicate: false };
       }
+      if (route === "sources.extract") return { created_review_items: 1, quarantined_items: 0 };
       if (route === "notes.create") {
         createdNote = {
           id: "note_from_imported_source",
@@ -3762,8 +3763,15 @@ describe("App", () => {
     );
     expect((await screen.findAllByText(longImportedSourceTitle)).length).toBeGreaterThan(0);
     expect((await screen.findAllByText("Evidence belongs in Storage.")).length).toBeGreaterThan(0);
-    expect((await screen.findByLabelText("Storage import next actions")).getAttribute("title")).toBe(longImportedSourceTitle);
+    const importFollowup = await screen.findByLabelText("Storage import next actions");
+    expect(importFollowup.getAttribute("title")).toBe(longImportedSourceTitle);
     expect(await screen.findByText("Saved to Storage")).toBeTruthy();
+    expect(within(importFollowup).queryByRole("button", { name: /find claims/i })).toBeNull();
+    expect(within(importFollowup).queryByRole("button", { name: /check claims/i })).toBeNull();
+
+    fireEvent.click(within(importFollowup).getByRole("button", { name: /review source/i }));
+    fireEvent.click(within(importFollowup).getByRole("button", { name: /check claims/i }));
+    await waitFor(() => expect(request).toHaveBeenCalledWith("sources.extract", { sourceId: "src_storage" }));
 
     const startNote = await screen.findByRole("button", { name: /start cited note/i });
     await waitFor(() => expect((startNote as HTMLButtonElement).disabled).toBe(false));

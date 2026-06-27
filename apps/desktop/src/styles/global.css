@@ -3538,6 +3538,26 @@ textarea:not(.ui-textarea) {
   gap: 8px;
 }
 
+.source-import-review {
+  position: relative;
+}
+
+.source-import-review > .button {
+  height: 36px;
+}
+
+.source-import-review > div {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  z-index: 5;
+  padding: 6px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
 .surface-empty-state {
   min-height: 320px;
   display: grid;
@@ -8156,6 +8176,11 @@ blockquote span {
 
   .source-import-followup > div:last-child {
     justify-content: flex-start;
+  }
+
+  .source-import-review > div {
+    left: 0;
+    right: auto;
   }
 
   .source-pipeline-steps {

@@ -43,6 +43,20 @@ const scenarios = {
     await installEmptyVaultBridge(page);
     await openStorage(page);
   },
+  "storage-import-followup": async (page) => {
+    await installStorageImportVaultBridge(page);
+    await openStorage(page);
+    await page.getByRole("button", { name: "Add source" }).click();
+    await page.getByRole("textbox", { name: "Source title" }).fill("Imported interview with a long archive title and nested folder context");
+    await page.getByRole("textbox", { name: "Source text" }).fill("Evidence belongs in Storage until it is quoted inside a note.");
+    await page.getByRole("button", { name: "Save" }).click();
+    await page.getByLabel("Storage import next actions").waitFor();
+    await page.getByRole("button", { name: "Start cited note" }).waitFor({ state: "visible" });
+    await page.waitForFunction(() => {
+      const startNote = Array.from(document.querySelectorAll("button")).find((button) => button.textContent?.includes("Start cited note"));
+      return Boolean(startNote && !startNote.disabled);
+    });
+  },
   "tasks-empty": async (page) => {
     await installEmptyVaultBridge(page);
     await openTasks(page);
@@ -401,5 +415,84 @@ async function installGeneratedDraftVaultBridge(page) {
       selectFiles: async () => []
     };
     window.__vaultVisualLongCitationTitle = longCitationTitle;
+  });
+}
+
+async function installStorageImportVaultBridge(page) {
+  await page.addInitScript(() => {
+    let importedSource = null;
+    const sourceBlock = {
+      id: "block_storage_visual",
+      source_id: "src_storage_visual",
+      block_index: 0,
+      locator: "p1",
+      text: "Evidence belongs in Storage until it is quoted inside a note."
+    };
+    window.vault = {
+      request: async (route, payload) => {
+        if (route === "health.get") return { ok: true, version: "0.1.0", db_ready: true, workspace_id: "wrk_default" };
+        if (route === "jobs.list") return [];
+        if (route === "stats.get") {
+          return {
+            sources: importedSource ? 1 : 0,
+            source_blocks: importedSource ? 1 : 0,
+            notes: 0,
+            claims: 0,
+            claims_without_evidence: 0,
+            contradicted_claims: 0,
+            pending_review_items: 0,
+            generated_notes_pending_review: 0,
+            installed_tools: 0,
+            failed_jobs: 0,
+            learning_items: 0
+          };
+        }
+        if (route === "events.list") return [];
+        if (route === "notes.list") return [];
+        if (route === "sources.list") return importedSource ? [importedSource] : [];
+        if (route === "sources.blocks") return importedSource ? [sourceBlock] : [];
+        if (route === "sources.pipeline") {
+          return {
+            source_id: importedSource?.id ?? "src_storage_visual",
+            source_title: importedSource?.title ?? "",
+            source_type: importedSource?.type ?? "text",
+            source_status: "active",
+            block_count: importedSource ? 1 : 0,
+            embedded_block_count: 0,
+            pending_review_items: 0,
+            needs_edit_review_items: 0,
+            approved_review_items: 0,
+            rejected_review_items: 0,
+            quarantined_items: 0,
+            approved_claims: 0,
+            evidence_links: 0,
+            latest_extraction_job: null,
+            stages: []
+          };
+        }
+        if (route === "sources.importText") {
+          importedSource = {
+            id: "src_storage_visual",
+            type: payload.type,
+            title: payload.title,
+            metadata: payload.metadata,
+            created_at: "2026-06-27T00:00:00Z",
+            updated_at: "2026-06-27T00:00:00Z"
+          };
+          return { source: importedSource, duplicate: false };
+        }
+        if (route === "sources.extract") return { created_review_items: 1, quarantined_items: 0 };
+        if (route === "claims.list") return [];
+        if (route === "todos.list") return { items: [], total: 0, limit: 100, offset: 0 };
+        if (route === "todoLists.list") return [];
+        if (route === "capsules.list") return { items: [] };
+        if (route === "learning.items") return [];
+        if (route === "tools.list") return [];
+        if (route === "ai.capabilities") return [];
+        if (route === "ai.providers") return [];
+        return [];
+      },
+      selectFiles: async () => []
+    };
   });
 }

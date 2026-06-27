@@ -55,6 +55,7 @@ Latest completed slice:
 - Quieted Settings Privacy and Export on 2026-06-27: Privacy now uses two plain local-state rows instead of explanatory cards, and Export now shows one backup action with compact content chips instead of a tile grid. Visual evidence: `/tmp/vault-settings-privacy-minimal.png` and `/tmp/vault-settings-export-minimal.png`.
 - Tightened Quick capture language on 2026-06-27: the Spotlight-style capture switcher now uses `Thought`, `Task`, and `Evidence`, with matching placeholders and save labels, so Notes versus Storage purpose is clear at capture time. Visual evidence: `/tmp/vault-quick-note-intent.png`, `/tmp/vault-quick-storage-intent.png`, and `/tmp/vault-quick-task-intent.png`.
 - Quieted the generated-draft review row on 2026-06-27: generated notes now show a flat `Review generated draft` gate with `Check claims` instead of a tinted explanatory card, while long evidence labels stay clipped and inspectable. Visual evidence: `/tmp/vault-generated-draft-row.png`.
+- Quieted the Storage post-import follow-up on 2026-06-27: first glance now emphasizes `Saved to Storage` and `Start cited note`, while local claim extraction sits one step deeper under `Review source` as `Check claims`. Visual evidence: `/tmp/vault-storage-import-followup-minimal.png`.
 
 Earlier implementation slice built a reproducible macOS arm64 `whisper-cli` package from `whisper.cpp` source, moved the whisper runtime from distribution-decision to release-evidence, verified all production model candidate bytes, and merged the current byte-evidence files into one candidate overlay.
 
@@ -2733,7 +2734,7 @@ Storage import now has an immediate next step:
 - After pasted text, files, or local audio transcription create a source, the imported source is selected.
 - The source detail view shows a restrained "Saved to Storage" follow-up.
 - `Start cited note` creates a note from the first source block with source/block citations preserved in `content_json`.
-- `Find claims` runs the existing extraction path for reviewable local-model proposals.
+- Local claim extraction sits one step deeper under `Review source` as `Check claims`, so Storage first glance stays focused on saved evidence and cited-note creation.
 - The follow-up wraps cleanly on narrow widths.
 
 Files touched:
@@ -3027,7 +3028,7 @@ Remaining tasks:
 - Continue testing long-title and long-path handling in generated draft banners.
 - Continue removing heavy card treatment from any remaining everyday writing/evidence surfaces.
 - Watch whether the save-state copy needs timestamp detail later; do not add clutter unless users need it.
-- Watch whether `Find claims` in the post-import banner feels too eager in real use; if it does, move extraction one step deeper.
+- Keep watching Storage import follow-up density in real use; extraction is already one step deeper and should not return as a first-glance action unless users ask for it.
 - Verify modal/footer wrapping visually in Browser at narrow widths.
 - Keep generated content reviewable.
 
