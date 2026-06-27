@@ -485,7 +485,7 @@ Latest Settings Models minimalist verification on 2026-06-21:
 - Latest desktop production build after this slice: passed.
 - Latest renderer e2e smoke after this slice: passed.
 - `git diff --check`: passed.
-- Permission-prompt note: do not use ad hoc standalone Chromium launch commands for QA. Use `CI=true pnpm e2e` or `node scripts/visual_check.mjs <scenario> <output>`; both route through explicit no-sandbox Playwright launch settings and ran unattended on 2026-06-27.
+- Permission-prompt note: do not use ad hoc standalone Chromium launch commands for QA. Use `CI=true pnpm e2e` or `node scripts/visual_check.mjs <scenario> <output>`; both prefer Playwright's Chrome Headless Shell executable when installed and keep explicit no-sandbox launch settings. Quarantine metadata was cleared from the local Playwright browser cache on 2026-06-27.
 
 Latest Assistant minimalist chat verification on 2026-06-21:
 
