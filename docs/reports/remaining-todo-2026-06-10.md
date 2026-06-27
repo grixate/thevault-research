@@ -77,6 +77,7 @@ Latest completed slice:
 - Quieted command palette fast actions further on 2026-06-27: the visible `Fast actions` header is gone, shortcut copy uses compact key glyphs, and action rows now read like Spotlight suggestions rather than an admin command list. Visual evidence: `/tmp/vault-command-actions-spotlight-v1.png`.
 - Hardened browser QA launches further on 2026-06-27: e2e, visual checks, and the browser doctor now share one fail-closed Chrome Headless Shell resolver, preventing prompt-prone default Chromium fallback when the safe executable is missing. Verification evidence: `node scripts/check_browser_qa.mjs`, `node scripts/visual_check.mjs command-actions /tmp/vault-browser-prompt-guard-command-actions.png`, `CI=true pnpm e2e`, and a negative missing-cache check.
 - Hardened browser QA autonomy again on 2026-06-27: the shared headless-shell launch path now removes quarantine attributes opportunistically and passes non-interactive Chromium flags for first-run, keychain, media, and default-browser prompts. Verification: `pnpm browser:doctor`, `CI=true pnpm e2e`, and `node scripts/visual_check.mjs practice-empty /tmp/vault-permission-check-practice.png`.
+- Quieted the Settings Models tab row on 2026-06-27: the first tab now reads `Local` instead of repeating `Models`, leaving the app destination as `Models` and the install/check action as `Setup`. Visual evidence: `/tmp/vault-settings-local-tab-minimal.png`.
 - Quieted the Review empty state on 2026-06-27: empty queues now use one calm panel with the status switch and clear-state copy, instead of a duplicate `Review` list rail plus an empty detail pane. Visual evidence: `/tmp/vault-review-empty-single-panel.png`.
 - Quieted the Local tools empty state on 2026-06-27: empty helper shelves now collapse to one calm panel with `No helpers`, removing the duplicate `Local tools` list heading and inert `Helper details` inspector. Visual evidence: `/tmp/vault-local-tools-empty-single-panel.png`.
 - Quieted the Tasks empty state on 2026-06-27: clean task workspaces now keep the quick-entry panel and hide the unused custom-list rail until tasks or lists exist. Visual evidence: `/tmp/vault-tasks-empty-focused-entry.png`.
@@ -3031,6 +3032,7 @@ Current good state:
 - Settings Advanced now gives the settings JSON a clear snapshot heading instead of a raw dump.
 - Local-model setup now opens with compact readiness facts and keeps library/approval detail behind disclosures instead of route-card/dashboard language.
 - Settings Models hides empty/loading setup counters and collapses zero-count library badges, keeping the first glance useful even before setup data loads.
+- Settings Models now uses `Local` as the first tab label, avoiding a repeated `Models` stack while keeping `Setup` reserved for the install/check action.
 - Quick Note, Storage intake, and generated-draft action rows wrap or stack cleanly at narrow widths.
 - Quick capture now names the core destinations by intent: `Thought`, `Task`, and `Evidence`.
 - Assistant no longer overflows at 390px; the mobile top bar removes desktop search width and keeps the question flow in view.

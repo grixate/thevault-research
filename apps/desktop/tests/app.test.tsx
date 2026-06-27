@@ -5689,10 +5689,10 @@ describe("App", () => {
     useUIStore.setState({ surface: "settings" });
     renderApp();
     const settingsTabs = await screen.findByRole("tablist", { name: "Settings sections" });
-    expect(within(settingsTabs).getByRole("tab", { name: "Models" }).getAttribute("data-state")).toBe("active");
+    expect(within(settingsTabs).getByRole("tab", { name: "Local" }).getAttribute("data-state")).toBe("active");
     expect(within(settingsTabs).getByRole("tab", { name: "Search" })).toBeTruthy();
     expect(within(settingsTabs).getByRole("tab", { name: "Advanced" })).toBeTruthy();
-    expect(await screen.findByRole("heading", { name: "Models", level: 2 })).toBeTruthy();
+    expect(await screen.findByRole("heading", { name: "Local", level: 2 })).toBeTruthy();
     expect(screen.queryByText("local preferences")).toBeNull();
     expect(screen.queryByText("Model approvals, evidence, and setup tools.")).toBeNull();
     expect(screen.queryByText("Installed models, runtimes, downloads, and local pack details.")).toBeNull();
@@ -6566,7 +6566,7 @@ describe("App", () => {
     useUIStore.setState({ surface: "settings" });
     renderApp();
 
-    expect(await screen.findByRole("heading", { name: "Models", level: 2 })).toBeTruthy();
+    expect(await screen.findByRole("heading", { name: "Local", level: 2 })).toBeTruthy();
     const setupGuide = (await screen.findByText("Private setup steps")).closest("section");
     expect(setupGuide).toBeTruthy();
     fireEvent.click(within(setupGuide as HTMLElement).getByRole("button", { name: /^setup$/i }));

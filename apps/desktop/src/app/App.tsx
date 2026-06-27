@@ -11369,7 +11369,7 @@ function SettingsView() {
     setTab("ai");
   }
   const settingsTabItems: Array<{ id: typeof tab; label: string }> = [
-    { id: "ai", label: "Models" },
+    { id: "ai", label: "Local" },
     { id: "routing", label: "Search" },
     { id: "voice", label: "Voice" },
     { id: "privacy", label: "Privacy" },
