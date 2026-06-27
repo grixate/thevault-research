@@ -8433,6 +8433,8 @@ describe("App", () => {
     expect(await screen.findByText("Model task routing")).toBeTruthy();
     expect(screen.queryByText("Choose which local provider handles each model-backed task.")).toBeNull();
     expect(screen.queryByText("No provider selected")).toBeNull();
+    expect(screen.queryByText("No saved embedding model")).toBeNull();
+    expect(screen.queryByText("No saved reranker model")).toBeNull();
     expect(screen.queryByText(/^setup$/i)).toBeNull();
     expect((await screen.findAllByText("Search index")).length).toBeGreaterThan(1);
     expect(await screen.findByLabelText("Provider for Search index")).toBeTruthy();

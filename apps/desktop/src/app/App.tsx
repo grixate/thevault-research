@@ -11937,7 +11937,6 @@ function SettingsView() {
               <summary className="embedding-config-header">
                 <div>
                   <h3>Search index</h3>
-                  <p>{embedBinding?.model_id ?? "No saved embedding model"}</p>
                 </div>
                 <SlidersHorizontal size={22} />
               </summary>
@@ -12074,7 +12073,6 @@ function SettingsView() {
               <summary className="embedding-config-header">
                 <div>
                   <h3>Result ranking</h3>
-                  <p>{rerankBinding?.model_id ?? "No saved reranker model"}</p>
                 </div>
                 <SlidersHorizontal size={22} />
               </summary>

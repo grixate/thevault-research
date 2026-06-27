@@ -159,6 +159,16 @@ const scenarios = {
     await installEmptyVaultBridge(page);
     await openSettings(page);
     await page.getByRole("tab", { name: "Search" }).click();
+    await page.waitForFunction(() => {
+      const text = document.body.innerText ?? "";
+      return (
+        text.includes("Search index") &&
+        text.includes("Result ranking") &&
+        text.includes("Model task routing") &&
+        !text.includes("No saved embedding model") &&
+        !text.includes("No saved reranker model")
+      );
+    });
   },
   "settings-voice": async (page) => {
     await installEmptyVaultBridge(page);
