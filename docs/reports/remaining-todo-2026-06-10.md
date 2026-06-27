@@ -54,6 +54,7 @@ Latest completed slice:
 - Quieted the Settings Voice first glance on 2026-06-27: microphone status, Dictation, and Read aloud are now plain action rows, static explanatory sublines are gone, and provider/model/path routing lives behind a single `Voice model setup` disclosure. Visual evidence: `/tmp/vault-settings-voice-minimal.png`.
 - Quieted Settings Privacy and Export on 2026-06-27: Privacy now uses two plain local-state rows instead of explanatory cards, and Export now shows one backup action with compact content chips instead of a tile grid. Visual evidence: `/tmp/vault-settings-privacy-minimal.png` and `/tmp/vault-settings-export-minimal.png`.
 - Tightened Quick capture language on 2026-06-27: the Spotlight-style capture switcher now uses `Thought`, `Task`, and `Evidence`, with matching placeholders and save labels, so Notes versus Storage purpose is clear at capture time. Visual evidence: `/tmp/vault-quick-note-intent.png`, `/tmp/vault-quick-storage-intent.png`, and `/tmp/vault-quick-task-intent.png`.
+- Quieted the generated-draft review row on 2026-06-27: generated notes now show a flat `Review generated draft` gate with `Check claims` instead of a tinted explanatory card, while long evidence labels stay clipped and inspectable. Visual evidence: `/tmp/vault-generated-draft-row.png`.
 
 Earlier implementation slice built a reproducible macOS arm64 `whisper-cli` package from `whisper.cpp` source, moved the whisper runtime from distribution-decision to release-evidence, verified all production model candidate bytes, and merged the current byte-evidence files into one candidate overlay.
 
@@ -3006,6 +3007,7 @@ Current good state:
 - Assistant no longer overflows at 390px; the mobile top bar removes desktop search width and keeps the question flow in view.
 - Assistant citation rows clamp long titles and exact quotes while preserving full evidence text.
 - Generated-note provenance and Storage import follow-ups now preserve long source/evidence labels without adding visible clutter.
+- Generated-note review gates now use a flat row and user-facing `Check claims` language instead of a static explanatory banner.
 - Storage source status is now a disclosure that opens when review work needs attention.
 - Command palette fast actions now show only icon, action name, and shortcut; explanatory action sublines are gone.
 - Clean sessions now open on Notes instead of Home, making the writing workspace the default product center.

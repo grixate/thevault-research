@@ -32,6 +32,10 @@ const scenarios = {
     await openNotes(page);
     await page.getByText("Tools", { exact: true }).click();
   },
+  "generated-draft": async (page) => {
+    await installGeneratedDraftVaultBridge(page);
+    await openNotes(page);
+  },
   "storage-loading": async (page) => {
     await openStorage(page);
   },
@@ -318,5 +322,84 @@ async function installNoteVaultBridge(page) {
       },
       selectFiles: async () => []
     };
+  });
+}
+
+async function installGeneratedDraftVaultBridge(page) {
+  await page.addInitScript(() => {
+    const longCitationTitle = "Archive source with a very long collection title for a generated local synthesis draft (appendix block 24 with nested locator)";
+    const note = {
+      id: "note_visual_generated",
+      title: "Local synthesis draft",
+      content: {
+        generation_status: "draft",
+        requires_review: true,
+        generated_by: "llama_cpp_cli",
+        model_id: "standard-gguf-placeholder",
+        capability: "generate_note",
+        ai_run_id: "run_visual_generated",
+        source_ids: ["src_visual_generated"],
+        claim_ids: ["claim_visual_generated"],
+        citations: [
+          {
+            title: "Archive source with a very long collection title for a generated local synthesis draft",
+            locator: "appendix block 24 with nested locator",
+            snippet: "Evidence quote remains inspectable without expanding the banner."
+          }
+        ],
+        generated_claim_review_status: "not_prepared",
+        generated_claim_review_item_count: 0,
+        generated_claim_review_quarantined_count: 0,
+        sent_off_device: false,
+        editor_doc: {
+          type: "doc",
+          content: [
+            { type: "heading", attrs: { level: 1 }, content: [{ type: "text", text: "Local synthesis draft" }] },
+            { type: "paragraph", content: [{ type: "text", text: "Generated synthesis awaits review before it becomes a normal note." }] }
+          ]
+        }
+      },
+      content_markdown: "# Local synthesis draft\n\nGenerated synthesis awaits review before it becomes a normal note.",
+      origin: "ai_generated",
+      status: "generated_pending_review",
+      version: 1,
+      source_id: "src_visual_generated",
+      updated_at: "2026-06-27T00:00:00Z"
+    };
+    window.vault = {
+      request: async (route) => {
+        if (route === "health.get") return { ok: true, version: "0.1.0", db_ready: true, workspace_id: "wrk_default" };
+        if (route === "jobs.list") return [];
+        if (route === "stats.get") {
+          return {
+            sources: 1,
+            source_blocks: 1,
+            notes: 1,
+            claims: 1,
+            claims_without_evidence: 0,
+            contradicted_claims: 0,
+            pending_review_items: 0,
+            generated_notes_pending_review: 1,
+            installed_tools: 0,
+            failed_jobs: 0,
+            learning_items: 0
+          };
+        }
+        if (route === "events.list") return [];
+        if (route === "notes.list") return [note];
+        if (route === "sources.list") return [];
+        if (route === "claims.list") return [];
+        if (route === "capsules.list") return { items: [] };
+        if (route === "ai.capabilities") return [
+          { capability: "extract_claims", provider_id: "llama_cpp_cli", model_id: "standard-gguf-placeholder", local_only: true, settings: {} },
+          { capability: "extract_objects", provider_id: "llama_cpp_cli", model_id: "standard-gguf-placeholder", local_only: true, settings: {} },
+          { capability: "generate_note", provider_id: "llama_cpp_cli", model_id: "standard-gguf-placeholder", local_only: true, settings: {} }
+        ];
+        if (route === "ai.providers") return [];
+        return [];
+      },
+      selectFiles: async () => []
+    };
+    window.__vaultVisualLongCitationTitle = longCitationTitle;
   });
 }

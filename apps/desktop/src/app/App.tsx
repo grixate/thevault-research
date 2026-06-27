@@ -5621,8 +5621,7 @@ function NoteEditor({ note, isLoading, onNewNote, onQuickNote }: { note?: Note; 
         <div className="generated-review-bar">
           <div>
             <Badge tone="warn">{generationStatus || "draft"}</Badge>
-            <strong>Generated draft awaiting review</strong>
-            <span>Prepare claim review items before promotion; any edited draft needs a fresh pass.</span>
+            <strong>Review generated draft</strong>
             {claimReviewPrepared && (
               <small>
                 {claimReviewCount} claim review{claimReviewCount === 1 ? "" : "s"} prepared
@@ -5643,7 +5642,7 @@ function NoteEditor({ note, isLoading, onNewNote, onQuickNote }: { note?: Note; 
               disabled={reviewBusy || claimReviewPrepared}
               onClick={() => prepareGeneratedReview.mutate()}
             >
-              {claimReviewPrepared ? "Claim review ready" : claimReviewStatus === "stale" || claimReviewBlocked ? "Recheck claims" : "Prepare claim review"}
+              {claimReviewPrepared ? "Claims checked" : claimReviewStatus === "stale" || claimReviewBlocked ? "Recheck claims" : "Check claims"}
             </Button>
             <Button icon={<Check size={15} />} variant={claimReviewPrepared ? "primary" : "secondary"} disabled={reviewBusy || !claimReviewPrepared} onClick={() => approveGenerated.mutate()}>
               Approve as note

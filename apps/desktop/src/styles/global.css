@@ -1999,18 +1999,22 @@ textarea:not(.ui-textarea) {
 
 .generated-review-bar {
   display: grid;
-  grid-template-columns: minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
   gap: 12px;
   margin: 8px 0;
-  padding: 12px;
-  background: rgba(243, 191, 106, 0.08);
-  border: 1px solid rgba(243, 191, 106, 0.28);
-  border-radius: 8px;
+  padding: 10px 0;
+  background: transparent;
+  border-block: 1px solid var(--line);
+  border-inline: 0;
+  border-radius: 0;
 }
 
 .generated-review-bar > div:first-child {
-  display: grid;
-  gap: 5px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 7px;
   min-width: 0;
 }
 
@@ -2029,7 +2033,7 @@ textarea:not(.ui-textarea) {
 .generated-review-actions {
   display: flex;
   flex-wrap: wrap;
-  justify-content: start;
+  justify-content: end;
   gap: 8px;
 }
 

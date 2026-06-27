@@ -2145,7 +2145,7 @@ describe("App", () => {
     fireEvent.click(screen.getByRole("button", { name: /Generated memo/i }));
     expect(await screen.findByDisplayValue("Generated memo")).toBeTruthy();
     expect(within(await screen.findByLabelText("Note metadata")).getByText("AI draft")).toBeTruthy();
-    expect(screen.getByText("Generated draft awaiting review")).toBeTruthy();
+    expect(screen.getByText("Review generated draft")).toBeTruthy();
 
     fireEvent.click(screen.getByRole("button", { name: /Written synthesis/i }));
     expect(await screen.findByDisplayValue("Written synthesis")).toBeTruthy();
@@ -6636,7 +6636,8 @@ describe("App", () => {
       )
     );
     expect(await screen.findByDisplayValue("Original memo")).toBeTruthy();
-    expect(await screen.findByText("Generated draft awaiting review")).toBeTruthy();
+    expect(await screen.findByText("Review generated draft")).toBeTruthy();
+    expect(screen.queryByText("Prepare claim review items before promotion; any edited draft needs a fresh pass.")).toBeNull();
     const draftedResult = (await screen.findByText("Drafted")).closest(".workflow-result");
     expect(draftedResult).toBeTruthy();
     expect(within(draftedResult as HTMLElement).getByText("Drafted locally")).toBeTruthy();
@@ -6648,7 +6649,7 @@ describe("App", () => {
     expect((await screen.findAllByText("Run recorded")).length).toBeGreaterThan(0);
     expect(await screen.findByTitle(longGeneratedCitationTitle)).toBeTruthy();
     expect(await screen.findByRole("button", { name: /approve as note/i })).toHaveProperty("disabled", true);
-    fireEvent.click(await screen.findByRole("button", { name: /prepare claim review/i }));
+    fireEvent.click(await screen.findByRole("button", { name: /check claims/i }));
     await waitFor(() =>
       expect(request).toHaveBeenCalledWith("notes.prepareGeneratedReview", {
         noteId: "note_generated",
@@ -7177,7 +7178,7 @@ describe("App", () => {
       )
     );
     expect(await screen.findByDisplayValue("Assistant answer: How do typed claims help?")).toBeTruthy();
-    expect(await screen.findByText("Generated draft awaiting review")).toBeTruthy();
+    expect(await screen.findByText("Review generated draft")).toBeTruthy();
     expect((await screen.findAllByText("Drafted locally")).length).toBeGreaterThan(0);
     expect((await screen.findAllByText("Run recorded")).length).toBeGreaterThan(0);
     expect(screen.queryByText("mock-local-llm")).toBeNull();
@@ -7565,7 +7566,7 @@ describe("App", () => {
 
     useUIStore.setState({ surface: "notes", selectedNoteId: "note_generated_reject" });
     renderApp();
-    expect(await screen.findByText("Generated draft awaiting review")).toBeTruthy();
+    expect(await screen.findByText("Review generated draft")).toBeTruthy();
     fireEvent.click(await screen.findByRole("button", { name: /^reject$/i }));
     await waitFor(() => expect(request).toHaveBeenCalledWith("notes.rejectGenerated", { noteId: "note_generated_reject" }));
     expect(await screen.findByText("rejected")).toBeTruthy();
