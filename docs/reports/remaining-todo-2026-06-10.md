@@ -56,6 +56,7 @@ Latest completed slice:
 - Tightened Quick capture language on 2026-06-27: the Spotlight-style capture switcher now uses `Thought`, `Task`, and `Evidence`, with matching placeholders and save labels, so Notes versus Storage purpose is clear at capture time. Visual evidence: `/tmp/vault-quick-note-intent.png`, `/tmp/vault-quick-storage-intent.png`, and `/tmp/vault-quick-task-intent.png`.
 - Quieted the generated-draft review row on 2026-06-27: generated notes now show a flat `Review generated draft` gate with `Check claims` instead of a tinted explanatory card, while long evidence labels stay clipped and inspectable. Visual evidence: `/tmp/vault-generated-draft-row.png`.
 - Quieted the Storage post-import follow-up on 2026-06-27: first glance now emphasizes `Saved to Storage` and `Start cited note`, while local claim extraction sits one step deeper under `Review source` as `Check claims`. Visual evidence: `/tmp/vault-storage-import-followup-minimal.png`.
+- Re-verified the no-prompt browser QA path on 2026-06-27: `CI=true pnpm e2e` and `node scripts/visual_check.mjs storage-import-followup /tmp/vault-storage-import-followup-minimal.png` both ran unattended with explicit no-sandbox Playwright launch settings.
 
 Earlier implementation slice built a reproducible macOS arm64 `whisper-cli` package from `whisper.cpp` source, moved the whisper runtime from distribution-decision to release-evidence, verified all production model candidate bytes, and merged the current byte-evidence files into one candidate overlay.
 
@@ -282,7 +283,7 @@ Latest production local-AI approval and pinning slice on 2026-06-22:
 Prompt/sandbox note for autonomous work:
 
 - `scripts/lib/core_python.sh` now preserves the caller's working directory while still preferring `services/core/.venv/bin/python`; relative `--output` paths from registry scripts now land where the command was launched, not under `services/core`.
-- For Chromium/Playwright visual QA, keep using the stable helper `node scripts/visual_check.mjs <scenario> <output>`. It now launches headless Chromium with explicit no-sandbox flags, and the desktop Playwright config uses the same launch settings for renderer e2e.
+- For Chromium/Playwright visual QA, use only the stable no-prompt paths: `CI=true pnpm e2e` and `node scripts/visual_check.mjs <scenario> <output>`. Both launch headless Chromium with explicit no-sandbox settings and were verified unattended on 2026-06-27.
 
 Latest production runtime setup probe on 2026-06-22:
 
@@ -473,7 +474,7 @@ Latest Settings Models minimalist verification on 2026-06-21:
 - Latest desktop production build after this slice: passed.
 - Latest renderer e2e smoke after this slice: passed.
 - `git diff --check`: passed.
-- Standalone shell-launched Chromium can still hit managed macOS Mach-port denial depending on the host policy. Use the stable helper `node scripts/visual_check.mjs <scenario> <output>` or `pnpm e2e`; both route through explicit no-sandbox Playwright launch settings for autonomous work.
+- Permission-prompt note: do not use ad hoc standalone Chromium launch commands for QA. Use `CI=true pnpm e2e` or `node scripts/visual_check.mjs <scenario> <output>`; both route through explicit no-sandbox Playwright launch settings and ran unattended on 2026-06-27.
 
 Latest Assistant minimalist chat verification on 2026-06-21:
 
