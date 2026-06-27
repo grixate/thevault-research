@@ -4323,6 +4323,8 @@ function TasksView() {
   const rows = todos.data?.items ?? [];
   const openRows = view === "completed" ? rows : rows.filter((todo) => todo.status !== "completed");
   const selectedTodo = rows.find((todo) => todo.id === selectedTodoId) ?? null;
+  const showTaskSide = selectedTodo || lists.isLoading || listRows.length > 0 || rows.length > 0;
+  const tasksViewClassName = ["surface", "tasks-view", !showTaskSide ? "tasks-view-empty" : ""].filter(Boolean).join(" ");
   useEffect(() => {
     if (selectedTodoId && !rows.some((todo) => todo.id === selectedTodoId)) setSelectedTodoId(null);
   }, [rows, selectedTodoId]);
@@ -4354,7 +4356,7 @@ function TasksView() {
   }
 
   return (
-    <div className="surface tasks-view">
+    <div className={tasksViewClassName}>
       <Panel className="tasks-pane">
         <div className="tasks-header">
           <div className="task-view-tabs" role="tablist" aria-label="Task views">
@@ -4398,70 +4400,72 @@ function TasksView() {
           ))}
         </div>
       </Panel>
-      <aside className="tasks-side" aria-label="Task lists">
-        {selectedTodo ? (
-          <TaskDetail todo={selectedTodo} lists={listRows} onClose={() => setSelectedTodoId(null)} />
-        ) : (
-          <>
-            <div className="tasks-side-section">
-              <div className="tasks-side-title">
-                <strong>Lists</strong>
-              </div>
-              <button type="button" className={!selectedListId ? "active" : ""} onClick={() => setSelectedListId(null)}>
-                <span>{view === "inbox" ? "Inbox" : "All"}</span>
-              </button>
-              {lists.isLoading && <span>Loading...</span>}
-              {!lists.isLoading && listRows.length === 0 && <span>No custom lists</span>}
-              {listRows.map((list) => (
-                <div key={list.id} className={`task-list-row ${selectedListId === list.id ? "active" : ""}`}>
-                  {editingListId === list.id ? (
-                    <form className="task-list-edit" onSubmit={(event) => submitListRename(event, list)}>
-                      <Input
-                        aria-label={`Rename ${list.name}`}
-                        value={editingListName}
-                        onChange={(event) => setEditingListName(event.target.value)}
-                        autoFocus
-                      />
-                      <Button type="submit" size="icon" variant="quiet" icon={<Check size={14} />} aria-label="Save list name" disabled={!editingListName.trim() || updateList.isPending} />
-                      <Button type="button" size="icon" variant="quiet" icon={<X size={14} />} aria-label="Cancel list rename" onClick={() => setEditingListId(null)} />
-                    </form>
-                  ) : (
-                    <>
-                      <button type="button" title={list.name} onClick={() => setSelectedListId(list.id)}>
-                        <span>{list.name}</span>
-                        <small>{list.open_count}</small>
-                      </button>
-                      <button type="button" className="task-list-icon" aria-label={`Rename ${list.name}`} onClick={() => startEditingList(list)}>
-                        <TextCursorInput size={13} />
-                      </button>
-                      <button
-                        type="button"
-                        className="task-list-icon"
-                        aria-label={`Archive ${list.name}`}
-                        disabled={updateList.isPending}
-                        onClick={() => updateList.mutate({ listId: list.id, data: { status: "archived" } })}
-                      >
-                        <Archive size={13} />
-                      </button>
-                    </>
-                  )}
+      {showTaskSide && (
+        <aside className="tasks-side" aria-label="Task lists">
+          {selectedTodo ? (
+            <TaskDetail todo={selectedTodo} lists={listRows} onClose={() => setSelectedTodoId(null)} />
+          ) : (
+            <>
+              <div className="tasks-side-section">
+                <div className="tasks-side-title">
+                  <strong>Lists</strong>
                 </div>
-              ))}
-              <form className="task-list-add" onSubmit={submitNewList}>
-                <Input
-                  aria-label="New list name"
-                  placeholder="New list"
-                  value={newListName}
-                  onChange={(event) => setNewListName(event.target.value)}
-                />
-                <Button type="submit" size="icon" variant="quiet" icon={<Plus size={14} />} aria-label="Create list" disabled={!newListName.trim() || createList.isPending} />
-              </form>
-              {createList.error && <small className="model-test-error">{createList.error.message}</small>}
-              {updateList.error && <small className="model-test-error">{updateList.error.message}</small>}
-            </div>
-          </>
-        )}
-      </aside>
+                <button type="button" className={!selectedListId ? "active" : ""} onClick={() => setSelectedListId(null)}>
+                  <span>{view === "inbox" ? "Inbox" : "All"}</span>
+                </button>
+                {lists.isLoading && <span>Loading...</span>}
+                {!lists.isLoading && listRows.length === 0 && <span>No custom lists</span>}
+                {listRows.map((list) => (
+                  <div key={list.id} className={`task-list-row ${selectedListId === list.id ? "active" : ""}`}>
+                    {editingListId === list.id ? (
+                      <form className="task-list-edit" onSubmit={(event) => submitListRename(event, list)}>
+                        <Input
+                          aria-label={`Rename ${list.name}`}
+                          value={editingListName}
+                          onChange={(event) => setEditingListName(event.target.value)}
+                          autoFocus
+                        />
+                        <Button type="submit" size="icon" variant="quiet" icon={<Check size={14} />} aria-label="Save list name" disabled={!editingListName.trim() || updateList.isPending} />
+                        <Button type="button" size="icon" variant="quiet" icon={<X size={14} />} aria-label="Cancel list rename" onClick={() => setEditingListId(null)} />
+                      </form>
+                    ) : (
+                      <>
+                        <button type="button" title={list.name} onClick={() => setSelectedListId(list.id)}>
+                          <span>{list.name}</span>
+                          <small>{list.open_count}</small>
+                        </button>
+                        <button type="button" className="task-list-icon" aria-label={`Rename ${list.name}`} onClick={() => startEditingList(list)}>
+                          <TextCursorInput size={13} />
+                        </button>
+                        <button
+                          type="button"
+                          className="task-list-icon"
+                          aria-label={`Archive ${list.name}`}
+                          disabled={updateList.isPending}
+                          onClick={() => updateList.mutate({ listId: list.id, data: { status: "archived" } })}
+                        >
+                          <Archive size={13} />
+                        </button>
+                      </>
+                    )}
+                  </div>
+                ))}
+                <form className="task-list-add" onSubmit={submitNewList}>
+                  <Input
+                    aria-label="New list name"
+                    placeholder="New list"
+                    value={newListName}
+                    onChange={(event) => setNewListName(event.target.value)}
+                  />
+                  <Button type="submit" size="icon" variant="quiet" icon={<Plus size={14} />} aria-label="Create list" disabled={!newListName.trim() || createList.isPending} />
+                </form>
+                {createList.error && <small className="model-test-error">{createList.error.message}</small>}
+                {updateList.error && <small className="model-test-error">{updateList.error.message}</small>}
+              </div>
+            </>
+          )}
+        </aside>
+      )}
     </div>
   );
 }

@@ -78,6 +78,7 @@ Latest completed slice:
 - Hardened browser QA launches further on 2026-06-27: e2e, visual checks, and the browser doctor now share one fail-closed Chrome Headless Shell resolver, preventing prompt-prone default Chromium fallback when the safe executable is missing. Verification evidence: `node scripts/check_browser_qa.mjs`, `node scripts/visual_check.mjs command-actions /tmp/vault-browser-prompt-guard-command-actions.png`, `CI=true pnpm e2e`, and a negative missing-cache check.
 - Quieted the Review empty state on 2026-06-27: empty queues now use one calm panel with the status switch and clear-state copy, instead of a duplicate `Review` list rail plus an empty detail pane. Visual evidence: `/tmp/vault-review-empty-single-panel.png`.
 - Quieted the Local tools empty state on 2026-06-27: empty helper shelves now collapse to one calm panel with `No helpers`, removing the duplicate `Local tools` list heading and inert `Helper details` inspector. Visual evidence: `/tmp/vault-local-tools-empty-single-panel.png`.
+- Quieted the Tasks empty state on 2026-06-27: clean task workspaces now keep the quick-entry panel and hide the unused custom-list rail until tasks or lists exist. Visual evidence: `/tmp/vault-tasks-empty-focused-entry.png`.
 
 Earlier implementation slice built a reproducible macOS arm64 `whisper-cli` package from `whisper.cpp` source, moved the whisper runtime from distribution-decision to release-evidence, verified all production model candidate bytes, and merged the current byte-evidence files into one candidate overlay.
 
@@ -3041,6 +3042,7 @@ Current good state:
 - Browser QA launch paths now fail closed through a shared Playwright Chrome Headless Shell resolver, so visual checks and e2e cannot silently fall back to prompt-prone default Chromium when the headless shell cache is missing.
 - Empty Review queues now collapse to one quiet panel with the status switcher and clear state instead of showing a redundant split-pane scaffold.
 - Empty Local tools shelves now collapse to one quiet panel instead of showing a redundant split-pane scaffold.
+- Empty Tasks workspaces hide the custom-list rail and keep focus on quick entry.
 - Clean sessions now open on Notes instead of Home, making the writing workspace the default product center.
 - The resting topbar search no longer exposes `Exact` / `Smart`; mode choice is available only while reviewing active search results.
 - Sidebar local status is reduced to one compact state chip; version and background-task details are no longer visible first-glance footer copy.

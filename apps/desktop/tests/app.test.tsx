@@ -727,6 +727,7 @@ describe("App", () => {
     renderApp();
     fireEvent.click(await screen.findByRole("button", { name: "Tasks" }));
     expect(await screen.findByText("Inbox clear.")).toBeTruthy();
+    expect(screen.getByLabelText("Task lists")).toBeTruthy();
 
     fireEvent.change(screen.getByPlaceholderText("Add task"), { target: { value: "Email Anna about citation mismatch tomorrow @waiting #Paper review p2" } });
     fireEvent.click(screen.getByRole("button", { name: "Add task" }));
@@ -765,6 +766,41 @@ describe("App", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Complete Email Anna about quote mismatch" }));
     await waitFor(() => expect(request).toHaveBeenCalledWith("todos.complete", { todoId: "todo_follow_up" }));
+  });
+
+  it("keeps the empty Tasks surface focused on quick entry", async () => {
+    const request = vi.fn(async (route: string, payload?: any) => {
+      if (route === "health.get") return { ok: true, version: "0.1.0", db_ready: true, workspace_id: "wrk_default" };
+      if (route === "jobs.list" || route === "events.list") return [];
+      if (route === "stats.get") {
+        return {
+          sources: 0,
+          source_blocks: 0,
+          notes: 0,
+          claims: 0,
+          claims_without_evidence: 0,
+          contradicted_claims: 0,
+          pending_review_items: 0,
+          generated_notes_pending_review: 0,
+          installed_tools: 0,
+          failed_jobs: 0,
+          learning_items: 0
+        };
+      }
+      if (route === "todos.list") return { items: [], total: 0, view: payload?.view ?? "inbox" };
+      if (route === "todoLists.list") return [];
+      return [];
+    });
+    window.vault = { request, selectFiles: vi.fn(async () => []) };
+
+    renderApp();
+    fireEvent.click(await screen.findByRole("button", { name: "Tasks" }));
+
+    expect(await screen.findByText("Inbox clear.")).toBeTruthy();
+    expect(screen.getByRole("textbox", { name: "Add task" })).toBeTruthy();
+    expect(screen.queryByLabelText("Task lists")).toBeNull();
+    expect(screen.queryByText("No custom lists")).toBeNull();
+    expect(screen.queryByPlaceholderText("New list")).toBeNull();
   });
 
   it("adds and completes subtasks from the task detail rail", async () => {

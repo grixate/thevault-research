@@ -2456,6 +2456,10 @@ textarea:not(.ui-textarea) {
   gap: 14px;
 }
 
+.tasks-view-empty {
+  grid-template-columns: minmax(0, 760px);
+}
+
 .tasks-pane {
   display: grid;
   align-content: start;
