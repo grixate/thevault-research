@@ -1986,6 +1986,26 @@ textarea:not(.ui-textarea) {
   align-items: stretch;
 }
 
+.provenance-strip.quiet {
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+}
+
+.provenance-strip.quiet .evidence-chip-list {
+  flex: 0 1 auto;
+}
+
+.provenance-strip.quiet .evidence-chip {
+  color: var(--muted);
+  background: transparent;
+  border-color: var(--line);
+}
+
 .evidence-chip-list {
   display: flex;
   flex: 1 1 100%;

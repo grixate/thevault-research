@@ -1285,7 +1285,7 @@ function CapabilityStatus({ capability, compact = false, quiet = false }: { capa
   );
 }
 
-function NoteProvenance({ note }: { note: Note }) {
+function NoteProvenance({ note, quiet = false }: { note: Note; quiet?: boolean }) {
   const content = note.content ?? {};
   const sourceIds = stringList(content.source_ids);
   const claimIds = stringList(content.claim_ids);
@@ -1293,6 +1293,27 @@ function NoteProvenance({ note }: { note: Note }) {
   const hasAIProvenance = Boolean(content.ai_run_id) || Boolean(content.model_id) || note.origin === "ai_generated";
   const hasEvidenceProvenance = sourceIds.length > 0 || citations.length > 0;
   if (!hasAIProvenance && !hasEvidenceProvenance) return null;
+  if (quiet) {
+    if (!hasEvidenceProvenance && claimIds.length === 0) return null;
+    return (
+      <div className="provenance-strip quiet" aria-label="Generated note evidence">
+        {sourceIds.length > 0 && <small>{sourceIds.length} source{sourceIds.length === 1 ? "" : "s"}</small>}
+        {claimIds.length > 0 && <small>{claimIds.length} claim{claimIds.length === 1 ? "" : "s"}</small>}
+        {citations.length > 0 && (
+          <div className="evidence-chip-list">
+            {citations.map((citation: any, index) => {
+              const label = `${String(citation?.title ?? "Evidence")}${citation?.locator ? ` (${String(citation.locator)})` : ""}`;
+              return (
+                <span key={`${String(citation?.source_block_id ?? citation?.title ?? "citation")}-${index}`} className="evidence-chip" title={label}>
+                  {label}
+                </span>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    );
+  }
   const generationStatus = typeof content.generation_status === "string" ? content.generation_status : note.status;
   return (
     <div className="provenance-strip">
@@ -4830,9 +4851,6 @@ function NotesView() {
                   <Clock3 size={12} />
                   {compactDate(note.updated_at)} · v{note.version} · {note.status.replace(/_/g, " ")}
                 </small>
-                {Boolean(note.content?.model_id) && (
-                  <small title={String(note.content?.model_id)}>{generatedDraftPrivacyLabel(note.content ?? {})}</small>
-                )}
               </button>
             );
           })}
@@ -5486,7 +5504,6 @@ function NoteEditor({ note, isLoading, onNewNote, onQuickNote }: { note?: Note; 
   }
 
   const content = note.content ?? {};
-  const generationStatus = typeof content.generation_status === "string" ? content.generation_status : "";
   const claimReviewStatus = typeof content.generated_claim_review_status === "string" ? content.generated_claim_review_status : "not_prepared";
   const claimReviewPrepared = claimReviewStatus === "prepared";
   const claimReviewBlocked = claimReviewStatus === "blocked";
@@ -5623,11 +5640,10 @@ function NoteEditor({ note, isLoading, onNewNote, onQuickNote }: { note?: Note; 
           </div>
         </details>
       </div>
-      <NoteProvenance note={note} />
+      <NoteProvenance note={note} quiet={isGeneratedDraft} />
       {isGeneratedDraft && (
         <div className="generated-review-bar">
           <div>
-            <Badge tone="warn">{generationStatus || "draft"}</Badge>
             <strong>Review generated draft</strong>
             {claimReviewPrepared && (
               <small>

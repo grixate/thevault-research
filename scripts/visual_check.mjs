@@ -25,7 +25,7 @@ const scenarios = {
     await page.waitForFunction(() => {
       const grounding = document.querySelector("[aria-label='Assistant answer grounding']");
       const citations = document.querySelector("[aria-label='Assistant citations']");
-      const text = document.body.textContent ?? "";
+      const text = document.body.innerText ?? "";
       return Boolean(
         grounding &&
           citations &&
@@ -61,6 +61,18 @@ const scenarios = {
   "generated-draft": async (page) => {
     await installGeneratedDraftVaultBridge(page);
     await openNotes(page);
+    await page.getByText("Review generated draft").waitFor();
+    await page.waitForFunction(() => {
+      const text = document.body.innerText ?? "";
+      return (
+        text.includes("1 source") &&
+        text.includes("1 claim") &&
+        text.includes("Review generated draft") &&
+        !text.includes("Drafted locally") &&
+        !text.includes("Run recorded") &&
+        !text.includes("Draft notes")
+      );
+    });
   },
   "storage-loading": async (page) => {
     await openStorage(page);

@@ -69,6 +69,7 @@ Latest completed slice:
 - Quieted Storage block-filter detail on 2026-06-27: filtered-out source blocks now leave a neutral `Block details` / `None selected` inspector instead of telling the user to select a block. Visual evidence: `/tmp/vault-storage-block-filter-empty-neutral-detail.png`.
 - Quieted Storage capability chips on 2026-06-27: the source detail toolbar now shows user-facing `Claim suggestions` and `Concept suggestions` without visible mock-provider or model-fallback text. Visual evidence: `/tmp/vault-storage-capability-chips-minimal.png`.
 - Quieted Assistant citations on 2026-06-27: answer grounding now reads as one provenance line and citations render as compact footnotes with icon-only actions instead of report-card status blocks. Visual evidence: `/tmp/vault-assistant-footnote-citations-minimal.png`.
+- Quieted generated-draft provenance on 2026-06-27: generated notes now keep source/claim evidence visible while hiding model/run/locality chatter from the first-glance review area and note list. Visual evidence: `/tmp/vault-generated-draft-provenance-minimal.png`.
 
 Earlier implementation slice built a reproducible macOS arm64 `whisper-cli` package from `whisper.cpp` source, moved the whisper runtime from distribution-decision to release-evidence, verified all production model candidate bytes, and merged the current byte-evidence files into one candidate overlay.
 

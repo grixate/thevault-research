@@ -6908,9 +6908,6 @@ describe("App", () => {
     expect(within(draftedResult as HTMLElement).getByText("Run recorded")).toBeTruthy();
     expect(within(draftedResult as HTMLElement).queryByText("mock-local-llm")).toBeNull();
     expect(within(draftedResult as HTMLElement).queryByText("run_generated")).toBeNull();
-    expect((await screen.findAllByText("Draft notes")).length).toBeGreaterThan(0);
-    expect((await screen.findAllByText("Drafted locally")).length).toBeGreaterThan(0);
-    expect((await screen.findAllByText("Run recorded")).length).toBeGreaterThan(0);
     expect(await screen.findByTitle(longGeneratedCitationTitle)).toBeTruthy();
     expect(await screen.findByRole("button", { name: /approve as note/i })).toHaveProperty("disabled", true);
     fireEvent.click(await screen.findByRole("button", { name: /check claims/i }));
@@ -7451,8 +7448,8 @@ describe("App", () => {
     );
     expect(await screen.findByDisplayValue("Assistant answer: How do typed claims help?")).toBeTruthy();
     expect(await screen.findByText("Review generated draft")).toBeTruthy();
-    expect((await screen.findAllByText("Drafted locally")).length).toBeGreaterThan(0);
-    expect((await screen.findAllByText("Run recorded")).length).toBeGreaterThan(0);
+    expect(screen.queryByText("Drafted locally")).toBeNull();
+    expect(screen.queryByText("Run recorded")).toBeNull();
     expect(screen.queryByText("mock-local-llm")).toBeNull();
   });
 
