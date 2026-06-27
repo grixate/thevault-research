@@ -5371,6 +5371,8 @@ blockquote span {
 .tool-permission-grid article {
   min-width: 0;
   display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
   gap: 7px;
   padding: 9px 10px 9px 0;
   background: transparent;
@@ -5384,6 +5386,36 @@ blockquote span {
   font-size: 12px;
   font-weight: 700;
   overflow-wrap: anywhere;
+}
+
+.tool-permission-state {
+  width: 19px;
+  height: 19px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--muted);
+  background: var(--card);
+}
+
+.tool-permission-state.allowed {
+  color: var(--green);
+  border-color: hsl(150 24% 78%);
+  background: hsl(150 24% 96%);
+}
+
+.tool-permission-state.sensitive {
+  color: var(--amber);
+  border-color: hsl(38 42% 76%);
+  background: hsl(42 68% 96%);
+}
+
+.tool-permission-state.blocked {
+  color: var(--muted);
+  border-color: var(--line);
+  background: hsl(220 14% 97%);
 }
 
 .tool-run-panel textarea {

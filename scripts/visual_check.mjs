@@ -287,6 +287,8 @@ const scenarios = {
         !text.includes("Result JSON") &&
         !text.includes("Stdout") &&
         !text.includes("Stderr") &&
+        !text.includes("allowed") &&
+        !text.includes("blocked") &&
         !text.includes('"findings"') &&
         runRowHeight > 0 &&
         runRowHeight < 90 &&

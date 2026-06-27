@@ -9950,14 +9950,18 @@ function ToolsView() {
                 <small>{String(manifest.description ?? "No description supplied.")}</small>
               </div>
               <div className="tool-permission-grid" aria-label="Tool permissions">
-                {permissions.map(([key, value]) => (
-                  <article key={key}>
-                    <Badge tone={value ? (key === "write_canonical_graph" || key === "network" || key === "shell" ? "bad" : "warn") : "good"}>
-                      {value ? "allowed" : "blocked"}
-                    </Badge>
-                    <span>{key.replace(/_/g, " ")}</span>
-                  </article>
-                ))}
+                {permissions.map(([key, value]) => {
+                  const permission = toolPermissionState(key, Boolean(value));
+                  const PermissionIcon = permission.icon;
+                  return (
+                    <article key={key}>
+                      <span className={permission.className} title={permission.label} aria-label={`${key.replace(/_/g, " ")} ${permission.label.toLowerCase()}`}>
+                        <PermissionIcon size={13} />
+                      </span>
+                      <span>{key.replace(/_/g, " ")}</span>
+                    </article>
+                  );
+                })}
               </div>
               <details className="payload-view">
                 <summary>Manifest</summary>
@@ -10071,6 +10075,13 @@ function toolRunFindingLabel(run?: ToolRunRecord): string {
 
 function toolRunReviewLabel(run?: ToolRunRecord): string {
   return countLabel(toolRunReviewCount(run), "review item");
+}
+
+function toolPermissionState(permission: string, allowed: boolean): { className: string; icon: typeof Check; label: string } {
+  const sensitive = permission === "write_canonical_graph" || permission === "network" || permission === "shell";
+  if (allowed && sensitive) return { className: "tool-permission-state sensitive", icon: Check, label: "Allowed sensitive permission" };
+  if (allowed) return { className: "tool-permission-state allowed", icon: Check, label: "Allowed" };
+  return { className: "tool-permission-state blocked", icon: X, label: "Blocked" };
 }
 
 function toolRunTaskMetadata(tool: Tool, run: ToolRunRecord): Record<string, unknown> {
