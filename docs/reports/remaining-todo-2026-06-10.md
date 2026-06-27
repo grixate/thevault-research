@@ -66,6 +66,7 @@ Latest completed slice:
 - Quieted Storage filtered-empty detail on 2026-06-27: filtered source search now shows `No sources` once in the list, while the detail pane stays neutral with `Source details` / `None selected`. Visual evidence: `/tmp/vault-storage-filter-empty-neutral-detail.png`.
 - Quieted empty claim evidence on 2026-06-27: selected claims with no source links now say `No evidence` instead of procedural attachment copy. Visual evidence: `/tmp/vault-graph-claim-no-evidence-minimal.png`.
 - Quieted Graph claim detail status on 2026-06-27: selected claims no longer repeat status as an uppercase detail-pane eyebrow; the inline status badge owns that state. Visual evidence: `/tmp/vault-graph-claim-no-evidence-no-eyebrow.png`.
+- Quieted Storage block-filter detail on 2026-06-27: filtered-out source blocks now leave a neutral `Block details` / `None selected` inspector instead of telling the user to select a block. Visual evidence: `/tmp/vault-storage-block-filter-empty-neutral-detail.png`.
 
 Earlier implementation slice built a reproducible macOS arm64 `whisper-cli` package from `whisper.cpp` source, moved the whisper runtime from distribution-decision to release-evidence, verified all production model candidate bytes, and merged the current byte-evidence files into one candidate overlay.
 
@@ -3024,6 +3025,7 @@ Current good state:
 - Generated-note review gates now use a flat row and user-facing `Check claims` language instead of a static explanatory banner.
 - Storage source status is now a disclosure that opens when review work needs attention.
 - Storage filtered search results no longer duplicate empty-state copy across list and detail panes.
+- Storage block filtering now keeps the evidence inspector neutral when no block matches.
 - Command palette fast actions now show only icon, action name, and shortcut; explanatory action sublines are gone.
 - Clean sessions now open on Notes instead of Home, making the writing workspace the default product center.
 - The resting topbar search no longer exposes `Exact` / `Smart`; mode choice is available only while reviewing active search results.

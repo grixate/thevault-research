@@ -3742,6 +3742,9 @@ describe("App", () => {
     expect((await screen.findAllByText("Participants returned to handwritten notes when synthesis felt uncertain.")).length).toBeGreaterThan(0);
     fireEvent.change(await screen.findByLabelText("Filter source blocks"), { target: { value: "missing block" } });
     expect(await screen.findByText("No blocks")).toBeTruthy();
+    expect(await screen.findByText("Block details")).toBeTruthy();
+    expect(await screen.findByText("None selected")).toBeTruthy();
+    expect(screen.queryByText("Select a block.")).toBeNull();
     expect(screen.queryByText("No source blocks match this filter.")).toBeNull();
     fireEvent.change(await screen.findByLabelText("Filter source blocks"), { target: { value: "handwritten" } });
     fireEvent.click(await screen.findByRole("button", { name: /new note from block/i }));

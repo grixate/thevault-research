@@ -6217,7 +6217,10 @@ async function copyBlock(block: SourceBlock) {
                     {createNoteFromBlock.error && <small className="model-test-error">{createNoteFromBlock.error.message}</small>}
                   </>
                 ) : (
-                  <p className="empty-copy">Select a block.</p>
+                  <div className="source-block-empty">
+                    <strong>Block details</strong>
+                    <span>None selected</span>
+                  </div>
                 )}
               </aside>
             </div>

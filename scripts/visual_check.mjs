@@ -75,6 +75,17 @@ const scenarios = {
       return noSourceCount === 1 && hasNeutralDetail;
     });
   },
+  "storage-block-filter-empty": async (page) => {
+    await installStorageFilterVaultBridge(page);
+    await openStorage(page);
+    await page.getByRole("textbox", { name: "Filter source blocks" }).fill("missing block");
+    await page.getByText("No blocks", { exact: true }).waitFor();
+    await page.waitForFunction(() => {
+      const hasNeutralDetail = Array.from(document.querySelectorAll("strong")).some((element) => element.textContent === "Block details") &&
+        Array.from(document.querySelectorAll("span")).some((element) => element.textContent === "None selected");
+      return hasNeutralDetail && !document.body.textContent?.includes("Select a block.");
+    });
+  },
   "tasks-empty": async (page) => {
     await installEmptyVaultBridge(page);
     await openTasks(page);
