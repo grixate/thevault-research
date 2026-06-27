@@ -8705,7 +8705,7 @@ function GraphView() {
   const supportedCount = (claims.data ?? []).filter((claim) => ["supported", "verified", "user_confirmed"].includes(claim.status)).length;
   const weakCount = (claims.data ?? []).filter((claim) => ["weakly_supported", "needs_review"].includes(claim.status)).length;
   const claimCount = claims.data?.length ?? 0;
-  const emptyClaimCopy = claimCount === 0 ? "Approve a claim in Review to start the evidence map." : "No matching claims.";
+  const emptyClaimCopy = "No claims";
   function openEvidence(link: ClaimEvidenceLink) {
     if (!link.source_id) return;
     setSelectedSourceId(link.source_id);
@@ -8802,7 +8802,7 @@ function GraphView() {
             </div>
           </>
         ) : (
-          <p className="empty-copy">Select a claim to inspect its source links.</p>
+          <p className="empty-copy">No claim selected</p>
         )}
       </Panel>
     </div>

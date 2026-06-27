@@ -4499,6 +4499,42 @@ describe("App", () => {
     expect((await screen.findAllByText("Typed claims keep exact source evidence visible.")).length).toBeGreaterThan(0);
   });
 
+  it("keeps the empty Evidence graph surface quiet", async () => {
+    const request = vi.fn(async (route: string) => {
+      if (route === "health.get") return { ok: true, version: "0.1.0", db_ready: true, workspace_id: "wrk_default" };
+      if (route === "jobs.list") return [];
+      if (route === "stats.get") {
+        return {
+          sources: 0,
+          source_blocks: 0,
+          notes: 0,
+          claims: 0,
+          claims_without_evidence: 0,
+          contradicted_claims: 0,
+          pending_review_items: 0,
+          generated_notes_pending_review: 0,
+          installed_tools: 0,
+          failed_jobs: 0,
+          learning_items: 0
+        };
+      }
+      if (route === "events.list") return [];
+      if (route === "claims.list") return [];
+      if (route === "ai.capabilities") return [];
+      if (route === "ai.providers") return [];
+      return [];
+    });
+    window.vault = { request, selectFiles: vi.fn(async () => []) };
+    useUIStore.setState({ surface: "graph", selectedClaimId: undefined });
+    renderApp();
+
+    expect(await screen.findByRole("heading", { name: "Evidence graph", level: 2 })).toBeTruthy();
+    expect(await screen.findByText("No claims")).toBeTruthy();
+    expect(await screen.findByText("No claim selected")).toBeTruthy();
+    expect(screen.queryByText("Approve a claim in Review to start the evidence map.")).toBeNull();
+    expect(screen.queryByText("Select a claim to inspect its source links.")).toBeNull();
+  });
+
   it("keeps the empty Practice surface quiet", async () => {
     const request = vi.fn(async (route: string) => {
       if (route === "health.get") return { ok: true, version: "0.1.0", db_ready: true, workspace_id: "wrk_default" };

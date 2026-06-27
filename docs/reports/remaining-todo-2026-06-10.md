@@ -60,6 +60,7 @@ Latest completed slice:
 - Quieted the Practice empty state further on 2026-06-27: the empty list now says only `No cards`, and the empty detail pane uses the direct `Create a deck.` cue instead of repeating Review/process guidance. Visual evidence: `/tmp/vault-practice-empty-minimal-v2.png`.
 - Quieted the Local tools empty/detail state further on 2026-06-27: empty shelves now say `No helpers`, the neutral detail pane says `Helper details` / `None selected`, and empty run/result slots use `No runs` / `No result`. Visual evidence: `/tmp/vault-local-tools-empty-minimal-v2.png`.
 - Quieted Storage filter empty states on 2026-06-27: source search now resolves to `No sources` without a second helper line, and block search resolves to `No blocks`. Visual evidence: `/tmp/vault-storage-filter-empty-minimal.png`.
+- Quieted the Evidence graph empty state further on 2026-06-27: clean workspaces now show `No claims` and `No claim selected` instead of Review/process instructions. Visual evidence: `/tmp/vault-graph-empty-minimal-v2.png`.
 
 Earlier implementation slice built a reproducible macOS arm64 `whisper-cli` package from `whisper.cpp` source, moved the whisper runtime from distribution-decision to release-evidence, verified all production model candidate bytes, and merged the current byte-evidence files into one candidate overlay.
 
@@ -3067,6 +3068,7 @@ Current good state:
 - The mobile top bar no longer forces desktop search width below 760px.
 - Evidence graph uses a compact context line and inline detail metadata instead of card-heavy metrics.
 - Evidence graph no longer renders zero-count dashboard facts on an empty workspace.
+- Evidence graph empty states now use short result labels instead of Review/process instructions.
 - Evidence graph, Practice, and Local tools no longer use explanatory SectionHeader sublines on first glance.
 - Settings Search keeps raw capability bindings in a `Model task routing` disclosure with user-facing task names.
 - Settings tabs now show tab-specific panel titles and avoid redundant eyebrow descriptions.
