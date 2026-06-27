@@ -74,6 +74,7 @@ Latest completed slice:
 - Quieted empty Notes and Storage workspaces on 2026-06-27: empty list rails now collapse instead of showing a redundant pane title and blank column, leaving one focused empty-state surface for `No notes` or `No sources`. Visual evidence: `/tmp/vault-notes-empty-single-pane.png` and `/tmp/vault-storage-empty-single-pane.png`.
 - Quieted Settings Search on 2026-06-27: the first glance now shows a plain `Reindex` command plus collapsed `Search index`, `Result ranking`, and `Model task routing` rows, with provider/model fields hidden until the user opens the relevant setup row. Visual evidence: `/tmp/vault-settings-search-quiet-disclosures.png`.
 - Quieted Settings Advanced on 2026-06-27: the first glance no longer shows `Reference`, explanatory debug copy, or raw JSON; the local preferences JSON now lives behind one `Settings snapshot` disclosure. Visual evidence: `/tmp/vault-settings-advanced-quiet-snapshot.png`.
+- Quieted command palette fast actions further on 2026-06-27: the visible `Fast actions` header is gone, shortcut copy uses compact key glyphs, and action rows now read like Spotlight suggestions rather than an admin command list. Visual evidence: `/tmp/vault-command-actions-spotlight-v1.png`.
 
 Earlier implementation slice built a reproducible macOS arm64 `whisper-cli` package from `whisper.cpp` source, moved the whisper runtime from distribution-decision to release-evidence, verified all production model candidate bytes, and merged the current byte-evidence files into one candidate overlay.
 

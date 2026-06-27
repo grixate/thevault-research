@@ -493,7 +493,7 @@ textarea:not(.ui-textarea) {
 
 .command-action-group {
   display: grid;
-  gap: 2px;
+  gap: 1px;
 }
 
 .search-section-label {
@@ -519,6 +519,11 @@ textarea:not(.ui-textarea) {
   border: 0;
   border-radius: 6px;
   cursor: pointer;
+}
+
+.command-action-group button {
+  min-height: 42px;
+  padding: 9px 10px;
 }
 
 .search-popover button:disabled {
@@ -551,6 +556,10 @@ textarea:not(.ui-textarea) {
   white-space: nowrap;
 }
 
+.command-action-group strong {
+  font-weight: 650;
+}
+
 .search-result-body > span {
   display: block;
   margin-top: 4px;
@@ -577,14 +586,16 @@ textarea:not(.ui-textarea) {
 
 .command-action-shortcut {
   justify-self: end;
-  padding: 3px 6px;
+  min-width: 28px;
+  padding: 2px 0;
   color: var(--muted);
-  background: var(--panel-soft);
-  border: 1px solid var(--line);
-  border-radius: 5px;
-  font-size: 11px;
+  background: transparent;
+  border: 0;
+  font-size: 12px;
   font-family: inherit;
-  font-weight: 700;
+  font-weight: 600;
+  line-height: 1;
+  text-align: right;
   white-space: nowrap;
 }
 

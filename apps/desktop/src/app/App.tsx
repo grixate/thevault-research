@@ -439,8 +439,8 @@ export function App() {
 type CommandAction = {
   id: string;
   title: string;
-  description: string;
   shortcut?: string;
+  shortcutLabel?: string;
   icon: typeof Search;
   disabled?: boolean;
   action: () => void;
@@ -752,24 +752,24 @@ function TopBar() {
     {
       id: "quick-note",
       title: "Quick note",
-      description: "Save a thought to the Notes inbox without opening the editor.",
-      shortcut: "Cmd/Ctrl+Shift+N",
+      shortcut: "⌘⇧N",
+      shortcutLabel: "Command Shift N",
       icon: NotebookPen,
       action: () => requestQuickNote()
     },
     {
       id: "quick-task",
       title: "Quick task",
-      description: "Capture a follow-up without leaving the current surface.",
-      shortcut: "Cmd/Ctrl+Shift+T",
+      shortcut: "⌘⇧T",
+      shortcutLabel: "Command Shift T",
       icon: List,
       action: () => requestQuickTask()
     },
     {
       id: "new-note",
       title: "New note",
-      description: "Open a blank research note for authored thinking.",
-      shortcut: "Enter",
+      shortcut: "↵",
+      shortcutLabel: "Enter",
       icon: FilePlus2,
       disabled: createNote.isPending,
       action: () => createNote.mutate()
@@ -777,22 +777,20 @@ function TopBar() {
     {
       id: "add-source",
       title: "Add source",
-      description: "Import pasted text, files, or audio into immutable Storage.",
-      shortcut: "Cmd/Ctrl+Shift+E",
+      shortcut: "⌘⇧E",
+      shortcutLabel: "Command Shift E",
       icon: Plus,
       action: () => openSourceCapture()
     },
     {
       id: "open-notes",
       title: "Open Notes",
-      description: "Go to editable writing, quick captures, and synthesis.",
       icon: NotebookPen,
       action: () => setSurface("notes")
     },
     {
       id: "open-storage",
       title: "Open Storage",
-      description: "Go to imported source records and evidence blocks.",
       icon: HardDrive,
       action: () => setSurface("sources")
     }
@@ -840,8 +838,7 @@ function TopBar() {
                 </div>
               )}
               {showCommandActions && (
-                <div className="command-action-group" aria-label="Fast actions">
-                  <div className="search-section-label">Fast actions</div>
+                <div className="command-action-group" aria-label="Suggested actions">
                   {commandActions.map((action, index) => {
                     const Icon = action.icon;
                     return (
@@ -859,7 +856,11 @@ function TopBar() {
                         <span className="search-result-body">
                           <strong>{action.title}</strong>
                         </span>
-                        {action.shortcut && <kbd className="command-action-shortcut">{action.shortcut}</kbd>}
+                        {action.shortcut && (
+                          <kbd className="command-action-shortcut" aria-label={action.shortcutLabel}>
+                            {action.shortcut}
+                          </kbd>
+                        )}
                       </button>
                     );
                   })}
@@ -913,7 +914,7 @@ function TopBar() {
               Quick note
             </Button>
           </TooltipTrigger>
-          <TooltipContent>Capture a thought into Notes. Cmd/Ctrl+Shift+N</TooltipContent>
+          <TooltipContent>Quick note · ⌘⇧N</TooltipContent>
         </Tooltip>
       </header>
       <Dialog.Root open={quickNoteOpen} onOpenChange={(open) => (open ? setQuickNoteOpen(true) : closeQuickNote())}>

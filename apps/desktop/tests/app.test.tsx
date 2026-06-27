@@ -3081,7 +3081,8 @@ describe("App", () => {
 
     await waitFor(() => expect(document.activeElement).toBe(search));
     const commands = await screen.findByLabelText("Search and actions");
-    expect(within(commands).getByText("Fast actions")).toBeTruthy();
+    expect(within(commands).getByLabelText("Suggested actions")).toBeTruthy();
+    expect(within(commands).queryByText("Fast actions")).toBeNull();
     expect(within(commands).queryByRole("tablist", { name: "Search style" })).toBeNull();
     expect(within(commands).getByRole("option", { name: /Quick note/i })).toBeTruthy();
     expect(within(commands).getByRole("option", { name: /Quick task/i })).toBeTruthy();
