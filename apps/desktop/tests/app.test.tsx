@@ -7304,6 +7304,9 @@ describe("App", () => {
     const answerContext = await screen.findByLabelText("Answer context");
     expect(within(answerContext).getByText("Resonance Capsule")).toBeTruthy();
     expect(await screen.findByText("The capsule keeps resonance evidence constrained to its approved claims [1].")).toBeTruthy();
+    const citationsList = await screen.findByLabelText("Assistant citations");
+    expect(within(citationsList).getByText("approved claim · clm_resonance")).toBeTruthy();
+    expect(within(citationsList).queryByText(/claim clm_resonance/)).toBeNull();
   });
 
   it("runs an Assistant starter with the matching evidence policy", async () => {

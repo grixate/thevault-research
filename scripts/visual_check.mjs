@@ -33,6 +33,7 @@ const scenarios = {
           grounding.textContent?.includes("on device") &&
           !text.includes("Answered from approved claims") &&
           !text.includes("approved evidence") &&
+          !text.includes("claim claim_") &&
           !text.includes("citations valid")
       );
     });

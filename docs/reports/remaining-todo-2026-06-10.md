@@ -79,6 +79,7 @@ Latest completed slice:
 - Hardened browser QA autonomy again on 2026-06-27: the shared headless-shell launch path now removes quarantine attributes opportunistically and passes non-interactive Chromium flags for first-run, keychain, media, and default-browser prompts. Verification: `pnpm browser:doctor`, `CI=true pnpm e2e`, and `node scripts/visual_check.mjs practice-empty /tmp/vault-permission-check-practice.png`.
 - Quieted the Settings Models tab row on 2026-06-27: the first tab now reads `Local` instead of repeating `Models`, leaving the app destination as `Models` and the install/check action as `Setup`. Visual evidence: `/tmp/vault-settings-local-tab-minimal.png`.
 - Tightened Assistant answer hierarchy on 2026-06-27: task/save/review actions now sit after the answer context line as response actions instead of floating under the user question. Visual evidence: `/tmp/vault-assistant-answer-actions-footer.png`.
+- Quieted Assistant citation metadata on 2026-06-27: approved-claim footnotes now show `approved claim · <id>` instead of duplicating `claim claim_<id>` in the citation line. Visual evidence: `/tmp/vault-assistant-citation-meta-minimal.png`.
 - Quieted the Review empty state on 2026-06-27: empty queues now use one calm panel with the status switch and clear-state copy, instead of a duplicate `Review` list rail plus an empty detail pane. Visual evidence: `/tmp/vault-review-empty-single-panel.png`.
 - Quieted the Local tools empty state on 2026-06-27: empty helper shelves now collapse to one calm panel with `No helpers`, removing the duplicate `Local tools` list heading and inert `Helper details` inspector. Visual evidence: `/tmp/vault-local-tools-empty-single-panel.png`.
 - Quieted the Tasks empty state on 2026-06-27: clean task workspaces now keep the quick-entry panel and hide the unused custom-list rail until tasks or lists exist. Visual evidence: `/tmp/vault-tasks-empty-focused-entry.png`.
@@ -3040,6 +3041,7 @@ Current good state:
 - Assistant citation rows clamp long titles and exact quotes while preserving full evidence text.
 - Assistant answers now keep the composer empty after send and show evidence provenance once, like a modern chat surface.
 - Assistant answer actions now belong to the answer footer instead of the user prompt area.
+- Assistant approved-claim citation metadata avoids duplicated `claim` prefixes.
 - Generated-note provenance and Storage import follow-ups now preserve long source/evidence labels without adding visible clutter.
 - Generated-note review gates now use a flat row and user-facing `Check claims` language instead of a static explanatory banner.
 - Storage source status is now a disclosure that opens when review work needs attention.

@@ -9131,15 +9131,7 @@ function AssistantView() {
                         <div className="citation-record-body">
                           <strong title={citation.title ?? citation.source_block_id}>{citation.title ?? citation.source_block_id}</strong>
                           <span title={citation.exact_quote}>{citation.exact_quote}</span>
-                          <small title={citation.claim_id ? `claim ${citation.claim_id}` : citation.source_block_id}>
-                            {[
-                              citationEvidenceLabel(citation.evidence_kind),
-                              citation.locator,
-                              citation.claim_id ? `claim ${citation.claim_id}` : citation.source_block_id
-                            ]
-                              .filter(Boolean)
-                              .join(" · ")}
-                          </small>
+                          <small title={assistantCitationMetaLabel(citation)}>{assistantCitationMetaLabel(citation)}</small>
                         </div>
                         <div className="assistant-citation-actions">
                           <AssistantCitationTaskButton citation={citation} answer={answer} questionText={submittedQuestionText} />
@@ -9284,6 +9276,16 @@ function citationEvidenceLabel(value?: string): string {
   if (value === "approved_claim_evidence") return "approved claim";
   if (value === "source_block") return "source block";
   return value?.replace(/_/g, " ") || "evidence";
+}
+
+function assistantCitationMetaLabel(citation: any): string {
+  const evidenceLabel = citationEvidenceLabel(citation?.evidence_kind);
+  const locator = String(citation?.locator ?? "").trim();
+  const targetId = String(citation?.claim_id ?? citation?.source_block_id ?? "").trim();
+  const parts = [evidenceLabel];
+  if (locator && locator !== targetId) parts.push(locator);
+  if (targetId) parts.push(targetId);
+  return parts.filter(Boolean).join(" · ");
 }
 
 function citationValidationLabel(value: string): string {
