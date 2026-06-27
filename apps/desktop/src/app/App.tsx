@@ -9740,27 +9740,17 @@ function LearningView() {
             }
           />
           {selectedLearningItem ? (
-            <>
-              <div className="learning-voice-context" aria-label="Practice voice privacy">
-                <Badge tone="good">local voice</Badge>
-                <span>Read aloud and spoken answers stay local.</span>
-              </div>
-              <div className="learning-review-schedule">
-                <Badge tone="warn">again: tomorrow</Badge>
-                <Badge tone="info">good: 3 days</Badge>
-                <Badge tone="good">easy: 7 days</Badge>
-              </div>
-              <div className="learning-practice-card">
+            <div className="learning-practice-card">
+              {(learningItemPhaseLabel(selectedLearningItem) || learningItemScoreLabel(selectedLearningItem)) && (
                 <div className="learning-path-meta">
-                  <Badge tone="info">Selected card</Badge>
                   {learningItemPhaseLabel(selectedLearningItem) && <Badge tone="neutral">{learningItemPhaseLabel(selectedLearningItem)}</Badge>}
                   {learningItemScoreLabel(selectedLearningItem) && <Badge tone="good">{learningItemScoreLabel(selectedLearningItem)}</Badge>}
                 </div>
-                <strong>{selectedLearningItem.title}</strong>
-                {learningItemPrompt(selectedLearningItem) && <p>{learningItemPrompt(selectedLearningItem)}</p>}
-                {learningItemAnswer(selectedLearningItem) && <small>{learningItemAnswer(selectedLearningItem)}</small>}
-              </div>
-            </>
+              )}
+              <strong>{selectedLearningItem.title}</strong>
+              {learningItemPrompt(selectedLearningItem) && <p>{learningItemPrompt(selectedLearningItem)}</p>}
+              {learningItemAnswer(selectedLearningItem) && <small>{learningItemAnswer(selectedLearningItem)}</small>}
+            </div>
           ) : (
             <p className="empty-copy">Create a deck.</p>
           )}

@@ -4671,8 +4671,7 @@ blockquote span {
 }
 
 .learning-card > div,
-.learning-path-meta,
-.learning-review-schedule {
+.learning-path-meta {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -4699,10 +4698,6 @@ blockquote span {
 
 .learning-card button {
   justify-self: start;
-}
-
-.learning-review-schedule {
-  margin-bottom: 12px;
 }
 
 .learning-practice-card {
@@ -5284,23 +5279,6 @@ blockquote span {
   flex-wrap: wrap;
   gap: 8px;
   margin-top: 8px;
-}
-
-.learning-voice-context {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 8px;
-  padding-block: 8px;
-  border-block: 1px solid var(--line);
-  color: var(--muted);
-  font-size: 13px;
-  line-height: 1.35;
-}
-
-.learning-voice-context span {
-  min-width: 0;
-  overflow-wrap: anywhere;
 }
 
 .assistant-citation-actions {

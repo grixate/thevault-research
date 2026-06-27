@@ -284,6 +284,16 @@ const scenarios = {
           !text.includes("flashcard")
       );
     });
+    await page.waitForFunction(() => {
+      const text = document.body.innerText ?? "";
+      return (
+        !text.includes("Selected card") &&
+        !text.includes("again: tomorrow") &&
+        !text.includes("good: 3 days") &&
+        !text.includes("easy: 7 days") &&
+        !text.includes("Read aloud and spoken answers stay local.")
+      );
+    });
   },
   "local-tools-empty": async (page) => {
     await installEmptyVaultBridge(page);

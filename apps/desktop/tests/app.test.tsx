@@ -4922,7 +4922,9 @@ describe("App", () => {
     expect(screen.queryByText("Practice one card at a time. Voice answers stay local.")).toBeNull();
     expect(await screen.findByText("Deck topic")).toBeTruthy();
     expect(await screen.findByText("Current card")).toBeTruthy();
-    expect(await screen.findByLabelText("Practice voice privacy")).toBeTruthy();
+    expect(screen.queryByLabelText("Practice voice privacy")).toBeNull();
+    expect(screen.queryByText("Selected card")).toBeNull();
+    expect(screen.queryByText("again: tomorrow")).toBeNull();
     expect((await screen.findAllByText("What is claim provenance?")).length).toBeGreaterThan(0);
     expect((await screen.findAllByText("Evidence links a claim to a source block.")).length).toBeGreaterThan(0);
     fireEvent.click(await screen.findByRole("button", { name: /create task from practice card/i }));
@@ -5072,7 +5074,7 @@ describe("App", () => {
     useUIStore.setState({ surface: "learning" });
     renderApp();
     expect(await screen.findByText("Current card")).toBeTruthy();
-    expect(await screen.findByText("Read aloud and spoken answers stay local.")).toBeTruthy();
+    expect(screen.queryByText("Read aloud and spoken answers stay local.")).toBeNull();
     expect((await screen.findAllByText("What is claim provenance?")).length).toBeGreaterThan(0);
     fireEvent.click(await screen.findByRole("button", { name: /^answer by voice$/i }));
     await waitFor(() => expect(getUserMedia).toHaveBeenCalledWith({ audio: true }));

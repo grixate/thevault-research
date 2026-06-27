@@ -105,6 +105,7 @@ Latest completed slice:
 - Quieted the Local tools permission grid on 2026-06-27: repeated `allowed` / `blocked` permission badges are now compact icon states with accessible labels, leaving the permission names readable without a status wall. Visual evidence: `/tmp/vault-local-tools-permission-icons.png`.
 - Quieted the Capsule export dialog on 2026-06-27: export preview no longer shows a transient `checking` badge or raw lowercase `ready` / `blocked` states; the dialog now stays blank while preview loads, then shows `Ready` or `Needs review`. Visual evidence: `/tmp/vault-capsule-export-dialog-minimal.png`.
 - Quieted Practice card chrome on 2026-06-27: active cards no longer show a redundant backend status badge, and card types render as clean labels such as `Flashcard` instead of lowercase raw values. Visual evidence: `/tmp/vault-practice-card-minimal.png`.
+- Quieted the Practice detail pane on 2026-06-27: removed the permanent `local voice` caption, static review-schedule chips, and redundant `Selected card` badge so the current card reads as prompt/answer content first. Visual evidence: `/tmp/vault-practice-detail-minimal.png`.
 
 Earlier implementation slice built a reproducible macOS arm64 `whisper-cli` package from `whisper.cpp` source, moved the whisper runtime from distribution-decision to release-evidence, verified all production model candidate bytes, and merged the current byte-evidence files into one candidate overlay.
 
