@@ -726,7 +726,8 @@ describe("App", () => {
 
     renderApp();
     fireEvent.click(await screen.findByRole("button", { name: "Tasks" }));
-    expect(await screen.findByText("Inbox clear.")).toBeTruthy();
+    expect(await screen.findByText("No tasks")).toBeTruthy();
+    expect(screen.queryByText("Inbox clear.")).toBeNull();
     expect(screen.getByLabelText("Task lists")).toBeTruthy();
 
     fireEvent.change(screen.getByPlaceholderText("Add task"), { target: { value: "Email Anna about citation mismatch tomorrow @waiting #Paper review p2" } });
@@ -759,7 +760,7 @@ describe("App", () => {
     fireEvent.click(screen.getByRole("button", { name: "Close task detail" }));
     expect(await screen.findByText("Email Anna about quote mismatch")).toBeTruthy();
     fireEvent.click(within(screen.getByLabelText("Task lists")).getByRole("button", { name: "Inbox" }));
-    expect(await screen.findByText("Inbox clear.")).toBeTruthy();
+    expect(await screen.findByText("No tasks")).toBeTruthy();
     fireEvent.click(screen.getByTitle("Paper review"));
     await waitFor(() => expect(request).toHaveBeenCalledWith("todos.list", { view: "inbox", listId: "tdl_paper", limit: 100, offset: 0 }));
     expect(await screen.findByText("Email Anna about quote mismatch")).toBeTruthy();
@@ -796,7 +797,8 @@ describe("App", () => {
     renderApp();
     fireEvent.click(await screen.findByRole("button", { name: "Tasks" }));
 
-    expect(await screen.findByText("Inbox clear.")).toBeTruthy();
+    expect(await screen.findByText("No tasks")).toBeTruthy();
+    expect(screen.queryByText("Inbox clear.")).toBeNull();
     expect(screen.getByRole("textbox", { name: "Add task" })).toBeTruthy();
     expect(screen.queryByLabelText("Task lists")).toBeNull();
     expect(screen.queryByText("No custom lists")).toBeNull();

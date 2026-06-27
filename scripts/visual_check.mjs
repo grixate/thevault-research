@@ -166,6 +166,10 @@ const scenarios = {
   "tasks-empty": async (page) => {
     await installEmptyVaultBridge(page);
     await openTasks(page);
+    await page.waitForFunction(() => {
+      const text = document.body.innerText ?? "";
+      return text.includes("No tasks") && !text.includes("Inbox clear.");
+    });
   },
   "review-loading": async (page) => {
     await openReview(page);

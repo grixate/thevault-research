@@ -4756,10 +4756,10 @@ function todoViewLabel(view: TodoView): string {
 }
 
 function todoEmptyCopy(view: TodoView): string {
-  if (view === "today") return "Nothing due today.";
+  if (view === "today") return "No tasks today.";
   if (view === "upcoming") return "No upcoming tasks.";
   if (view === "completed") return "No completed tasks.";
-  return "Inbox clear.";
+  return "No tasks";
 }
 
 function todoMetaLine(todo: TodoItem): string {
