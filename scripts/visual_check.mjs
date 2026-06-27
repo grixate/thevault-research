@@ -310,9 +310,11 @@ const scenarios = {
       return (
         text.includes("Claim Citation Checker") &&
         text.includes("Available") &&
+        text.includes("Definition") &&
         text.includes("History") &&
         text.includes("Run details") &&
         !text.includes("installed") &&
+        !text.includes("Manifest") &&
         !text.includes("Result JSON") &&
         !text.includes("Stdout") &&
         !text.includes("Stderr") &&

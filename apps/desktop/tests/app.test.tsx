@@ -2559,6 +2559,8 @@ describe("App", () => {
     fireEvent.click(await screen.findByRole("button", { name: /Claim Citation Checker/i }));
     expect(await screen.findByText("Available")).toBeTruthy();
     expect(screen.queryByText("installed")).toBeNull();
+    expect(await screen.findByText("Definition")).toBeTruthy();
+    expect(screen.queryByText("Manifest")).toBeNull();
     expect(await screen.findByText("write canonical graph")).toBeTruthy();
     expect(await screen.findByText("History")).toBeTruthy();
     fireEvent.change(await screen.findByLabelText("Input"), {

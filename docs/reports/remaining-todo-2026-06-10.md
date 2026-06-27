@@ -107,6 +107,7 @@ Latest completed slice:
 - Quieted Practice card chrome on 2026-06-27: active cards no longer show a redundant backend status badge, and card types render as clean labels such as `Flashcard` instead of lowercase raw values. Visual evidence: `/tmp/vault-practice-card-minimal.png`.
 - Quieted the Practice detail pane on 2026-06-27: removed the permanent `local voice` caption, static review-schedule chips, and redundant `Selected card` badge so the current card reads as prompt/answer content first. Visual evidence: `/tmp/vault-practice-detail-minimal.png`.
 - Quieted Local tools helper state on 2026-06-27: installed helpers now read as `Available` in the list and contract header instead of exposing the raw `installed` backend state. Visual evidence: `/tmp/vault-local-tools-available-label.png`.
+- Quieted Local tools definition language on 2026-06-27: the helper JSON disclosure now reads `Definition` instead of `Manifest`, keeping file-oriented terminology out of the first glance. Visual evidence: `/tmp/vault-local-tools-definition-label.png`.
 
 Earlier implementation slice built a reproducible macOS arm64 `whisper-cli` package from `whisper.cpp` source, moved the whisper runtime from distribution-decision to release-evidence, verified all production model candidate bytes, and merged the current byte-evidence files into one candidate overlay.
 

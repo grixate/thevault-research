@@ -9956,7 +9956,7 @@ function ToolsView() {
                 })}
               </div>
               <details className="payload-view">
-                <summary>Manifest</summary>
+                <summary>Definition</summary>
                 <pre>{JSON.stringify(manifest, null, 2)}</pre>
               </details>
             </section>
