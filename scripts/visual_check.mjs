@@ -103,7 +103,7 @@ const scenarios = {
   "quick-storage": async (page) => {
     await installEmptyVaultBridge(page);
     await openQuickNote(page);
-    await page.getByRole("button", { name: "Capture to Storage" }).click();
+    await page.getByRole("button", { name: "Capture as evidence" }).click();
   },
   "quick-source": async (page) => {
     await scenarios["quick-storage"](page);

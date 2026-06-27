@@ -53,6 +53,7 @@ Latest completed slice:
 - Tightened generated-note citation coverage on 2026-06-27: local llama note drafts now must cite every supplied evidence marker, and explicit claim-scoped note generation no longer pulls unrelated source blocks just to fill the evidence pack. Focused evidence: `cd services/core && uv run pytest tests/test_core_flow.py -k "local_generated_note"`.
 - Quieted the Settings Voice first glance on 2026-06-27: microphone status, Dictation, and Read aloud are now plain action rows, static explanatory sublines are gone, and provider/model/path routing lives behind a single `Voice model setup` disclosure. Visual evidence: `/tmp/vault-settings-voice-minimal.png`.
 - Quieted Settings Privacy and Export on 2026-06-27: Privacy now uses two plain local-state rows instead of explanatory cards, and Export now shows one backup action with compact content chips instead of a tile grid. Visual evidence: `/tmp/vault-settings-privacy-minimal.png` and `/tmp/vault-settings-export-minimal.png`.
+- Tightened Quick capture language on 2026-06-27: the Spotlight-style capture switcher now uses `Thought`, `Task`, and `Evidence`, with matching placeholders and save labels, so Notes versus Storage purpose is clear at capture time. Visual evidence: `/tmp/vault-quick-note-intent.png`, `/tmp/vault-quick-storage-intent.png`, and `/tmp/vault-quick-task-intent.png`.
 
 Earlier implementation slice built a reproducible macOS arm64 `whisper-cli` package from `whisper.cpp` source, moved the whisper runtime from distribution-decision to release-evidence, verified all production model candidate bytes, and merged the current byte-evidence files into one candidate overlay.
 
@@ -3001,6 +3002,7 @@ Current good state:
 - Local-model setup now opens with compact readiness facts and keeps library/approval detail behind disclosures instead of route-card/dashboard language.
 - Settings Models hides empty/loading setup counters and collapses zero-count library badges, keeping the first glance useful even before setup data loads.
 - Quick Note, Storage intake, and generated-draft action rows wrap or stack cleanly at narrow widths.
+- Quick capture now names the core destinations by intent: `Thought`, `Task`, and `Evidence`.
 - Assistant no longer overflows at 390px; the mobile top bar removes desktop search width and keeps the question flow in view.
 - Assistant citation rows clamp long titles and exact quotes while preserving full evidence text.
 - Generated-note provenance and Storage import follow-ups now preserve long source/evidence labels without adding visible clutter.

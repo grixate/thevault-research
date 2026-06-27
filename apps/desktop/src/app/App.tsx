@@ -961,11 +961,11 @@ function TopBar() {
                       type="button"
                       className={`quick-note-route-option ${quickNoteDestination === "notes" ? "active" : ""}`}
                       aria-pressed={quickNoteDestination === "notes"}
-                      aria-label="Save as note"
+                      aria-label="Save as thought"
                       onClick={() => setQuickNoteDestination("notes")}
                     >
                       <NotebookPen size={14} />
-                      <strong>Note</strong>
+                      <strong>Thought</strong>
                     </button>
                     <button
                       type="button"
@@ -981,11 +981,11 @@ function TopBar() {
                       type="button"
                       className={`quick-note-route-option ${quickNoteDestination === "storage" ? "active" : ""}`}
                       aria-pressed={quickNoteDestination === "storage"}
-                      aria-label="Capture to Storage"
+                      aria-label="Capture as evidence"
                       onClick={() => setQuickNoteDestination("storage")}
                     >
                       <HardDrive size={14} />
-                      <strong>Storage</strong>
+                      <strong>Evidence</strong>
                     </button>
                   </div>
                   <div className="quick-note-actions">
@@ -1051,14 +1051,14 @@ function quickCaptureInputLabel(destination: QuickCaptureDestination): string {
 
 function quickCapturePlaceholder(destination: QuickCaptureDestination): string {
   if (destination === "tasks") return "Add task...";
-  if (destination === "storage") return "Paste source material...";
-  return "Write a note...";
+  if (destination === "storage") return "Paste evidence...";
+  return "Write a thought...";
 }
 
 function quickCaptureSaveLabel(destination: QuickCaptureDestination): string {
-  if (destination === "tasks") return "Save to Tasks";
-  if (destination === "storage") return "Save to Storage";
-  return "Save to Notes";
+  if (destination === "tasks") return "Save task";
+  if (destination === "storage") return "Save evidence";
+  return "Save thought";
 }
 
 function searchResultMeta(result: SearchResult): { label: string; action: string; icon: typeof FileText } {
