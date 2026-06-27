@@ -7004,12 +7004,16 @@ describe("App", () => {
     fireEvent.click(await screen.findByRole("button", { name: /^ask$/i }));
     const grounding = await screen.findByLabelText("Assistant answer grounding");
     const answerContext = await screen.findByLabelText("Answer context");
+    expect(await screen.findByText("How do typed claims help?")).toBeTruthy();
+    expect((screen.getByLabelText("Assistant question") as HTMLTextAreaElement).value).toBe("");
     expect(await screen.findByText("source evidence")).toBeTruthy();
+    expect(await screen.findAllByText("Answered with Storage evidence")).toHaveLength(1);
+    expect(within(grounding).getByText("Claims + Storage")).toBeTruthy();
     expect(within(grounding).getByText("Answered with Storage evidence")).toBeTruthy();
-    expect(within(answerContext).getByText("Claims + Storage")).toBeTruthy();
     expect(within(answerContext).getByText("1 citation")).toBeTruthy();
     expect(within(answerContext).getByText("on device")).toBeTruthy();
-    expect(within(answerContext).getByText("Local model")).toBeTruthy();
+    expect(within(answerContext).queryByText("Local model")).toBeNull();
+    expect(within(grounding).queryByText(/Answers may cite reviewed claims and raw source blocks/)).toBeNull();
     expect(within(answerContext).queryByText("mock-local-llm")).toBeNull();
     expect(await screen.findByText("source block")).toBeTruthy();
     expect(await screen.findByTitle(longCitationTitle)).toBeTruthy();
@@ -7235,7 +7239,8 @@ describe("App", () => {
         })
       )
     );
-    expect(await screen.findByDisplayValue("What patterns or contradictions should I review in raw Storage, with exact source block citations?")).toBeTruthy();
+    expect(await screen.findByText("What patterns or contradictions should I review in raw Storage, with exact source block citations?")).toBeTruthy();
+    expect((screen.getByLabelText("Assistant question") as HTMLTextAreaElement).value).toBe("");
     expect((await screen.findAllByText("Claims + Storage")).length).toBeGreaterThan(0);
     expect(await screen.findByText("Storage shows two themes worth reviewing [1].")).toBeTruthy();
   });
@@ -7683,7 +7688,8 @@ describe("App", () => {
         })
       )
     );
-    expect(await screen.findByDisplayValue("What evidence supports typed claims?")).toBeTruthy();
+    expect((await screen.findAllByText("What evidence supports typed claims?")).length).toBeGreaterThan(0);
+    expect((screen.getByLabelText("Assistant question") as HTMLTextAreaElement).value).toBe("");
     expect(await screen.findByRole("button", { name: /^voice question$/i })).toBeTruthy();
     const voiceQuestionResult = (await screen.findAllByText("Voice question"))
       .map((element) => element.closest(".workflow-result"))

@@ -62,6 +62,7 @@ Latest completed slice:
 - Quieted Storage filter empty states on 2026-06-27: source search now resolves to `No sources` without a second helper line, and block search resolves to `No blocks`. Visual evidence: `/tmp/vault-storage-filter-empty-minimal.png`.
 - Quieted the Evidence graph empty state further on 2026-06-27: clean workspaces now show `No claims` and `No claim selected` instead of Review/process instructions. Visual evidence: `/tmp/vault-graph-empty-minimal-v2.png`.
 - Quieted the Notes version drawer on 2026-06-27: the panel now says `Versions`, `0 versions`, and `No versions` instead of saved-version status copy. Visual evidence: `/tmp/vault-editor-versions-empty-minimal.png`.
+- Quieted the Assistant answer chrome on 2026-06-27: sent questions now leave the composer ready for the next prompt, and answer evidence is one compact provenance row instead of repeated status/caption copy. Visual evidence: `/tmp/vault-assistant-answer-minimal-provenance.png`.
 
 Earlier implementation slice built a reproducible macOS arm64 `whisper-cli` package from `whisper.cpp` source, moved the whisper runtime from distribution-decision to release-evidence, verified all production model candidate bytes, and merged the current byte-evidence files into one candidate overlay.
 
@@ -3013,6 +3014,7 @@ Current good state:
 - Quick capture now names the core destinations by intent: `Thought`, `Task`, and `Evidence`.
 - Assistant no longer overflows at 390px; the mobile top bar removes desktop search width and keeps the question flow in view.
 - Assistant citation rows clamp long titles and exact quotes while preserving full evidence text.
+- Assistant answers now keep the composer empty after send and show evidence provenance once, like a modern chat surface.
 - Generated-note provenance and Storage import follow-ups now preserve long source/evidence labels without adding visible clutter.
 - Generated-note review gates now use a flat row and user-facing `Check claims` language instead of a static explanatory banner.
 - Storage source status is now a disclosure that opens when review work needs attention.

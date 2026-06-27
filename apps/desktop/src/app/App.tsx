@@ -8819,6 +8819,7 @@ function AssistantView() {
   const setSelectedReviewItemId = useUIStore((state) => state.setSelectedReviewItemId);
   const setSelectedClaimId = useUIStore((state) => state.setSelectedClaimId);
   const [question, setQuestion] = useState("");
+  const [submittedQuestion, setSubmittedQuestion] = useState("");
   const [evidenceMode, setEvidenceMode] = useState<AssistantEvidenceMode>("approved_claims");
   const [submittedEvidenceMode, setSubmittedEvidenceMode] = useState<AssistantEvidenceMode>("approved_claims");
   const [assistantContextId, setAssistantContextId] = useState(selectedCapsuleId ?? "vault");
@@ -8848,7 +8849,7 @@ function AssistantView() {
   const saveAssistantAnswer = useMutation<Note, Error>({
     mutationFn: async () => {
       if (!answer?.answer_markdown) throw new Error("Ask a question before saving an answer.");
-      const sourceQuestion = question.trim() || "Assistant answer";
+      const sourceQuestion = submittedQuestion.trim() || question.trim() || "Assistant answer";
       const title = assistantAnswerNoteTitle(sourceQuestion);
       const markdown = assistantAnswerNoteMarkdown(title, sourceQuestion, answer);
       const contentJson = assistantAnswerNoteContent(sourceQuestion, answer, submittedEvidenceMode, markdown);
@@ -8885,10 +8886,9 @@ function AssistantView() {
   const AnswerEvidencePolicyIcon = answerEvidencePolicy.icon;
   const validationStatus = answer?.citation_validation?.status ? citationValidationLabel(String(answer.citation_validation.status)) : undefined;
   const groundingTitle = assistantGroundingTitle(answer, answerEvidencePolicy, ask.isPending);
-  const groundingDetail = assistantGroundingDetail(answer, answerEvidencePolicy, citations.length);
   const localityLabel = assistantLocalityLabel(answer);
-  const modelLabel = assistantModelLabel(answer, ask.isPending);
   const contextLabel = assistantContextLabel(answer, submittedContextId, submittedCapsule);
+  const submittedQuestionText = submittedQuestion.trim();
   const assistantEmpty = !answer && !ask.isPending;
 
   useEffect(() => {
@@ -8932,6 +8932,9 @@ function AssistantView() {
   function askQuestion(questionOverride?: string, modeOverride: AssistantEvidenceMode = evidenceMode) {
     const nextQuestion = String(questionOverride ?? question).trim();
     if (!nextQuestion) return;
+    setAnswer(undefined);
+    setSubmittedQuestion(nextQuestion);
+    setQuestion("");
     setSubmittedEvidenceMode(modeOverride);
     setSubmittedContextId(assistantContextId);
     ask.mutate({ question: nextQuestion, mode: modeOverride, contextId: assistantContextId });
@@ -9046,58 +9049,54 @@ function AssistantView() {
             </div>
           ) : (
             <>
-              {question.trim() && (
+              {submittedQuestionText && (
                 <article className="assistant-message assistant-message-user">
-                  <p>{question.trim()}</p>
+                  <p>{submittedQuestionText}</p>
                 </article>
               )}
               <article className="assistant-message assistant-message-answer">
-                <div className="assistant-answer-header">
-                  <div className="assistant-answer-status">
-                    <span>{ask.isPending ? "Assistant" : groundingTitle}</span>
+                {(answer?.review_item_id || answer?.ai_run_id || answer?.answer_markdown) && (
+                  <div className="assistant-answer-header">
+                    <div className="assistant-answer-actions">
+                      {answer?.review_item_id && (
+                        <Button icon={<GitBranch size={15} />} variant="quiet" onClick={openReviewFollowUp}>
+                          Review follow-up
+                        </Button>
+                      )}
+                      {answer?.ai_run_id && (
+                        <TaskCreateButton
+                          targetType="assistant_answer"
+                          targetId={String(answer.ai_run_id)}
+                          targetTitle={submittedQuestionText || "Assistant answer"}
+                          defaultTitle={`Follow up on ${assistantAnswerNoteTitle(submittedQuestionText || "Assistant answer")}`}
+                          relation="follow_up_answer"
+                          metadata={assistantAnswerTaskMetadata(answer, submittedQuestionText)}
+                        />
+                      )}
+                      {answer?.answer_markdown && (
+                        <Button icon={<FilePlus2 size={15} />} variant="secondary" disabled={saveAssistantAnswer.isPending} onClick={() => saveAssistantAnswer.mutate()}>
+                          {saveAssistantAnswer.isPending ? "Saving" : "Save as note"}
+                        </Button>
+                      )}
+                    </div>
                   </div>
-                  <div className="assistant-answer-actions">
-                    {answer?.review_item_id && (
-                      <Button icon={<GitBranch size={15} />} variant="quiet" onClick={openReviewFollowUp}>
-                        Review follow-up
-                      </Button>
-                    )}
-                    {answer?.ai_run_id && (
-                      <TaskCreateButton
-                        targetType="assistant_answer"
-                        targetId={String(answer.ai_run_id)}
-                        targetTitle={question.trim() || "Assistant answer"}
-                        defaultTitle={`Follow up on ${assistantAnswerNoteTitle(question.trim() || "Assistant answer")}`}
-                        relation="follow_up_answer"
-                        metadata={assistantAnswerTaskMetadata(answer, question.trim())}
-                      />
-                    )}
-                    {answer?.answer_markdown && (
-                      <Button icon={<FilePlus2 size={15} />} variant="secondary" disabled={saveAssistantAnswer.isPending} onClick={() => saveAssistantAnswer.mutate()}>
-                        {saveAssistantAnswer.isPending ? "Saving" : "Save as note"}
-                      </Button>
-                    )}
-                  </div>
-                </div>
+                )}
                 <div className="markdown-output">
                   {ask.isPending ? "Working locally..." : answer?.answer_markdown}
                 </div>
                 <div className="assistant-grounding-panel" aria-label="Assistant answer grounding">
-                  <div>
+                  <div className="assistant-grounding-main">
                     <Badge tone={answerEvidencePolicy.tone}>
                       <AnswerEvidencePolicyIcon size={12} />
                       {answerEvidencePolicy.label}
                     </Badge>
-                    <strong>{groundingTitle}</strong>
-                    <span>{evidenceQualityLabel(answer?.evidence_quality)}</span>
-                    <span>{groundingDetail}</span>
                   </div>
                   <div className="assistant-grounding-meta" aria-label="Answer context">
-                    <span>{answerEvidencePolicy.label}</span>
+                    <strong>{groundingTitle}</strong>
+                    {answer?.evidence_quality && <span>{evidenceQualityLabel(answer.evidence_quality)}</span>}
                     <span>{contextLabel}</span>
                     <span>{assistantCitationCountLabel(citations.length)}</span>
-                    <span>{localityLabel}</span>
-                    <span title={String(answer?.model_id ?? "")}>{modelLabel}</span>
+                    <span title={String(answer?.model_id ?? "")}>{localityLabel}</span>
                     {validationStatus && <span>{validationStatus}</span>}
                   </div>
                 </div>
@@ -9129,7 +9128,7 @@ function AssistantView() {
                             {citation.claim_id ? `claim ${citation.claim_id}` : citation.source_block_id}
                           </small>
                           <div className="assistant-citation-actions">
-                            <AssistantCitationTaskButton citation={citation} answer={answer} questionText={question.trim()} />
+                            <AssistantCitationTaskButton citation={citation} answer={answer} questionText={submittedQuestionText} />
                             <Button icon={<Network size={14} />} variant="quiet" disabled={!citation.claim_id} onClick={() => openCitationClaim(citation)}>
                               Open claim
                             </Button>
@@ -9254,14 +9253,6 @@ function assistantGroundingTitle(answer: any, policy: (typeof assistantEvidenceP
   return `Answered with ${policy.label.toLowerCase()}`;
 }
 
-function assistantGroundingDetail(answer: any, policy: (typeof assistantEvidencePolicies)[AssistantEvidenceMode], citationCount: number): string {
-  if (!answer) return `${policy.caption} Ask a question to see citations and review needs.`;
-  if (answer.evidence_quality === "missing") return "The assistant did not find enough reviewed evidence to state this as fact.";
-  if (answer.review_item_id) return "A follow-up review item is waiting because the answer needs stronger evidence.";
-  if (citationCount === 0) return "No citations were returned. Treat this as provisional.";
-  return `${policy.caption} ${assistantCitationCountLabel(citationCount)} attached.`;
-}
-
 function assistantCitationCountLabel(count: number): string {
   if (count === 0) return "none";
   if (count === 1) return "1 citation";
@@ -9271,13 +9262,6 @@ function assistantCitationCountLabel(count: number): string {
 function assistantLocalityLabel(answer: any): string {
   if (!answer) return "local by default";
   return answer.sent_off_device ? "off device" : "on device";
-}
-
-function assistantModelLabel(answer: any, pending: boolean): string {
-  if (pending) return "working";
-  if (!answer) return "waiting";
-  if (answer.sent_off_device) return "Off-device model";
-  return "Local model";
 }
 
 function assistantContextLabel(answer: any, contextId: string, capsule?: Partial<Capsule> | null): string {

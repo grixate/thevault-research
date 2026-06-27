@@ -4840,11 +4840,11 @@ blockquote span {
 
 .assistant-answer-header {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end;
   align-items: center;
   gap: 12px;
-  min-height: 34px;
-  margin-bottom: 8px;
+  min-height: 30px;
+  margin-bottom: 4px;
 }
 
 .assistant-answer-header > div {
@@ -5017,20 +5017,20 @@ blockquote span {
 }
 
 .assistant-grounding-panel {
-  display: grid;
-  gap: 8px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 7px 10px;
   margin-top: 12px;
   padding-top: 10px;
   background: transparent;
   border-top: 1px solid var(--line);
 }
 
-.assistant-grounding-panel > div:first-child {
+.assistant-grounding-main {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  justify-items: start;
-  gap: 7px;
   min-width: 0;
 }
 
@@ -5040,13 +5040,13 @@ blockquote span {
   overflow-wrap: anywhere;
 }
 
-.assistant-grounding-panel > div:first-child > strong {
+.assistant-grounding-meta strong {
   color: var(--text);
   font-size: 12px;
   line-height: 1.3;
 }
 
-.assistant-grounding-panel > div:first-child > span {
+.assistant-grounding-meta span {
   color: var(--muted);
   font-size: 12px;
   line-height: 1.45;
@@ -5056,18 +5056,20 @@ blockquote span {
   display: flex;
   flex-wrap: wrap;
   gap: 5px 8px;
+  min-width: 0;
   color: var(--muted);
   font-size: 12px;
   line-height: 1.35;
 }
 
+.assistant-grounding-meta strong,
 .assistant-grounding-meta span {
   min-width: 0;
   max-width: 100%;
   overflow-wrap: anywhere;
 }
 
-.assistant-grounding-meta span + span::before {
+.assistant-grounding-meta > * + *::before {
   content: "/";
   margin-right: 8px;
   color: var(--line-strong);
