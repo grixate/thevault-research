@@ -6861,9 +6861,10 @@ function ReviewView() {
   const pendingVisibleItems = visibleReviewItems.filter((reviewItem) => reviewItem.status === "pending");
   const selectedPendingItems = pendingVisibleItems.filter((reviewItem) => selectedReviewIds.includes(reviewItem.id));
   const allVisibleSelected = pendingVisibleItems.length > 0 && pendingVisibleItems.every((reviewItem) => selectedReviewIds.includes(reviewItem.id));
-  const pendingCount = reviewItems.filter((reviewItem) => reviewItem.status === "pending").length;
+  const pendingDecisionCount = pendingVisibleItems.length;
   const hasReviewItems = reviewItems.length > 0;
   const hasActiveFilters = typeFilter !== "all" || scopeQuery.trim().length > 0;
+  const showReviewDecisionSummary = pendingDecisionCount > 0;
   useEffect(() => {
     setDecisionNote("");
     setReviewCapsuleId("none");
@@ -6969,9 +6970,9 @@ function ReviewView() {
     <div className="surface review-layout">
       <Panel className="review-list" aria-label="Review queue">
         {reviewStatusTabs}
-        {hasReviewItems && (
+        {showReviewDecisionSummary && (
           <div className="review-decision-summary" aria-label="Review decision summary">
-            <Badge tone={pendingCount ? "warn" : "good"}>{pendingCount ? `${pendingCount} to decide` : "clear"}</Badge>
+            <Badge tone="warn">{pendingDecisionCount} to decide</Badge>
             <div>
               <span>
                 {selectedPendingItems.length

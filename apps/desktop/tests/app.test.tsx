@@ -4277,6 +4277,48 @@ describe("App", () => {
     );
   });
 
+  it("keeps the Review summary hidden when only rejected proposals are visible", async () => {
+    const rejectedItem = {
+      id: "rev_rejected",
+      item_type: "new_claim",
+      title: "Rejected synthesis proposal",
+      summary: "This proposal was already rejected and should not carry a clear-state banner.",
+      status: "rejected",
+      created_at: "2026-06-05T00:00:00Z",
+      payload: { body: "Rejected claim body", model_id: "mock-local-llm" }
+    };
+    const request = vi.fn(async (route: string, payload?: any) => {
+      if (route === "health.get") return { ok: true, version: "0.1.0", db_ready: true, workspace_id: "wrk_default" };
+      if (route === "jobs.list" || route === "events.list") return [];
+      if (route === "stats.get") {
+        return {
+          sources: 0,
+          source_blocks: 0,
+          notes: 0,
+          claims: 0,
+          claims_without_evidence: 0,
+          contradicted_claims: 0,
+          pending_review_items: 0,
+          generated_notes_pending_review: 0,
+          installed_tools: 0,
+          failed_jobs: 0,
+          learning_items: 0
+        };
+      }
+      if (route === "review.list") return payload?.status === "dismissed" ? [rejectedItem] : [];
+      if (route === "capsules.list") return { items: [], total: 0 };
+      return [];
+    });
+    window.vault = { request, selectFiles: vi.fn(async () => []) };
+    useUIStore.setState({ surface: "review" });
+    renderApp();
+
+    fireEvent.click(await screen.findByRole("tab", { name: "Rejected" }));
+    expect((await screen.findAllByText("Rejected synthesis proposal")).length).toBeGreaterThan(0);
+    await waitFor(() => expect(screen.queryByLabelText("Review decision summary")).toBeNull());
+    expect(screen.queryByText("clear")).toBeNull();
+  });
+
   it("bulk rejects filtered review proposals with a shared decision note", async () => {
     const reviewItems = [
       {

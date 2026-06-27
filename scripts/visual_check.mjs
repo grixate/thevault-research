@@ -185,6 +185,20 @@ const scenarios = {
       return text.includes("No proposals") && !text.includes("Review is clear.");
     });
   },
+  "review-rejected-only": async (page) => {
+    await installRejectedReviewVaultBridge(page);
+    await openReview(page);
+    await page.getByRole("tab", { name: "Rejected" }).click();
+    await page.getByText("Rejected synthesis proposal").first().waitFor();
+    await page.waitForFunction(() => {
+      const text = document.body.innerText ?? "";
+      return (
+        text.includes("Rejected synthesis proposal") &&
+        !document.querySelector("[aria-label='Review decision summary']") &&
+        !text.includes("clear")
+      );
+    });
+  },
   "settings-models": async (page) => {
     await installEmptyVaultBridge(page);
     await openSettings(page);
@@ -442,6 +456,49 @@ async function installEmptyVaultBridge(page) {
             uncertainties: []
           };
         }
+        return [];
+      },
+      selectFiles: async () => []
+    };
+  });
+}
+
+async function installRejectedReviewVaultBridge(page) {
+  await page.addInitScript(() => {
+    const rejectedItem = {
+      id: "rev_rejected_visual",
+      item_type: "new_claim",
+      title: "Rejected synthesis proposal",
+      summary: "Already rejected proposals should read like archive rows, not a success announcement.",
+      status: "rejected",
+      created_at: "2026-06-27T00:00:00Z",
+      payload: {
+        body: "This rejected claim remains available for inspection.",
+        model_id: "mock-local-llm"
+      }
+    };
+    window.vault = {
+      request: async (route, payload) => {
+        if (route === "health.get") return { ok: true, version: "0.1.0", db_ready: true, workspace_id: "wrk_default" };
+        if (route === "jobs.list") return [];
+        if (route === "stats.get") {
+          return {
+            sources: 0,
+            source_blocks: 0,
+            notes: 0,
+            claims: 0,
+            claims_without_evidence: 0,
+            contradicted_claims: 0,
+            pending_review_items: 0,
+            generated_notes_pending_review: 0,
+            installed_tools: 0,
+            failed_jobs: 0,
+            learning_items: 0
+          };
+        }
+        if (route === "events.list") return [];
+        if (route === "review.list") return payload?.status === "dismissed" ? [rejectedItem] : [];
+        if (route === "capsules.list") return { items: [], total: 0 };
         return [];
       },
       selectFiles: async () => []
