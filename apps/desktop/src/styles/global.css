@@ -5455,23 +5455,6 @@ blockquote span {
   gap: 12px;
 }
 
-.settings-raw-header {
-  display: grid;
-  justify-items: start;
-  gap: 7px;
-}
-
-.settings-raw-header h3,
-.settings-raw-header p {
-  margin: 0;
-}
-
-.settings-raw-header p {
-  max-width: 620px;
-  color: var(--muted);
-  line-height: 1.5;
-}
-
 .runtime-install-card,
 .runtime-details article,
 .model-pack-card,
@@ -5573,6 +5556,11 @@ blockquote span {
   display: grid;
   gap: 14px;
   padding: 0 0 16px 19px;
+}
+
+.settings-snapshot-panel pre {
+  margin-top: 0;
+  margin-left: 19px;
 }
 
 .settings-route-details .capability-list {

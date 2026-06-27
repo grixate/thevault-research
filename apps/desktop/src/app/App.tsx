@@ -10034,6 +10034,7 @@ function SettingsView() {
   const queryClient = useQueryClient();
   const [tab, setTab] = useState<"ai" | "routing" | "voice" | "privacy" | "export" | "raw">("ai");
   const [setupWizardOpen, setSetupWizardOpen] = useState(false);
+  const [settingsSnapshotOpen, setSettingsSnapshotOpen] = useState(false);
   const [embeddingProviderId, setEmbeddingProviderId] = useState("mock_embedding");
   const [embeddingModelId, setEmbeddingModelId] = useState("mock-local-embedding");
   const [embeddingEndpoint, setEmbeddingEndpoint] = useState("");
@@ -12614,12 +12615,14 @@ function SettingsView() {
 
         {tab === "raw" && (
           <div className="settings-section">
-            <div className="settings-raw-header">
-              <Badge tone="neutral">Reference</Badge>
-              <h3>Settings snapshot</h3>
-              <p>Current local preferences as JSON. Useful when comparing support notes or debugging a setup issue.</p>
-            </div>
-            <pre aria-label="Settings JSON snapshot">{JSON.stringify(settings.data, null, 2)}</pre>
+            <details className="settings-advanced-panel settings-snapshot-panel" onToggle={(event) => setSettingsSnapshotOpen((event.currentTarget as HTMLDetailsElement).open)}>
+              <summary>
+                <span>
+                  <strong>Settings snapshot</strong>
+                </span>
+              </summary>
+              {settingsSnapshotOpen && <pre aria-label="Settings JSON snapshot">{JSON.stringify(settings.data, null, 2)}</pre>}
+            </details>
           </div>
         )}
       </Panel>

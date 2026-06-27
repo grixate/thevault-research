@@ -6287,7 +6287,11 @@ describe("App", () => {
     expect(screen.queryByText("Choose which local provider handles each model-backed task.")).toBeNull();
     fireEvent.click(within(settingsTabs).getByRole("tab", { name: "Advanced" }));
     expect(await screen.findByRole("heading", { name: "Advanced", level: 2 })).toBeTruthy();
-    expect(await screen.findByText("Settings snapshot")).toBeTruthy();
+    const snapshotSummary = (await screen.findByText("Settings snapshot")).closest("summary");
+    expect(snapshotSummary).toBeTruthy();
+    expect(screen.queryByText("Current local preferences as JSON. Useful when comparing support notes or debugging a setup issue.")).toBeNull();
+    expect(screen.queryByLabelText("Settings JSON snapshot")).toBeNull();
+    fireEvent.click(snapshotSummary as HTMLElement);
     expect(await screen.findByLabelText("Settings JSON snapshot")).toBeTruthy();
   });
 
