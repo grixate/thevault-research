@@ -96,6 +96,9 @@ Latest completed slice:
 - Quieted the Tasks empty copy on 2026-06-27: empty Inbox now says `No tasks` instead of the cutesy `Inbox clear.`, matching the neutral empty-state language used by Notes, Storage, Capsules, and Graph. Visual evidence: `/tmp/vault-tasks-empty-neutral-copy.png`.
 - Quieted the blank Home activity panel on 2026-06-27: clean workspaces no longer show `Recent activity`, `0 updates`, zero counters, or `No activity` until there is real activity or a nonzero workspace signal. Visual evidence: `/tmp/vault-home-empty-no-zero-activity.png`.
 - Quieted the Review empty copy on 2026-06-27: empty pending queues now say `No proposals` instead of `Review is clear.`, keeping Review aligned with the app's neutral `No ...` empty-state language. Visual evidence: `/tmp/vault-review-empty-neutral-copy.png`.
+- Quieted the Settings Models download area on 2026-06-27: the empty `Download queue` / `No model downloads yet` block now stays hidden until there is real download activity. Visual evidence: `/tmp/vault-settings-models-download-queue-clean.png`.
+- Added `Promptless browser QA` to `scripts/verify_v1.sh` on 2026-06-27, so the full v1 verifier checks the no-prompt Chrome Headless Shell path before Playwright e2e.
+- Quieted the rejected Review archive state on 2026-06-27: rejected-only views no longer show a green `clear` summary, and the proposal detail no longer repeats the proposal type badge inside the body. Visual evidence: `/tmp/vault-review-rejected-type-deduped.png`.
 
 Earlier implementation slice built a reproducible macOS arm64 `whisper-cli` package from `whisper.cpp` source, moved the whisper runtime from distribution-decision to release-evidence, verified all production model candidate bytes, and merged the current byte-evidence files into one candidate overlay.
 

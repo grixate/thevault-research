@@ -192,8 +192,10 @@ const scenarios = {
     await page.getByText("Rejected synthesis proposal").first().waitFor();
     await page.waitForFunction(() => {
       const text = document.body.innerText ?? "";
+      const typeChipCount = (text.match(/\bnew claim\b/g) ?? []).length;
       return (
         text.includes("Rejected synthesis proposal") &&
+        typeChipCount <= 1 &&
         !document.querySelector("[aria-label='Review decision summary']") &&
         !text.includes("clear")
       );

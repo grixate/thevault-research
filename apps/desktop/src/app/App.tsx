@@ -6559,6 +6559,13 @@ function reviewItemLabel(itemType: string): string {
   return itemType.replace(/_/g, " ");
 }
 
+function reviewPayloadTypeBadge(item: ReviewItem): string {
+  const payloadType = String(item.payload?.type ?? "").replace(/_/g, " ").trim();
+  if (!payloadType) return "";
+  const itemLabel = reviewItemLabel(item.item_type).replace(/_/g, " ").trim();
+  return itemLabel.toLowerCase().includes(payloadType.toLowerCase()) ? "" : payloadType;
+}
+
 function reviewDecisionPrompt(item: ReviewItem): string {
   if (item.item_type === "new_claim") return "Approve only if the exact quote supports the claim.";
   if (item.item_type === "new_object" || item.item_type === "new_concept") return "Approve if this object should become active graph knowledge.";
@@ -6690,14 +6697,17 @@ function ReviewPayloadSummary({ item }: { item: ReviewItem }) {
   const learningItems = Array.isArray(payload.items) ? payload.items : [];
   const importMergePreview = capsuleImportMergePreview(payload);
   const changedImportFields = capsuleImportChangedFields(importMergePreview);
+  const headerBadges = [reviewPayloadTypeBadge(item), payload.language ? String(payload.language) : ""].filter(Boolean);
   return (
     <div className="review-proposal">
-      <div className="review-proposal-header">
-        <Badge tone={reviewItemTone(item.item_type)}>{reviewItemLabel(item.item_type)}</Badge>
-        {payload.type && <Badge>{String(payload.type)}</Badge>}
-        {payload.language && <Badge>{String(payload.language)}</Badge>}
-        {confidence != null && Number.isFinite(confidence) && <Badge tone={confidence >= 0.75 ? "good" : confidence >= 0.45 ? "warn" : "bad"}>{Math.round(confidence * 100)}%</Badge>}
-      </div>
+      {(headerBadges.length > 0 || (confidence != null && Number.isFinite(confidence))) && (
+        <div className="review-proposal-header">
+          {headerBadges.map((badge) => (
+            <Badge key={badge}>{badge}</Badge>
+          ))}
+          {confidence != null && Number.isFinite(confidence) && <Badge tone={confidence >= 0.75 ? "good" : confidence >= 0.45 ? "warn" : "bad"}>{Math.round(confidence * 100)}%</Badge>}
+        </div>
+      )}
       {importMergePreview && (
         <section className="review-import-merge" aria-label="Capsule import merge preview">
           <span>Merge preview</span>
