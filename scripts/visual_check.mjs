@@ -309,8 +309,10 @@ const scenarios = {
       const runRowHeight = runRow?.getBoundingClientRect().height ?? 0;
       return (
         text.includes("Claim Citation Checker") &&
+        text.includes("Available") &&
         text.includes("History") &&
         text.includes("Run details") &&
+        !text.includes("installed") &&
         !text.includes("Result JSON") &&
         !text.includes("Stdout") &&
         !text.includes("Stderr") &&

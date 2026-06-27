@@ -9903,7 +9903,7 @@ function ToolsView() {
           {toolRows.map((tool) => (
             <button key={tool.id} className={selected?.id === tool.id ? "active" : ""} onClick={() => setSelectedToolId(tool.id)}>
               <strong>{tool.name}</strong>
-              <span>{tool.status} · {tool.version}</span>
+              <span>{toolStatusLabel(tool.status)} · {tool.version}</span>
             </button>
           ))}
         </div>
@@ -9934,7 +9934,7 @@ function ToolsView() {
             <section className="tool-contract-panel">
               <div className="tool-contract-header">
                 <div>
-                  <Badge tone={selected.status === "installed" ? "good" : "warn"}>{selected.status}</Badge>
+                  <Badge tone={selected.status === "installed" ? "good" : "warn"}>{toolStatusLabel(selected.status)}</Badge>
                   {manifest.imported_from_capsule === true && <Badge tone="warn">imported</Badge>}
                   <Badge tone="info">{String(manifest.runtime ?? "runtime")}</Badge>
                   <Badge>{Number(manifest.timeout_ms ?? 0) / 1000}s timeout</Badge>
@@ -10074,6 +10074,12 @@ function toolPermissionState(permission: string, allowed: boolean): { className:
   if (allowed && sensitive) return { className: "tool-permission-state sensitive", icon: Check, label: "Allowed sensitive permission" };
   if (allowed) return { className: "tool-permission-state allowed", icon: Check, label: "Allowed" };
   return { className: "tool-permission-state blocked", icon: X, label: "Blocked" };
+}
+
+function toolStatusLabel(status?: string): string {
+  if (status === "installed") return "Available";
+  if (status === "disabled") return "Needs review";
+  return searchModeLabel(status || "unknown");
 }
 
 function toolRunTaskMetadata(tool: Tool, run: ToolRunRecord): Record<string, unknown> {

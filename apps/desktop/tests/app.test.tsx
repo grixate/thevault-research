@@ -2549,12 +2549,16 @@ describe("App", () => {
     expect(screen.queryByText("Sandboxed helpers")).toBeNull();
     expect(screen.queryByText("Run approved local helpers against notes and Storage. Their output can create Review work, but cannot change trusted knowledge directly.")).toBeNull();
     expect(screen.queryByText(/Home Lab/i)).toBeNull();
+    await waitFor(() => expect(screen.getAllByText("Available").length).toBeGreaterThanOrEqual(1));
+    expect(screen.queryByText("installed")).toBeNull();
     fireEvent.click(await screen.findByRole("button", { name: /Imported Capsule Tool/i }));
     expect(await screen.findByRole("button", { name: "Enable" })).toBeTruthy();
     expect((screen.getByRole("button", { name: /^run$/i }) as HTMLButtonElement).disabled).toBe(true);
     fireEvent.click(screen.getByRole("button", { name: "Enable" }));
     await waitFor(() => expect(request).toHaveBeenCalledWith("tools.enable", { toolId: "tool_imported_capsule" }));
     fireEvent.click(await screen.findByRole("button", { name: /Claim Citation Checker/i }));
+    expect(await screen.findByText("Available")).toBeTruthy();
+    expect(screen.queryByText("installed")).toBeNull();
     expect(await screen.findByText("write canonical graph")).toBeTruthy();
     expect(await screen.findByText("History")).toBeTruthy();
     fireEvent.change(await screen.findByLabelText("Input"), {
