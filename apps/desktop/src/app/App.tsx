@@ -9847,13 +9847,22 @@ function ToolsView() {
       setRunInputError(error instanceof Error ? error.message : "Run input is not valid JSON.");
     }
   }
+  if (!tools.isLoading && toolRows.length === 0) {
+    return (
+      <div className="surface tool-empty-layout">
+        <Panel className="tool-empty-panel" aria-label="Local tools">
+          <div className="surface-empty-state">
+            <strong>No helpers</strong>
+          </div>
+        </Panel>
+      </div>
+    );
+  }
   return (
     <div className="surface split-view tool-studio-view">
       <Panel className="list-pane">
-        <SectionHeader title="Local tools" />
         <div className="entity-list">
           {tools.isLoading && <p className="empty-copy">Loading helpers...</p>}
-          {!tools.isLoading && toolRows.length === 0 && <p className="empty-copy">No helpers</p>}
           {toolRows.map((tool) => (
             <button key={tool.id} className={selected?.id === tool.id ? "active" : ""} onClick={() => setSelectedToolId(tool.id)}>
               <strong>{tool.name}</strong>

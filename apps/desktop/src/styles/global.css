@@ -4235,6 +4235,20 @@ textarea {
   min-height: 0;
 }
 
+.tool-empty-layout {
+  display: grid;
+}
+
+.tool-empty-panel {
+  min-height: min(72vh, 720px);
+  display: grid;
+  padding: 16px;
+}
+
+.tool-empty-panel .surface-empty-state {
+  min-height: 0;
+}
+
 .review-tabs {
   display: inline-flex;
   max-width: 100%;

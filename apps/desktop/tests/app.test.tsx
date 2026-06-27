@@ -1279,10 +1279,10 @@ describe("App", () => {
     useUIStore.setState({ surface: "tools" });
     renderApp();
 
-    expect(await screen.findByRole("heading", { name: "Local tools", level: 2 })).toBeTruthy();
     expect(await screen.findByText("No helpers")).toBeTruthy();
-    expect(await screen.findByRole("heading", { name: "Helper details", level: 2 })).toBeTruthy();
-    expect(await screen.findByText("None selected")).toBeTruthy();
+    expect(screen.queryByRole("heading", { name: "Local tools", level: 2 })).toBeNull();
+    expect(screen.queryByRole("heading", { name: "Helper details", level: 2 })).toBeNull();
+    expect(screen.queryByText("None selected")).toBeNull();
     expect(screen.queryByText("No helpers installed.")).toBeNull();
     expect(screen.queryByText("Install or import a trusted helper to run local checks.")).toBeNull();
   });
@@ -2494,7 +2494,8 @@ describe("App", () => {
 
     useUIStore.setState({ surface: "tools" });
     renderApp();
-    expect(await screen.findByRole("heading", { name: "Local tools", level: 2 })).toBeTruthy();
+    expect(await screen.findByRole("button", { name: /Imported Capsule Tool/i })).toBeTruthy();
+    expect(screen.queryByRole("heading", { name: "Local tools", level: 2 })).toBeNull();
     expect(screen.queryByText("Sandboxed helpers")).toBeNull();
     expect(screen.queryByText("Run approved local helpers against notes and Storage. Their output can create Review work, but cannot change trusted knowledge directly.")).toBeNull();
     expect(screen.queryByText(/Home Lab/i)).toBeNull();
