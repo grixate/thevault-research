@@ -8726,6 +8726,7 @@ function GraphView() {
   const weakCount = (claims.data ?? []).filter((claim) => ["weakly_supported", "needs_review"].includes(claim.status)).length;
   const claimCount = claims.data?.length ?? 0;
   const emptyClaimCopy = "No claims";
+  const showGraphDetail = claims.isLoading || claimCount > 0;
   function openEvidence(link: ClaimEvidenceLink) {
     if (!link.source_id) return;
     setSelectedSourceId(link.source_id);
@@ -8733,9 +8734,9 @@ function GraphView() {
     setSurface("sources");
   }
   return (
-    <div className="surface graph-layout">
+    <div className={`surface graph-layout ${showGraphDetail ? "" : "graph-layout-empty"}`}>
       <Panel className="graph-canvas">
-        <SectionHeader title="Evidence graph" />
+        {showGraphDetail && <SectionHeader title="Evidence graph" />}
         {claimCount > 0 && (
           <div className="graph-context-strip" aria-label="Evidence graph context">
             <span>{claimCount} claims</span>
@@ -8775,55 +8776,57 @@ function GraphView() {
           ))}
         </div>
       </Panel>
-      <Panel className="detail-pane">
-        <SectionHeader
-          title={selected?.title ?? "Evidence"}
-          actions={
-            selected ? (
-              <>
-                <TaskCreateButton targetType="claim" targetId={selected.id} targetTitle={selected.title} />
-                <CapsuleAttachButton targetType="claim" targetId={selected.id} targetTitle={selected.title} defaultRole="core" autoIncludeEvidence />
-              </>
-            ) : undefined
-          }
-        />
-        {selected ? (
-          <>
-            <div className="claim-detail-card">
-              <Badge tone={claimStatusTone(selected.status)}>{selected.status.replace(/_/g, " ")}</Badge>
-              <p>{selected.normalized_text}</p>
-              <div className="claim-detail-context" aria-label="Claim strength">
-                <span>{percentLabel(selected.confidence)} confidence</span>
-                <span>{percentLabel(selected.evidence_strength)} evidence</span>
+      {showGraphDetail && (
+        <Panel className="detail-pane">
+          <SectionHeader
+            title={selected?.title ?? "Evidence"}
+            actions={
+              selected ? (
+                <>
+                  <TaskCreateButton targetType="claim" targetId={selected.id} targetTitle={selected.title} />
+                  <CapsuleAttachButton targetType="claim" targetId={selected.id} targetTitle={selected.title} defaultRole="core" autoIncludeEvidence />
+                </>
+              ) : undefined
+            }
+          />
+          {selected ? (
+            <>
+              <div className="claim-detail-card">
+                <Badge tone={claimStatusTone(selected.status)}>{selected.status.replace(/_/g, " ")}</Badge>
+                <p>{selected.normalized_text}</p>
+                <div className="claim-detail-context" aria-label="Claim strength">
+                  <span>{percentLabel(selected.confidence)} confidence</span>
+                  <span>{percentLabel(selected.evidence_strength)} evidence</span>
+                </div>
               </div>
-            </div>
-            <div className="claim-evidence-list" aria-label="Claim evidence">
-              {(evidence.data ?? []).length === 0 && <p className="empty-copy">No evidence</p>}
-              {(evidence.data ?? []).map((link) => (
-                <article key={link.id}>
-                  <div>
-                    <Badge tone={link.support_type === "supports" ? "good" : "warn"}>{link.support_type}</Badge>
-                    {link.locator && <Badge>{link.locator}</Badge>}
-                    {link.strength != null && <Badge tone="info">{percentLabel(link.strength)} strength</Badge>}
-                  </div>
-                  <blockquote>
-                    <span>Exact quote</span>
-                    {link.exact_quote}
-                  </blockquote>
-                  <footer>
-                    <small>{link.source_title ?? link.source_block_id}</small>
-                    <Button icon={<Link2 size={14} />} variant="quiet" disabled={!link.source_id} onClick={() => openEvidence(link)}>
-                      Open source
-                    </Button>
-                  </footer>
-                </article>
-              ))}
-            </div>
-          </>
-        ) : (
-          <p className="empty-copy">No claim selected</p>
-        )}
-      </Panel>
+              <div className="claim-evidence-list" aria-label="Claim evidence">
+                {(evidence.data ?? []).length === 0 && <p className="empty-copy">No evidence</p>}
+                {(evidence.data ?? []).map((link) => (
+                  <article key={link.id}>
+                    <div>
+                      <Badge tone={link.support_type === "supports" ? "good" : "warn"}>{link.support_type}</Badge>
+                      {link.locator && <Badge>{link.locator}</Badge>}
+                      {link.strength != null && <Badge tone="info">{percentLabel(link.strength)} strength</Badge>}
+                    </div>
+                    <blockquote>
+                      <span>Exact quote</span>
+                      {link.exact_quote}
+                    </blockquote>
+                    <footer>
+                      <small>{link.source_title ?? link.source_block_id}</small>
+                      <Button icon={<Link2 size={14} />} variant="quiet" disabled={!link.source_id} onClick={() => openEvidence(link)}>
+                        Open source
+                      </Button>
+                    </footer>
+                  </article>
+                ))}
+              </div>
+            </>
+          ) : (
+            <p className="empty-copy">No claim selected</p>
+          )}
+        </Panel>
+      )}
     </div>
   );
 }

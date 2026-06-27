@@ -4663,9 +4663,11 @@ describe("App", () => {
     useUIStore.setState({ surface: "graph", selectedClaimId: undefined });
     renderApp();
 
-    expect(await screen.findByRole("heading", { name: "Evidence graph", level: 2 })).toBeTruthy();
     expect(await screen.findByText("No claims")).toBeTruthy();
-    expect(await screen.findByText("No claim selected")).toBeTruthy();
+    expect(screen.getByLabelText("Find claims")).toBeTruthy();
+    await waitFor(() => expect(screen.queryByRole("heading", { name: "Evidence graph", level: 2 })).toBeNull());
+    expect(screen.queryByRole("heading", { name: "Evidence", level: 2 })).toBeNull();
+    expect(screen.queryByText("No claim selected")).toBeNull();
     expect(screen.queryByText("Approve a claim in Review to start the evidence map.")).toBeNull();
     expect(screen.queryByText("Select a claim to inspect its source links.")).toBeNull();
   });
