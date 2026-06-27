@@ -94,6 +94,7 @@ Latest completed slice:
 - Quieted the Capsules empty state on 2026-06-27: clean capsule workspaces now show one focused `No capsules` panel with `New` and `Import`, without the duplicate list rail, search field, or stale `No capsule selected` detail. Visual evidence: `/tmp/vault-capsules-empty-single-panel.png`.
 - Quieted the Home quick-start path on 2026-06-27: the first-run rows now show direct destinations and actions without filler badges like `empty`, `clear`, or `checking`, and `Models` now resolves to `Setup` instead of repeating itself. Visual evidence: `/tmp/vault-home-empty-minimal-path.png`.
 - Quieted the Tasks empty copy on 2026-06-27: empty Inbox now says `No tasks` instead of the cutesy `Inbox clear.`, matching the neutral empty-state language used by Notes, Storage, Capsules, and Graph. Visual evidence: `/tmp/vault-tasks-empty-neutral-copy.png`.
+- Quieted the blank Home activity panel on 2026-06-27: clean workspaces no longer show `Recent activity`, `0 updates`, zero counters, or `No activity` until there is real activity or a nonzero workspace signal. Visual evidence: `/tmp/vault-home-empty-no-zero-activity.png`.
 
 Earlier implementation slice built a reproducible macOS arm64 `whisper-cli` package from `whisper.cpp` source, moved the whisper runtime from distribution-decision to release-evidence, verified all production model candidate bytes, and merged the current byte-evidence files into one candidate overlay.
 

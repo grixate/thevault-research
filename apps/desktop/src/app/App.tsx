@@ -4150,6 +4150,15 @@ function Dashboard() {
     }).filter(([, value]) => value !== undefined && value !== "")
   );
   const recentEvents = events.data ?? [];
+  const hasWorkspaceCounts = Boolean(
+    values &&
+      ((values.notes ?? 0) > 0 ||
+        (values.sources ?? 0) > 0 ||
+        (values.pending_review_items ?? 0) > 0 ||
+        (values.learning_items ?? 0) > 0 ||
+        (values.failed_jobs ?? 0) > 0)
+  );
+  const showActivityPanel = recentEvents.length > 0 || hasWorkspaceCounts;
   return (
     <div className="surface dashboard-grid">
       <HomeStartPanel
@@ -4240,29 +4249,31 @@ function Dashboard() {
           {nightLab.error && <small className="model-test-error">{nightLab.error.message}</small>}
         </div>
       </details>
-      <Panel className="activity-panel">
-        <div className="activity-panel-header">
-          <div>
-            <h3>Recent activity</h3>
+      {showActivityPanel && (
+        <Panel className="activity-panel">
+          <div className="activity-panel-header">
+            <div>
+              <h3>Recent activity</h3>
+            </div>
+            <span>{recentEvents.length} updates</span>
           </div>
-          <span>{recentEvents.length} updates</span>
-        </div>
-        <div className="home-counts" aria-label="Workspace counts">
-          <span><strong>{values?.notes ?? 0}</strong> notes</span>
-          <span><strong>{values?.sources ?? 0}</strong> sources</span>
-          <span><strong>{values?.pending_review_items ?? 0}</strong> to review</span>
-          <span><strong>{values?.learning_items ?? 0}</strong> practice</span>
-        </div>
-        <div className="event-list">
-          {recentEvents.length === 0 && <p className="empty-copy">No activity</p>}
-          {recentEvents.map((event) => (
-            <article key={event.id}>
-              <span>{formatActivityAction(event.action)}</span>
-              <small>{new Date(event.created_at).toLocaleString()}</small>
-            </article>
-          ))}
-        </div>
-      </Panel>
+          <div className="home-counts" aria-label="Workspace counts">
+            <span><strong>{values?.notes ?? 0}</strong> notes</span>
+            <span><strong>{values?.sources ?? 0}</strong> sources</span>
+            <span><strong>{values?.pending_review_items ?? 0}</strong> to review</span>
+            <span><strong>{values?.learning_items ?? 0}</strong> practice</span>
+          </div>
+          <div className="event-list">
+            {recentEvents.length === 0 && <p className="empty-copy">No activity</p>}
+            {recentEvents.map((event) => (
+              <article key={event.id}>
+                <span>{formatActivityAction(event.action)}</span>
+                <small>{new Date(event.created_at).toLocaleString()}</small>
+              </article>
+            ))}
+          </div>
+        </Panel>
+      )}
     </div>
   );
 }

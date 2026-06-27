@@ -1925,6 +1925,9 @@ describe("App", () => {
     expect(within(path).queryByText("Import source material when it should stay unchanged.")).toBeNull();
     expect(within(path).queryByText("Suggestions wait here before becoming knowledge.")).toBeNull();
     expect(await within(path).findByText("needs setup")).toBeTruthy();
+    expect(screen.queryByText("Recent activity")).toBeNull();
+    expect(screen.queryByText("0 updates")).toBeNull();
+    expect(screen.queryByText("No activity")).toBeNull();
 
     fireEvent.click(within(path).getByRole("button", { name: /quick note/i }));
     expect(await screen.findByLabelText("Quick note text")).toBeTruthy();

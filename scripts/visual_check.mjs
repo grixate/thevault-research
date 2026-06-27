@@ -29,7 +29,10 @@ const scenarios = {
         !text.includes("empty") &&
         !text.includes("clear") &&
         !text.includes("checking") &&
-        !text.includes("Start here")
+        !text.includes("Start here") &&
+        !text.includes("Recent activity") &&
+        !text.includes("0 updates") &&
+        !text.includes("No activity")
       );
     });
   },
