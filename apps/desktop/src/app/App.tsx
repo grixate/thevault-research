@@ -9965,7 +9965,6 @@ function ToolsView() {
                 <span>Input</span>
                 <Textarea value={runInput} onChange={(event) => setRunInput(event.target.value)} />
               </label>
-              <small>Input is prepared locally before the helper starts.</small>
               {runInputError && <small className="model-test-error">{runInputError}</small>}
               {run.error && <small className="model-test-error">{run.error.message}</small>}
               {test.error && <small className="model-test-error">{test.error.message}</small>}

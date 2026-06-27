@@ -2561,6 +2561,7 @@ describe("App", () => {
     expect(screen.queryByText("installed")).toBeNull();
     expect(await screen.findByText("Definition")).toBeTruthy();
     expect(screen.queryByText("Manifest")).toBeNull();
+    expect(screen.queryByText("Input is prepared locally before the helper starts.")).toBeNull();
     expect(await screen.findByText("write canonical graph")).toBeTruthy();
     expect(await screen.findByText("History")).toBeTruthy();
     fireEvent.change(await screen.findByLabelText("Input"), {
