@@ -58,6 +58,7 @@ Latest completed slice:
 - Quieted the Storage post-import follow-up on 2026-06-27: first glance now emphasizes `Saved to Storage` and `Start cited note`, while local claim extraction sits one step deeper under `Review source` as `Check claims`. Visual evidence: `/tmp/vault-storage-import-followup-minimal.png`.
 - Re-verified the no-prompt browser QA path on 2026-06-27: `CI=true pnpm e2e` and `node scripts/visual_check.mjs storage-import-followup /tmp/vault-storage-import-followup-minimal.png` both ran unattended with explicit no-sandbox Playwright launch settings.
 - Quieted the Practice empty state further on 2026-06-27: the empty list now says only `No cards`, and the empty detail pane uses the direct `Create a deck.` cue instead of repeating Review/process guidance. Visual evidence: `/tmp/vault-practice-empty-minimal-v2.png`.
+- Quieted the Local tools empty/detail state further on 2026-06-27: empty shelves now say `No helpers`, the neutral detail pane says `Helper details` / `None selected`, and empty run/result slots use `No runs` / `No result`. Visual evidence: `/tmp/vault-local-tools-empty-minimal-v2.png`.
 
 Earlier implementation slice built a reproducible macOS arm64 `whisper-cli` package from `whisper.cpp` source, moved the whisper runtime from distribution-decision to release-evidence, verified all production model candidate bytes, and merged the current byte-evidence files into one candidate overlay.
 
@@ -3078,6 +3079,7 @@ Current good state:
 - Practice no longer uses all-caps form labels or a dashed empty card on a clean workspace.
 - Practice empty state no longer repeats Review/process guidance; the empty list says `No cards` and the detail pane says `Create a deck.`.
 - Local tools now keeps absence copy in the list pane and uses a neutral detail-pane title.
+- Local tools empty and no-run states now use short shelf/result labels instead of install/process guidance.
 - Global visual tokens and major Settings panels are calmer and closer to notes-app references.
 - Command palette fast actions now follow the same minimal Spotlight-like row pattern as Quick capture.
 - Search mode selection now uses existing Radix tabs only inside the active search popover instead of permanently occupying the topbar.

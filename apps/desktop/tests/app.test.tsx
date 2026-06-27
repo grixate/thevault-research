@@ -1252,6 +1252,41 @@ describe("App", () => {
     });
   });
 
+  it("keeps the empty Local tools surface quiet", async () => {
+    const request = vi.fn(async (route: string) => {
+      if (route === "health.get") return { ok: true, version: "0.1.0", db_ready: true, workspace_id: "wrk_default" };
+      if (route === "jobs.list") return [];
+      if (route === "stats.get") {
+        return {
+          sources: 0,
+          source_blocks: 0,
+          notes: 0,
+          claims: 0,
+          claims_without_evidence: 0,
+          contradicted_claims: 0,
+          pending_review_items: 0,
+          generated_notes_pending_review: 0,
+          installed_tools: 0,
+          failed_jobs: 0,
+          learning_items: 0
+        };
+      }
+      if (route === "events.list") return [];
+      if (route === "tools.list") return [];
+      return [];
+    });
+    window.vault = { request, selectFiles: vi.fn(async () => []) };
+    useUIStore.setState({ surface: "tools" });
+    renderApp();
+
+    expect(await screen.findByRole("heading", { name: "Local tools", level: 2 })).toBeTruthy();
+    expect(await screen.findByText("No helpers")).toBeTruthy();
+    expect(await screen.findByRole("heading", { name: "Helper details", level: 2 })).toBeTruthy();
+    expect(await screen.findByText("None selected")).toBeTruthy();
+    expect(screen.queryByText("No helpers installed.")).toBeNull();
+    expect(screen.queryByText("Install or import a trusted helper to run local checks.")).toBeNull();
+  });
+
   it("creates a capsule from the Capsules surface", async () => {
     const capsule = {
       id: "cap_acoustics",

@@ -9882,7 +9882,7 @@ function ToolsView() {
         <SectionHeader title="Local tools" />
         <div className="entity-list">
           {tools.isLoading && <p className="empty-copy">Loading helpers...</p>}
-          {!tools.isLoading && toolRows.length === 0 && <p className="empty-copy">No helpers installed.</p>}
+          {!tools.isLoading && toolRows.length === 0 && <p className="empty-copy">No helpers</p>}
           {toolRows.map((tool) => (
             <button key={tool.id} className={selected?.id === tool.id ? "active" : ""} onClick={() => setSelectedToolId(tool.id)}>
               <strong>{tool.name}</strong>
@@ -9893,7 +9893,7 @@ function ToolsView() {
       </Panel>
       <Panel className="detail-pane">
         <SectionHeader
-          title={selected?.name ?? "Tool details"}
+          title={selected?.name ?? "Helper details"}
           eyebrow={selected?.status}
           actions={
             selected && (
@@ -9972,7 +9972,7 @@ function ToolsView() {
                 </Button>
               </div>
               <div className="tool-run-list" aria-label="Tool runs">
-                {(runs.data ?? []).length === 0 && <p className="empty-copy">No runs yet.</p>}
+                {(runs.data ?? []).length === 0 && <p className="empty-copy">No runs</p>}
                 {(runs.data ?? []).map((toolRun) => (
                   <button key={toolRun.id} className={selectedRun?.id === toolRun.id ? "active" : ""} onClick={() => setSelectedRunId(toolRun.id)}>
                     <Badge tone={toolRun.status === "completed" ? "good" : toolRun.status === "failed" ? "bad" : "warn"} title={toolRun.status}>
@@ -10009,12 +10009,12 @@ function ToolsView() {
                   </details>
                 </>
               ) : (
-                <p className="empty-copy">Run or test this helper to see its result.</p>
+                <p className="empty-copy">No result</p>
               )}
             </section>
           </div>
         ) : (
-          <p className="empty-copy">Install or import a trusted helper to run local checks.</p>
+          <p className="empty-copy">None selected</p>
         )}
       </Panel>
     </div>
