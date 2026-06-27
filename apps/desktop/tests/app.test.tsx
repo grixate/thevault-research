@@ -5649,7 +5649,6 @@ describe("App", () => {
     expect(screen.queryByText("Model approvals, evidence, and setup tools.")).toBeNull();
     expect(screen.queryByText("Installed models, runtimes, downloads, and local pack details.")).toBeNull();
     const commandCenter = await screen.findByLabelText("Local AI setup summary");
-    expect(within(commandCenter).getByText("starter")).toBeTruthy();
     expect(within(commandCenter).getByText("Connect local model tasks")).toBeTruthy();
     expect(within(commandCenter).getByText("0/3 essentials ready")).toBeTruthy();
     expect(within(commandCenter).getByText("0/8 files")).toBeTruthy();
@@ -5669,8 +5668,8 @@ describe("App", () => {
     expect(within(commandCenter).queryByRole("button", { name: /^setup$/i })).toBeNull();
     expect(within(commandCenter).queryByRole("button", { name: /choose candidate files/i })).toBeNull();
     expect(within(commandCenter).getAllByRole("button")).toHaveLength(2);
-    expect(await screen.findByText("Runtime missing")).toBeTruthy();
-    expect(await screen.findByText("No local GGUF models")).toBeTruthy();
+    expect(screen.queryByText("Runtime missing")).toBeNull();
+    expect(screen.queryByText("No local GGUF models")).toBeNull();
     expect(await screen.findByText("Private setup steps")).toBeTruthy();
     const setupGuideSummary = await screen.findByLabelText("Private model setup steps");
     expect(within(setupGuideSummary).getByText("Not set up")).toBeTruthy();
@@ -5684,6 +5683,8 @@ describe("App", () => {
     const modelLibrarySummary = (await screen.findByText("Model library")).closest("summary");
     expect(modelLibrarySummary).toBeTruthy();
     fireEvent.click(modelLibrarySummary as HTMLElement);
+    expect(await screen.findByRole("button", { name: /test runtime/i })).toBeTruthy();
+    expect(await screen.findByRole("button", { name: /import model/i })).toBeTruthy();
     expect((await screen.findAllByText("Runtimes")).length).toBeGreaterThan(1);
     expect(await screen.findByText("Approved model packs")).toBeTruthy();
     expect((await screen.findAllByText("Starter models")).length).toBeGreaterThan(0);

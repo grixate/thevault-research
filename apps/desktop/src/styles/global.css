@@ -5406,7 +5406,7 @@ blockquote span {
 }
 
 .settings-tabs {
-  margin-bottom: 18px;
+  margin-bottom: 12px;
 }
 
 .settings-tabs .ui-tabs-list {
@@ -5436,7 +5436,7 @@ blockquote span {
 
 .settings-section {
   display: grid;
-  gap: 16px;
+  gap: 12px;
 }
 
 .settings-raw-header {
@@ -5454,57 +5454,6 @@ blockquote span {
   max-width: 620px;
   color: var(--muted);
   line-height: 1.5;
-}
-
-.settings-model-strip {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 8px 14px;
-  min-width: 0;
-  padding: 10px 0 12px;
-  border-bottom: 1px solid var(--line);
-}
-
-.settings-model-strip > span {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  min-width: 0;
-  color: var(--muted);
-  font-size: 12px;
-  line-height: 1.3;
-}
-
-.settings-model-strip > span svg {
-  flex: 0 0 auto;
-  color: var(--muted);
-}
-
-.settings-model-strip strong,
-.settings-model-strip small {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.settings-model-strip strong {
-  color: var(--foreground);
-  font-size: 12px;
-  font-weight: 650;
-}
-
-.settings-model-strip small {
-  color: var(--muted);
-  font-size: 12px;
-}
-
-.settings-model-strip > div {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  margin-left: auto;
 }
 
 .runtime-install-card,
@@ -5753,6 +5702,23 @@ blockquote span {
   gap: 12px;
 }
 
+.runtime-details-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.runtime-details-heading h3 {
+  margin: 0;
+}
+
+.runtime-details-heading > div {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
 .setup-guide {
   display: grid;
   gap: 12px;
@@ -5920,12 +5886,6 @@ blockquote span {
 .local-ai-command-facts dd {
   color: var(--foreground);
   font-weight: 600;
-}
-
-.local-ai-command-note {
-  color: var(--muted);
-  font-size: 12px;
-  line-height: 1.35;
 }
 
 .local-ai-command-actions {

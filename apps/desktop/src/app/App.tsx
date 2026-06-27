@@ -1978,24 +1978,6 @@ function runtimeHealthLabel(state?: RuntimeHealth["llama_cpp"]["state"]) {
   return "Checking";
 }
 
-function runtimeCliLabel(configured?: boolean) {
-  return configured ? "Runtime ready" : "Runtime missing";
-}
-
-function runtimeInstalledModelsLabel(count: number) {
-  if (count === 0) return "No local GGUF models";
-  if (count === 1) return "1 local GGUF model";
-  return `${count} local GGUF models`;
-}
-
-function hardwareSummaryLabel(hardware?: HardwareProfile | null) {
-  const parts: string[] = [];
-  if (hardware?.os) parts.push(hardware.os);
-  if (hardware?.arch) parts.push(hardware.arch);
-  if (typeof hardware?.physical_ram_gb === "number") parts.push(`${hardware.physical_ram_gb} GB RAM`);
-  return parts.length ? parts.join(" / ") : "Hardware check pending";
-}
-
 function runtimeBinaryStatusLabel(binary?: RuntimeHealth["llama_cpp"]["cli"]) {
   if (binary?.configured) return "Ready";
   return "Missing";
@@ -2158,7 +2140,6 @@ function LocalAICommandCenter({
   onRunRecommended: () => void;
   onEvaluateCandidate: () => void;
 }) {
-  if (!setup && !report && !releasePlan) return null;
   const reportSummary = report?.summary;
   const reportSections = Array.isArray(report?.sections) ? report.sections : [];
   const setupSteps = Array.isArray(setup?.steps) ? setup.steps : [];
@@ -2173,7 +2154,7 @@ function LocalAICommandCenter({
   const topApproval = [...(report?.approval_items ?? [])].sort((a, b) => b.blocker_count - a.blocker_count)[0];
   const blockedSetup = setupSteps.find((step) => step.status === "blocked");
   const demoAvailable = Boolean(setup?.can_use_demo || demoPack?.installable || demoPack?.installed);
-  const nextTitle = topApproval?.title ?? blockedSetup?.title ?? setup?.next_action ?? "Check private model setup";
+  const nextTitle = topApproval?.title ?? blockedSetup?.title ?? setup?.next_action ?? "Local model setup";
   const nextDetail = topApproval?.next_action ?? blockedSetup?.detail ?? report?.next_actions?.[0] ?? setup?.next_action;
   const nextDetailCopy =
     topApproval?.category === "capability_route" ? "Choose an approved local model for this task before using it." : localAIUserText(nextDetail);
@@ -2223,9 +2204,6 @@ function LocalAICommandCenter({
   return (
     <section className="local-ai-command" aria-label="Local AI setup summary" title={nextDetailCopy || undefined}>
       <div className="local-ai-command-status">
-        <Badge tone={report?.production_ready ? "good" : setup?.can_use_demo ? "warn" : "bad"}>
-          {report?.production_ready ? "ready" : setup?.can_use_demo ? "starter" : "setup"}
-        </Badge>
         <strong>{localAIUserText(nextTitle)}</strong>
       </div>
       {commandFacts.length > 0 ? (
@@ -2237,9 +2215,7 @@ function LocalAICommandCenter({
             </div>
           ))}
         </dl>
-      ) : (
-        <span className="local-ai-command-note">Run setup check to inspect local model files.</span>
-      )}
+      ) : null}
       <div className="local-ai-command-actions">
         <Button icon={primaryActionIcon} variant={primaryActionVariant} disabled={primaryActionDisabled} onClick={primaryAction}>
           {primaryActionLabel}
@@ -11011,11 +10987,14 @@ function SettingsView() {
   const packs = modelPacks.data ?? [];
   const productionPacks = packs.filter((pack) => pack.release_channel === "production");
   const demoPacks = packs.filter((pack) => pack.release_channel === "demo");
+  const localAISetupStatus = Array.isArray(setupStatus.data) ? undefined : setupStatus.data;
+  const localAIReadinessReport = Array.isArray(readinessReport.data) ? undefined : readinessReport.data;
+  const localAIRegistryReleasePlan = Array.isArray(registryReleasePlan.data) ? undefined : registryReleasePlan.data;
   const recommendedProductionPack =
-    productionPacks.find((pack) => pack.id === setupStatus.data?.recommended_pack_id) ??
+    productionPacks.find((pack) => pack.id === localAISetupStatus?.recommended_pack_id) ??
     productionPacks.find((pack) => pack.profile === hardware.data?.recommended_profile) ??
     productionPacks[0];
-  const demoSetupPack = demoPacks.find((pack) => pack.id === setupStatus.data?.demo_pack_id) ?? demoPacks[0];
+  const demoSetupPack = demoPacks.find((pack) => pack.id === localAISetupStatus?.demo_pack_id) ?? demoPacks[0];
   const managedRuntimes = runtimeRegistry.data ?? [];
   const sttModels = useMemo(() => models.filter((model) => model.kind === "stt" && model.runtime === "whisper_cpp"), [models]);
   const selectedManagedSttModel = sttModels.find((model) => model.id === sttManagedModelId);
@@ -11370,7 +11349,9 @@ function SettingsView() {
   return (
     <div className="surface settings-layout">
       <Panel>
-        <SectionHeader title={activeSettingsTab.label} />
+        <h2 className="visually-hidden" title={activeSettingsTab.label}>
+          {activeSettingsTab.label}
+        </h2>
         <Tabs value={tab} onValueChange={(value) => setTab(value as typeof tab)} className="settings-tabs">
           <TabsList aria-label="Settings sections">
             {settingsTabItems.map((item) => (
@@ -11383,56 +11364,36 @@ function SettingsView() {
 
         {tab === "ai" && (
           <div className="settings-section">
-            <div className="settings-model-strip" aria-label="Local model environment">
-              <Badge tone="good">Runs on this device</Badge>
-              <span>
-                <Cpu size={14} />
-                <strong>{hardware.data?.recommended_profile ?? "tiny"} profile</strong>
-                <small>{hardwareSummaryLabel(hardware.data)}</small>
-              </span>
-              <span>
-                <Badge tone={runtimeTone} title={llamaRuntime?.state ?? "checking"}>
-                  {runtimeHealthLabel(llamaRuntime?.state)}
-                </Badge>
-                <strong>llama.cpp</strong>
-                <small title={runtimeBinaryTitle(llamaRuntime?.cli)}>{runtimeCliLabel(llamaRuntime?.cli.configured)}</small>
-                <small>{runtimeInstalledModelsLabel(llamaRuntime?.installed_models.length ?? 0)}</small>
-              </span>
-              <div>
-                <Button icon={<Play size={15} />} size="icon" variant="quiet" aria-label="Test runtime" title="Test runtime" onClick={() => testRuntime.mutate()} />
-                <Button icon={<Import size={15} />} size="icon" variant="quiet" aria-label="Import model" title="Import model" onClick={() => importModel.mutate()} />
-              </div>
-            </div>
             {importModel.data && <small className="import-result">Imported {importModel.data.display_name} into Vault model storage.</small>}
             {importModel.error && <small className="import-result import-error">{importModel.error.message}</small>}
             {downloadModelPack.error && <small className="import-result import-error">{downloadModelPack.error.message}</small>}
 
             <LocalAICommandCenter
-              setup={setupStatus.data}
-              report={readinessReport.data}
-              releasePlan={registryReleasePlan.data}
+              setup={localAISetupStatus}
+              report={localAIReadinessReport}
+              releasePlan={localAIRegistryReleasePlan}
               productionPack={recommendedProductionPack}
               demoPack={demoSetupPack}
               busy={setupWizardBusy}
               candidateBusy={evaluateCandidateReleasePlan.isPending}
               onOpenWizard={() => setSetupWizardOpen(true)}
               onOpenRouting={() => setTab("routing")}
-              onRunDemo={() => runSetup.mutate({ mode: "demo", pack_id: setupStatus.data?.demo_pack_id ?? undefined })}
-              onRunRecommended={() => runSetup.mutate({ mode: "recommended", pack_id: setupStatus.data?.recommended_pack_id ?? recommendedProductionPack?.id })}
+              onRunDemo={() => runSetup.mutate({ mode: "demo", pack_id: localAISetupStatus?.demo_pack_id ?? undefined })}
+              onRunRecommended={() => runSetup.mutate({ mode: "recommended", pack_id: localAISetupStatus?.recommended_pack_id ?? recommendedProductionPack?.id })}
               onEvaluateCandidate={() => evaluateCandidateReleasePlan.mutate()}
             />
             <AISetupGuide
-              setup={setupStatus.data}
+              setup={localAISetupStatus}
               busy={setupWizardBusy}
               onAction={runSetupAction}
               onPreflightRecommended={() =>
                 runSetup.mutate({
                   mode: "recommended",
-                  pack_id: setupStatus.data?.recommended_pack_id ?? recommendedProductionPack?.id,
+                  pack_id: localAISetupStatus?.recommended_pack_id ?? recommendedProductionPack?.id,
                   dry_run: true
                 })
               }
-              onPrepareDemo={() => runSetup.mutate({ mode: "demo", pack_id: setupStatus.data?.demo_pack_id ?? undefined })}
+              onPrepareDemo={() => runSetup.mutate({ mode: "demo", pack_id: localAISetupStatus?.demo_pack_id ?? undefined })}
               onOpenWizard={() => setSetupWizardOpen(true)}
             />
             <details className="settings-advanced-panel">
@@ -11440,13 +11401,15 @@ function SettingsView() {
                 <span>
                   <strong>Approval details</strong>
                 </span>
-                <Badge tone={readinessReport.data?.production_ready ? "good" : "warn"}>
-                  {readinessReport.data?.production_ready ? "ready" : `${readinessReport.data?.summary?.blocked_count ?? 0} items`}
-                </Badge>
+                {localAIReadinessReport && (
+                  <Badge tone={localAIReadinessReport.production_ready ? "good" : "warn"}>
+                    {localAIReadinessReport.production_ready ? "ready" : `${localAIReadinessReport.summary?.blocked_count ?? 0} items`}
+                  </Badge>
+                )}
               </summary>
               <div className="settings-advanced-body">
                 <AIProductionReadinessPanel
-                  report={readinessReport.data}
+                  report={localAIReadinessReport}
                   registryValidation={registryValidation.data}
                   registryValidationLoading={registryValidation.isLoading}
                   exportBusy={exportReadinessReport.isPending}
@@ -11460,8 +11423,8 @@ function SettingsView() {
                   onOpenRouting={() => setTab("routing")}
                 />
                 <AIRegistryReleasePlanPanel
-                  plan={registryReleasePlan.data}
-                  productionReadiness={readinessReport.data}
+                  plan={localAIRegistryReleasePlan}
+                  productionReadiness={localAIReadinessReport}
                   exportBusy={exportRegistryReleasePlan.isPending}
                   exportStatus={registryReleaseExportStatus}
                   candidate={candidateReleasePlan}
@@ -11515,7 +11478,7 @@ function SettingsView() {
             </details>
             <AISetupWizard
               open={setupWizardOpen}
-              setup={setupStatus.data}
+              setup={localAISetupStatus}
               hardware={hardware.data}
               productionPack={recommendedProductionPack}
               demoPack={demoSetupPack}
@@ -11529,12 +11492,12 @@ function SettingsView() {
               onPreflightRecommended={() =>
                 runSetup.mutate({
                   mode: "recommended",
-                  pack_id: setupStatus.data?.recommended_pack_id ?? recommendedProductionPack?.id,
+                  pack_id: localAISetupStatus?.recommended_pack_id ?? recommendedProductionPack?.id,
                   dry_run: true
                 })
               }
-              onRunDemo={() => runSetup.mutate({ mode: "demo", pack_id: setupStatus.data?.demo_pack_id ?? undefined })}
-              onRunRecommended={() => runSetup.mutate({ mode: "recommended", pack_id: setupStatus.data?.recommended_pack_id ?? undefined })}
+              onRunDemo={() => runSetup.mutate({ mode: "demo", pack_id: localAISetupStatus?.demo_pack_id ?? undefined })}
+              onRunRecommended={() => runSetup.mutate({ mode: "recommended", pack_id: localAISetupStatus?.recommended_pack_id ?? undefined })}
               onInstallRuntime={(runtimeId) => installRuntime.mutate(runtimeId)}
               onDownloadPack={(packId) => downloadModelPack.mutate(packId)}
             />
@@ -11546,9 +11509,7 @@ function SettingsView() {
                 <span>
                   <strong>Model library</strong>
                 </span>
-                {modelLibraryItemCount === 0 ? (
-                  <Badge tone="neutral">empty</Badge>
-                ) : (
+                {modelLibraryItemCount > 0 && (
                   <span className="settings-library-counts">
                     <Badge tone="neutral">{models.length} models</Badge>
                     <Badge tone="neutral">{managedRuntimes.length} runtimes</Badge>
@@ -11840,60 +11801,66 @@ function SettingsView() {
                   {testModel.error && <small className="model-test-result model-test-error">{testModel.error.message}</small>}
                   {startLlamaServer.error && model.runtime === "llama_cpp" && <small className="model-test-result model-test-error">{startLlamaServer.error.message}</small>}
                 </article>
-              ))}
-                </div>
-                <div className="runtime-details">
-              <h3>Local runtime</h3>
-              <article>
-                <Badge tone={runtimeTone} title={llamaRuntime?.state ?? "checking"}>
-                  {runtimeHealthLabel(llamaRuntime?.state)}
-                </Badge>
-                <strong>Runtime</strong>
-                <span title={runtimeBinaryTitle(llamaRuntime?.cli)}>{runtimeBinaryDescription("cli", llamaRuntime?.cli)}</span>
-              </article>
-              <article>
-                <Badge tone={llamaRuntime?.server.configured ? "good" : "warn"}>
-                  {runtimeBinaryStatusLabel(llamaRuntime?.server)}
-                </Badge>
-                <strong>Server</strong>
-                <span title={runtimeBinaryTitle(llamaRuntime?.server)}>{runtimeBinaryDescription("server", llamaRuntime?.server)}</span>
-              </article>
-              <article>
-                <Badge tone={llamaServerRunning ? "good" : llamaServerProcess?.state === "exited" ? "warn" : "info"}>
-                  {serverProcessLabel(llamaServerProcess?.state)}
-                </Badge>
-                <strong>Session</strong>
-                <span title={serverProcessTitle(llamaServerProcess)}>{serverProcessDescription(llamaServerProcess)}</span>
-                {llamaServerProcess?.model_id && <small title={llamaServerProcess.model_id}>Active model</small>}
-                {llamaServerProcess?.mode && <small title={llamaServerProcess.mode}>Run mode</small>}
-                {llamaServerProcess?.pid && <small title={String(llamaServerProcess.pid)}>Process ID</small>}
-                {llamaServerProcess?.log_path && <small title={llamaServerProcess.log_path}>Log file</small>}
-                {llamaServerRunning && (
-                  <Button icon={<Pause size={15} />} variant="quiet" disabled={stopLlamaServer.isPending} onClick={() => stopLlamaServer.mutate()}>
-                    Stop server
-                  </Button>
-                )}
-              </article>
-              {(llamaRuntime?.warnings ?? []).map((warning) => (
-                <small key={warning}>{warning}</small>
-              ))}
-              {testRuntime.data && <small>{testRuntime.data.status}: {testRuntime.data.message}</small>}
-              {stopLlamaServer.error && <small className="model-test-error">{stopLlamaServer.error.message}</small>}
-                </div>
-                <div className="download-list">
-              <h3>Download queue</h3>
-              {(downloads.data ?? []).length === 0 && <p>No model downloads yet.</p>}
-              {(downloads.data ?? []).map((download) => (
-                <DownloadQueueRow
-                  key={download.id}
-                  download={download}
-                  busy={downloadActionBusy}
-                  onPause={() => pauseDownload.mutate(download.id)}
-                  onResume={() => resumeDownload.mutate(download.id)}
-                  onCancel={() => cancelDownload.mutate(download.id)}
-                />
-              ))}
-                </div>
+                    ))}
+                  </div>
+                  <div className="runtime-details">
+                    <div className="runtime-details-heading">
+                      <h3>Local runtime</h3>
+                      <div>
+                        <Button icon={<Play size={15} />} size="icon" variant="quiet" aria-label="Test runtime" title="Test runtime" onClick={() => testRuntime.mutate()} />
+                        <Button icon={<Import size={15} />} size="icon" variant="quiet" aria-label="Import model" title="Import model" onClick={() => importModel.mutate()} />
+                      </div>
+                    </div>
+                    <article>
+                      <Badge tone={runtimeTone} title={llamaRuntime?.state ?? "checking"}>
+                        {runtimeHealthLabel(llamaRuntime?.state)}
+                      </Badge>
+                      <strong>Runtime</strong>
+                      <span title={runtimeBinaryTitle(llamaRuntime?.cli)}>{runtimeBinaryDescription("cli", llamaRuntime?.cli)}</span>
+                    </article>
+                    <article>
+                      <Badge tone={llamaRuntime?.server.configured ? "good" : "warn"}>
+                        {runtimeBinaryStatusLabel(llamaRuntime?.server)}
+                      </Badge>
+                      <strong>Server</strong>
+                      <span title={runtimeBinaryTitle(llamaRuntime?.server)}>{runtimeBinaryDescription("server", llamaRuntime?.server)}</span>
+                    </article>
+                    <article>
+                      <Badge tone={llamaServerRunning ? "good" : llamaServerProcess?.state === "exited" ? "warn" : "info"}>
+                        {serverProcessLabel(llamaServerProcess?.state)}
+                      </Badge>
+                      <strong>Session</strong>
+                      <span title={serverProcessTitle(llamaServerProcess)}>{serverProcessDescription(llamaServerProcess)}</span>
+                      {llamaServerProcess?.model_id && <small title={llamaServerProcess.model_id}>Active model</small>}
+                      {llamaServerProcess?.mode && <small title={llamaServerProcess.mode}>Run mode</small>}
+                      {llamaServerProcess?.pid && <small title={String(llamaServerProcess.pid)}>Process ID</small>}
+                      {llamaServerProcess?.log_path && <small title={llamaServerProcess.log_path}>Log file</small>}
+                      {llamaServerRunning && (
+                        <Button icon={<Pause size={15} />} variant="quiet" disabled={stopLlamaServer.isPending} onClick={() => stopLlamaServer.mutate()}>
+                          Stop server
+                        </Button>
+                      )}
+                    </article>
+                    {(llamaRuntime?.warnings ?? []).map((warning) => (
+                      <small key={warning}>{warning}</small>
+                    ))}
+                    {testRuntime.data && <small>{testRuntime.data.status}: {testRuntime.data.message}</small>}
+                    {stopLlamaServer.error && <small className="model-test-error">{stopLlamaServer.error.message}</small>}
+                  </div>
+                  <div className="download-list">
+                    <h3>Download queue</h3>
+                    {(downloads.data ?? []).length === 0 && <p>No model downloads yet.</p>}
+                    {(downloads.data ?? []).map((download) => (
+                      <DownloadQueueRow
+                        key={download.id}
+                        download={download}
+                        busy={downloadActionBusy}
+                        onPause={() => pauseDownload.mutate(download.id)}
+                        onResume={() => resumeDownload.mutate(download.id)}
+                        onCancel={() => cancelDownload.mutate(download.id)}
+                      />
+                    ))}
+                  </div>
               </div>
             </details>
           </div>
