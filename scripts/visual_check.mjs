@@ -268,6 +268,23 @@ const scenarios = {
     await installEmptyVaultBridge(page);
     await openPractice(page);
   },
+  "practice-card": async (page) => {
+    await installLearningCardVaultBridge(page);
+    await openPractice(page);
+    await page.locator(".learning-card", { hasText: "Evidence recall" }).waitFor();
+    await page.waitForFunction(() => {
+      const card = document.querySelector(".learning-card");
+      const text = card?.textContent ?? "";
+      return Boolean(
+        card &&
+          text.includes("Flashcard") &&
+          text.includes("Evidence recall") &&
+          text.includes("What belongs in Storage?") &&
+          !text.includes("active") &&
+          !text.includes("flashcard")
+      );
+    });
+  },
   "local-tools-empty": async (page) => {
     await installEmptyVaultBridge(page);
     await openLocalTools(page);
@@ -532,6 +549,56 @@ async function installCapsuleExportVaultBridge(page) {
         if (route === "ai.capabilities") return [];
         if (route === "ai.providers") return [];
         if (route === "review.list") return [];
+        return [];
+      },
+      selectFiles: async () => []
+    };
+  });
+}
+
+async function installLearningCardVaultBridge(page) {
+  await page.addInitScript(() => {
+    const learningItem = {
+      id: "learn_visual_evidence",
+      type: "flashcard",
+      title: "Evidence recall",
+      status: "active",
+      body: {
+        front: "What belongs in Storage?",
+        back: "Raw source material and exact quotes.",
+        capsule_learning: { phase: "Foundations", sequence: 1 }
+      }
+    };
+    window.vault = {
+      request: async (route) => {
+        if (route === "health.get") return { ok: true, version: "0.1.0", db_ready: true, workspace_id: "wrk_default" };
+        if (route === "jobs.list") return [];
+        if (route === "stats.get") {
+          return {
+            sources: 1,
+            source_blocks: 1,
+            notes: 1,
+            claims: 1,
+            claims_without_evidence: 0,
+            contradicted_claims: 0,
+            pending_review_items: 0,
+            generated_notes_pending_review: 0,
+            installed_tools: 0,
+            failed_jobs: 0,
+            learning_items: 1
+          };
+        }
+        if (route === "events.list") return [];
+        if (route === "notes.list") return [];
+        if (route === "sources.list") return [];
+        if (route === "claims.list") return [];
+        if (route === "todoLists.list") return [];
+        if (route === "todos.list") return { items: [], total: 0, limit: 100, offset: 0 };
+        if (route === "capsules.list") return { items: [] };
+        if (route === "learning.items") return [learningItem];
+        if (route === "tools.list") return [];
+        if (route === "ai.capabilities") return [];
+        if (route === "ai.providers") return [];
         return [];
       },
       selectFiles: async () => []

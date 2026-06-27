@@ -9677,11 +9677,12 @@ function LearningView() {
           )}
           {learningItems.map((item) => {
             const isSelected = selectedLearningItem?.id === item.id;
+            const statusLabel = item.status === "active" ? "" : capsuleOptionLabel(item.status);
             return (
               <article key={item.id} className={isSelected ? "learning-card active" : "learning-card"}>
                 <div>
-                  <Badge tone={item.status === "active" ? "good" : "neutral"}>{item.status}</Badge>
-                  <Badge tone="info">{item.type}</Badge>
+                  {statusLabel && <Badge tone="neutral">{statusLabel}</Badge>}
+                  <Badge tone="info">{capsuleOptionLabel(item.type)}</Badge>
                   {learningItemPhaseLabel(item) && <Badge tone="neutral">{learningItemPhaseLabel(item)}</Badge>}
                 </div>
                 <strong>{item.title}</strong>
