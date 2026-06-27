@@ -9082,6 +9082,10 @@ describe("App", () => {
     expect(await screen.findByText("Test needed")).toBeTruthy();
     expect(screen.queryByText("needs test")).toBeNull();
     expect(screen.queryByText("local capture")).toBeNull();
+    expect(screen.queryByText("Audio notes")).toBeNull();
+    expect(screen.queryByText("Read-aloud history")).toBeNull();
+    expect(screen.queryByText("No audio notes yet.")).toBeNull();
+    expect(screen.queryByText("No read-aloud audio yet.")).toBeNull();
     fireEvent.click(await screen.findByRole("button", { name: /check microphone/i }));
     await waitFor(() => expect(getUserMedia).toHaveBeenCalledWith({ audio: true }));
     expect(stopTrack).toHaveBeenCalled();

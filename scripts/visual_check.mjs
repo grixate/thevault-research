@@ -182,7 +182,9 @@ const scenarios = {
         text.includes("Dictation") &&
         text.includes("Read aloud") &&
         !text.includes("needs test") &&
-        !text.includes("local capture")
+        !text.includes("local capture") &&
+        !text.includes("No audio notes yet.") &&
+        !text.includes("No read-aloud audio yet.")
       );
     });
   },

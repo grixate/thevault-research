@@ -12540,31 +12540,33 @@ function SettingsView() {
                 </article>
               ))}
             </div>
-            <div className="voice-list">
-              <h3>Audio notes</h3>
-              {(voiceAssets.data ?? []).length === 0 && <p>No audio notes yet.</p>}
-              {(voiceAssets.data ?? []).map((asset) => (
-                <article key={asset.id} title={asset.kind}>
-                  <Badge tone="good">{audioAssetKindLabel(asset.kind)}</Badge>
-                  <strong>{asset.original_filename ?? "Audio asset"}</strong>
-                  <span title={asset.source_id ?? undefined}>{asset.source_id ? "Linked to Storage" : "Not linked"}</span>
-                </article>
-              ))}
-            </div>
-            <div className="voice-list">
-              <h3>Read-aloud history</h3>
-              {(speechAssets.data ?? []).length === 0 && <p>No read-aloud audio yet.</p>}
-              {(speechAssets.data ?? []).map((asset) => (
-                <article key={asset.id} title={asset.provider}>
-                  <Badge tone={asset.sent_off_device ? "bad" : "good"}>{speechAssetPrivacyLabel(asset)}</Badge>
-                  <strong>{asset.voice_id ?? "Default voice"}</strong>
-                  <span title={asset.audio_path}>{asset.text_preview ?? "Cached audio file"}</span>
-                  <Button icon={<Play size={14} />} variant="quiet" onClick={() => playSpeechAsset.mutate(asset.id)} disabled={playSpeechAsset.isPending}>
-                    Play
-                  </Button>
-                </article>
-              ))}
-            </div>
+            {(voiceAssets.data ?? []).length > 0 && (
+              <div className="voice-list">
+                <h3>Audio notes</h3>
+                {(voiceAssets.data ?? []).map((asset) => (
+                  <article key={asset.id} title={asset.kind}>
+                    <Badge tone="good">{audioAssetKindLabel(asset.kind)}</Badge>
+                    <strong>{asset.original_filename ?? "Audio asset"}</strong>
+                    <span title={asset.source_id ?? undefined}>{asset.source_id ? "Linked to Storage" : "Not linked"}</span>
+                  </article>
+                ))}
+              </div>
+            )}
+            {(speechAssets.data ?? []).length > 0 && (
+              <div className="voice-list">
+                <h3>Read-aloud history</h3>
+                {(speechAssets.data ?? []).map((asset) => (
+                  <article key={asset.id} title={asset.provider}>
+                    <Badge tone={asset.sent_off_device ? "bad" : "good"}>{speechAssetPrivacyLabel(asset)}</Badge>
+                    <strong>{asset.voice_id ?? "Default voice"}</strong>
+                    <span title={asset.audio_path}>{asset.text_preview ?? "Cached audio file"}</span>
+                    <Button icon={<Play size={14} />} variant="quiet" onClick={() => playSpeechAsset.mutate(asset.id)} disabled={playSpeechAsset.isPending}>
+                      Play
+                    </Button>
+                  </article>
+                ))}
+              </div>
+            )}
             {settingsSpeechAudio && (
               <div className="speech-preview">
                 <Badge tone="good">Playback</Badge>
