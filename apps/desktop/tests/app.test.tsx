@@ -1890,6 +1890,8 @@ describe("App", () => {
     await waitFor(() => expect(useUIStore.getState().surface).toBe("sources"));
     expect(await screen.findByRole("button", { name: /add source/i })).toBeTruthy();
     expect(await screen.findByText("No sources")).toBeTruthy();
+    expect(document.querySelector(".split-view-empty-list")).toBeTruthy();
+    expect(document.querySelector(".list-pane")).toBeNull();
     expect(screen.queryByText("Paste text, import files, or transcribe audio.")).toBeNull();
   });
 
@@ -3037,11 +3039,10 @@ describe("App", () => {
     };
     renderApp();
 
-    const notesPanel = document.querySelector(".list-pane");
-    expect(notesPanel).toBeTruthy();
-    expect(within(notesPanel as HTMLElement).queryByLabelText("Notes and Storage paths")).toBeNull();
     const editorPane = (await screen.findAllByText("No notes")).find((node) => node.closest(".editor-pane"))?.closest(".editor-pane");
     expect(editorPane).toBeTruthy();
+    expect(document.querySelector(".split-view-empty-list")).toBeTruthy();
+    expect(document.querySelector(".list-pane")).toBeNull();
     fireEvent.click(await within(editorPane as HTMLElement).findByRole("button", { name: /quick note/i }));
 
     expect(await screen.findByLabelText("Quick note text")).toBeTruthy();

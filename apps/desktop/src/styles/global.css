@@ -2433,6 +2433,11 @@ textarea:not(.ui-textarea) {
   grid-template-columns: 320px minmax(0, 1fr);
 }
 
+.split-view-empty-list,
+.split-view.storage-view.split-view-empty-list {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .tasks-view {
   display: grid;
   grid-template-columns: minmax(0, 760px) 220px;
@@ -2892,6 +2897,17 @@ textarea:not(.ui-textarea) {
 .review-list {
   padding: 16px;
   overflow: hidden;
+}
+
+.quiet-list-pane {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+}
+
+.list-pane-actions {
+  display: flex;
+  justify-content: flex-end;
 }
 
 .entity-list {

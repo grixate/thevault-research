@@ -4800,38 +4800,38 @@ function NotesView() {
     }
   });
   return (
-    <div className="surface split-view">
-      <Panel className="list-pane">
-        <SectionHeader
-          title="Notes"
-          actions={
-            noteRows.length > 0 ? (
+    <div className={`surface split-view ${!notes.isLoading && noteRows.length === 0 ? "split-view-empty-list" : ""}`}>
+      {(notes.isLoading || noteRows.length > 0) && (
+        <Panel className="list-pane quiet-list-pane">
+          <h2 className="visually-hidden">Notes</h2>
+          {noteRows.length > 0 && (
+            <div className="list-pane-actions">
               <Button icon={<FilePlus2 size={16} />} onClick={() => createNote.mutate()}>
                 New note
               </Button>
-            ) : undefined
-          }
-        />
-        <div className="entity-list notes-list">
-          {notes.isLoading && <div className="entity-list-empty">Loading notes...</div>}
-          {noteRows.map((note) => {
-            const kind = noteKind(note);
-            return (
-              <button key={note.id} className={selected?.id === note.id ? "active" : ""} onClick={() => setSelectedNoteId(note.id)}>
-                <span className="note-list-title">
-                  <strong>{note.title}</strong>
-                  <Badge tone={kind.tone}>{kind.label}</Badge>
-                </span>
-                <span className="note-list-preview">{notePreview(note)}</span>
-                <small className="note-list-meta">
-                  <Clock3 size={12} />
-                  {compactDate(note.updated_at)} · v{note.version} · {note.status.replace(/_/g, " ")}
-                </small>
-              </button>
-            );
-          })}
-        </div>
-      </Panel>
+            </div>
+          )}
+          <div className="entity-list notes-list">
+            {notes.isLoading && <div className="entity-list-empty">Loading notes...</div>}
+            {noteRows.map((note) => {
+              const kind = noteKind(note);
+              return (
+                <button key={note.id} className={selected?.id === note.id ? "active" : ""} onClick={() => setSelectedNoteId(note.id)}>
+                  <span className="note-list-title">
+                    <strong>{note.title}</strong>
+                    <Badge tone={kind.tone}>{kind.label}</Badge>
+                  </span>
+                  <span className="note-list-preview">{notePreview(note)}</span>
+                  <small className="note-list-meta">
+                    <Clock3 size={12} />
+                    {compactDate(note.updated_at)} · v{note.version} · {note.status.replace(/_/g, " ")}
+                  </small>
+                </button>
+              );
+            })}
+          </div>
+        </Panel>
+      )}
       <NoteEditor note={selected} isLoading={notes.isLoading} onNewNote={() => createNote.mutate()} onQuickNote={() => requestQuickNote()} />
     </div>
   );
@@ -6008,56 +6008,56 @@ async function copyBlock(block: SourceBlock) {
   const firstSourceBlock = (blocks.data ?? [])[0];
   const showImportFollowup = Boolean(selected?.id && selected.id === lastImportedSourceId);
   return (
-    <div className="surface split-view storage-view">
-      <Panel className="list-pane">
-        <SectionHeader
-          title="Storage"
-          actions={
-            sourceRows.length > 0 ? (
+    <div className={`surface split-view storage-view ${!sources.isLoading && sourceRows.length === 0 ? "split-view-empty-list" : ""}`}>
+      {(sources.isLoading || sourceRows.length > 0) && (
+        <Panel className="list-pane quiet-list-pane">
+          <h2 className="visually-hidden">Storage</h2>
+          {sourceRows.length > 0 && (
+            <div className="list-pane-actions">
               <Button icon={<Plus size={16} />} onClick={() => setSourceDialogOpen(true)}>
                 Add source
               </Button>
-            ) : undefined
-          }
-        />
-        {sourceRows.length > 0 && (
-          <div className="source-list-tools">
-            <label className="source-list-search">
-              <Search size={15} />
-              <input value={sourceQuery} onChange={(event) => setSourceQuery(event.target.value)} placeholder="Search Storage" aria-label="Search Storage sources" />
-            </label>
-            <small>
-              {filteredSources.length}/{sourceCount} shown
-            </small>
-          </div>
-        )}
-        <div className="entity-list">
-          {sources.isLoading && <div className="entity-list-empty">Loading Storage...</div>}
-          {!sources.isLoading && sourceRows.length > 0 && filteredSources.length === 0 && (
-            <div className="entity-list-empty">
-              <Search size={18} />
-              <strong>No sources</strong>
             </div>
           )}
-          {filteredSources.map((source) => (
-            <button
-              key={source.id}
-              className={selected?.id === source.id ? "active" : ""}
-              title={source.title}
-              onClick={() => {
-                setSelectedSourceId(source.id);
-                setSelectedSourceBlockId(undefined);
-              }}
-            >
-              <strong>{source.title}</strong>
-              <span>
-                {source.type} source
-                {source.created_at ? ` - ${formatTimestamp(source.created_at)}` : ""}
-              </span>
-            </button>
-          ))}
-        </div>
-      </Panel>
+          {sourceRows.length > 0 && (
+            <div className="source-list-tools">
+              <label className="source-list-search">
+                <Search size={15} />
+                <input value={sourceQuery} onChange={(event) => setSourceQuery(event.target.value)} placeholder="Search Storage" aria-label="Search Storage sources" />
+              </label>
+              <small>
+                {filteredSources.length}/{sourceCount} shown
+              </small>
+            </div>
+          )}
+          <div className="entity-list">
+            {sources.isLoading && <div className="entity-list-empty">Loading Storage...</div>}
+            {!sources.isLoading && sourceRows.length > 0 && filteredSources.length === 0 && (
+              <div className="entity-list-empty">
+                <Search size={18} />
+                <strong>No sources</strong>
+              </div>
+            )}
+            {filteredSources.map((source) => (
+              <button
+                key={source.id}
+                className={selected?.id === source.id ? "active" : ""}
+                title={source.title}
+                onClick={() => {
+                  setSelectedSourceId(source.id);
+                  setSelectedSourceBlockId(undefined);
+                }}
+              >
+                <strong>{source.title}</strong>
+                <span>
+                  {source.type} source
+                  {source.created_at ? ` - ${formatTimestamp(source.created_at)}` : ""}
+                </span>
+              </button>
+            ))}
+          </div>
+        </Panel>
+      )}
       <Panel className="source-detail">
         {selected ? (
           <>
