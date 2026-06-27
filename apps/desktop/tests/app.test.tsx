@@ -2576,6 +2576,10 @@ describe("App", () => {
     expect(within(helperResult).getByText("1 review item")).toBeTruthy();
     expect(within(helperResult).getByText("Completed")).toBeTruthy();
     expect(within(helperResult).queryByText("completed")).toBeNull();
+    expect(screen.queryByRole("button", { name: /review output/i })).toBeNull();
+    const historyPanel = screen.getByText("History").closest(".tool-run-history");
+    expect(historyPanel).toBeTruthy();
+    expect(within(historyPanel as HTMLElement).getByRole("button", { name: /^review$/i })).toBeTruthy();
     expect(await screen.findByText("Result JSON")).toBeTruthy();
     expect(await screen.findByText("checked 1 claim")).toBeTruthy();
     expect(await screen.findByText(/missing_evidence/)).toBeTruthy();
@@ -2591,7 +2595,7 @@ describe("App", () => {
       )
     );
     await waitFor(() => expect(screen.queryByRole("dialog", { name: /new task/i })).toBeNull());
-    fireEvent.click(await screen.findByRole("button", { name: /review output/i }));
+    fireEvent.click(within(historyPanel as HTMLElement).getByRole("button", { name: /^review$/i }));
     expect((await screen.findAllByText("Claim needs evidence: Tool finding")).length).toBeGreaterThan(0);
   });
 

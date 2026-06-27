@@ -316,6 +316,8 @@ const scenarios = {
         !text.includes("installed") &&
         !text.includes("Manifest") &&
         !text.includes("Input is prepared locally") &&
+        !text.includes("Review output") &&
+        !text.includes("0 review items") &&
         !text.includes("Result JSON") &&
         !text.includes("Stdout") &&
         !text.includes("Stderr") &&

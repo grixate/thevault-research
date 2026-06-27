@@ -9986,9 +9986,11 @@ function ToolsView() {
                     buttonSize="icon"
                   />
                 )}
-                <Button icon={<Check size={15} />} variant="quiet" disabled={!toolRunReviewCount(selectedRun)} onClick={() => setSurface("review")}>
-                  Review output
-                </Button>
+                {toolRunReviewCount(selectedRun) > 0 && (
+                  <Button icon={<Check size={15} />} variant="quiet" onClick={() => setSurface("review")}>
+                    Review
+                  </Button>
+                )}
               </div>
               <div className="tool-run-list" aria-label="Tool runs">
                 {(runs.data ?? []).length === 0 && <p className="empty-copy">No runs</p>}
@@ -10011,7 +10013,7 @@ function ToolsView() {
                       {toolRunStatusLabel(selectedRun.status)}
                     </Badge>
                     <span>{toolRunFindingLabel(selectedRun)}</span>
-                    <span>{toolRunReviewLabel(selectedRun)}</span>
+                    {toolRunReviewCount(selectedRun) > 0 && <span>{toolRunReviewLabel(selectedRun)}</span>}
                   </div>
                   {selectedRun.error && <small className="model-test-error">{selectedRun.error}</small>}
                   <details className="payload-view tool-run-raw-details">
