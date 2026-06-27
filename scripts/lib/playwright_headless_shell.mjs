@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { execFileSync } from "node:child_process";
 
 const HEADLESS_SHELL_NAMES = [
   ["chrome-headless-shell-mac-arm64", "chrome-headless-shell"],
@@ -12,10 +13,24 @@ const HEADLESS_SHELL_NAMES = [
 ];
 
 export function playwrightChromiumLaunchOptions() {
+  const executablePath = playwrightHeadlessShellPath();
+  preparePlaywrightHeadlessShell(executablePath);
+
   return {
-    executablePath: playwrightHeadlessShellPath(),
+    executablePath,
     chromiumSandbox: false,
-    args: ["--no-sandbox", "--disable-setuid-sandbox"]
+    args: [
+      "--no-sandbox",
+      "--disable-setuid-sandbox",
+      "--no-first-run",
+      "--no-default-browser-check",
+      "--disable-dev-shm-usage",
+      "--disable-gpu",
+      "--disable-features=DialMediaRouteProvider,HardwareMediaKeyHandling",
+      "--use-fake-ui-for-media-stream",
+      "--use-mock-keychain",
+      "--password-store=basic"
+    ]
   };
 }
 
@@ -61,4 +76,30 @@ function requireExecutable(executablePath, envName) {
     throw new Error(`${envName} does not exist: ${executablePath}`);
   }
   return executablePath;
+}
+
+export function preparePlaywrightHeadlessShell(executablePath = playwrightHeadlessShellPath()) {
+  if (process.platform !== "darwin" || process.env.VAULT_BROWSER_QA_REPAIR === "0") return { prepared: false };
+
+  const browserRoot = findBrowserRoot(executablePath);
+  if (!browserRoot) return { prepared: false };
+
+  try {
+    execFileSync("xattr", ["-dr", "com.apple.quarantine", browserRoot], { stdio: "ignore" });
+    return { prepared: true, browserRoot };
+  } catch (error) {
+    return { prepared: false, browserRoot, error: error instanceof Error ? error.message : String(error) };
+  }
+}
+
+function findBrowserRoot(executablePath) {
+  let current = path.dirname(executablePath);
+  const cacheRoot = playwrightBrowserCacheRoot();
+  while (current.startsWith(cacheRoot)) {
+    if (path.basename(current).startsWith("chromium_headless_shell-")) return current;
+    const next = path.dirname(current);
+    if (next === current) break;
+    current = next;
+  }
+  return null;
 }

@@ -1,9 +1,10 @@
 import { chromium } from "@playwright/test";
 import { execFileSync } from "node:child_process";
-import { playwrightChromiumLaunchOptions } from "./lib/playwright_headless_shell.mjs";
+import { playwrightChromiumLaunchOptions, preparePlaywrightHeadlessShell } from "./lib/playwright_headless_shell.mjs";
 
 const launchOptions = playwrightChromiumLaunchOptions();
 const executablePath = launchOptions.executablePath;
+const preparation = preparePlaywrightHeadlessShell(executablePath);
 const assessment = assessExecutable(executablePath);
 
 const browser = await chromium.launch({
@@ -20,11 +21,12 @@ try {
       {
         ok: text === "ok",
         executablePath,
+        preparation,
         gatekeeper: assessment,
         note:
           assessment.accepted === false
-            ? "Direct headless launch works, but macOS Gatekeeper assessment rejects this Playwright-managed binary. Keep using repo QA scripts so regular Chromium fallback never runs."
-            : "Direct headless launch works and Gatekeeper assessment did not reject the binary."
+            ? "Direct headless launch works without approval prompts. Gatekeeper still rejects Playwright's ad-hoc cached binary for direct Finder-style execution, so keep browser QA on these repo scripts."
+            : "Direct headless launch works without approval prompts and Gatekeeper assessment did not reject the binary."
       },
       null,
       2
