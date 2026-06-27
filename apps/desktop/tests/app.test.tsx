@@ -2217,7 +2217,10 @@ describe("App", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /Generated memo/i }));
     expect(await screen.findByDisplayValue("Generated memo")).toBeTruthy();
-    expect(within(await screen.findByLabelText("Note metadata")).getByText("AI draft")).toBeTruthy();
+    expect(within(await screen.findByLabelText("Note metadata")).getByText("Draft")).toBeTruthy();
+    expect(await screen.findByText("Needs review")).toBeTruthy();
+    expect(screen.queryByText("AI draft")).toBeNull();
+    expect(screen.queryByText("generated pending review")).toBeNull();
     expect(screen.getByText("Review generated draft")).toBeTruthy();
 
     fireEvent.click(screen.getByRole("button", { name: /Written synthesis/i }));

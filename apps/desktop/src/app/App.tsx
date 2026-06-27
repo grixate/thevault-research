@@ -1427,13 +1427,25 @@ function noteKind(note: Note): { label: string; tone: "neutral" | "good" | "warn
   const captureMode = String(note.content?.capture_mode ?? "");
   if (captureMode === "quick_note") return { label: "Quick capture", tone: "info" };
   if (captureMode === "source_block_note") return { label: "From Storage", tone: "good" };
-  if (note.origin === "ai_generated") return { label: "AI draft", tone: "warn" };
+  if (note.origin === "ai_generated") return { label: "Draft", tone: "warn" };
   if (note.origin === "lab_brief") return { label: "Lab brief", tone: "info" };
   return { label: "Note", tone: "neutral" };
 }
 
+function noteStatusLabel(status: string): string {
+  if (status === "generated_pending_review") return "Needs review";
+  if (status === "active") return "Active";
+  if (status === "archived") return "Archived";
+  if (status === "rejected") return "Rejected";
+  return searchModeLabel(status);
+}
+
 function notePreview(note: Note): string {
-  const text = note.content_markdown.replace(/[#>*_`-]/g, " ").replace(/\s+/g, " ").trim();
+  let text = note.content_markdown.replace(/[#>*_`-]/g, " ").replace(/\s+/g, " ").trim();
+  const normalizedTitle = note.title.replace(/\s+/g, " ").trim();
+  if (normalizedTitle && text.toLocaleLowerCase().startsWith(normalizedTitle.toLocaleLowerCase())) {
+    text = text.slice(normalizedTitle.length).trim();
+  }
   if (!text) return "Empty note";
   return text.length > 116 ? `${text.slice(0, 113)}...` : text;
 }
@@ -4829,7 +4841,7 @@ function NotesView() {
                   <span className="note-list-preview">{notePreview(note)}</span>
                   <small className="note-list-meta">
                     <Clock3 size={12} />
-                    {compactDate(note.updated_at)} · v{note.version} · {note.status.replace(/_/g, " ")}
+                    {compactDate(note.updated_at)} · v{note.version} · {noteStatusLabel(note.status)}
                   </small>
                 </button>
               );
@@ -5522,7 +5534,7 @@ function NoteEditor({ note, isLoading, onNewNote, onQuickNote }: { note?: Note; 
             </small>
           </div>
           <div className="editor-status-row">
-            <Badge tone={note.status === "generated_pending_review" ? "warn" : "good"}>{note.status.replace(/_/g, " ")}</Badge>
+            <Badge tone={note.status === "generated_pending_review" ? "warn" : "good"}>{noteStatusLabel(note.status)}</Badge>
             <span role="status" aria-live="polite" aria-label="Note save status">
               <Badge tone={noteSaveStateTone(saveState)}>{noteSaveStateLabel(saveState)}</Badge>
             </span>

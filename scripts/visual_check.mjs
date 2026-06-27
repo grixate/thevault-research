@@ -69,6 +69,8 @@ const scenarios = {
         text.includes("Review generated draft") &&
         !text.includes("Drafted locally") &&
         !text.includes("Run recorded") &&
+        !text.includes("AI draft") &&
+        !text.includes("generated pending review") &&
         !text.includes("Draft notes")
       );
     });
