@@ -7088,7 +7088,6 @@ function ReviewView() {
           <>
             <SectionHeader
               title={item.title}
-              eyebrow={reviewItemLabel(item.item_type)}
               actions={
                 item ? (
                   <>

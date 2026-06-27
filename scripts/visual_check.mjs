@@ -196,6 +196,7 @@ const scenarios = {
       return (
         text.includes("Rejected synthesis proposal") &&
         typeChipCount <= 1 &&
+        !text.includes("NEW CLAIM") &&
         !document.querySelector("[aria-label='Review decision summary']") &&
         !text.includes("clear")
       );
