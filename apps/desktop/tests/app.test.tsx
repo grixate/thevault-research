@@ -4383,6 +4383,10 @@ describe("App", () => {
       })
     );
     expect((await screen.findAllByText("Review is clear.")).length).toBeGreaterThan(0);
+    const queue = await screen.findByLabelText("Review queue");
+    expect(within(queue).getByRole("tablist", { name: "Review status" })).toBeTruthy();
+    expect(screen.queryByRole("heading", { name: "Review", level: 2 })).toBeNull();
+    expect(screen.getAllByRole("heading", { name: "Review" })).toHaveLength(1);
   });
 
   it("creates contextual tasks from whole Assistant answers with answer metadata", async () => {

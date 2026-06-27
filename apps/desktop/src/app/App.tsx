@@ -6916,20 +6916,32 @@ function ReviewView() {
       setSurface("graph");
     }
   }
+  const reviewStatusTabs = (
+    <Tabs value={statusFilter} onValueChange={(value) => selectReviewStatus(value as "pending" | "dismissed")} className="review-tabs">
+      <TabsList aria-label="Review status">
+        <TabsTrigger value="pending" onClick={() => selectReviewStatus("pending")}>
+          To decide
+        </TabsTrigger>
+        <TabsTrigger value="dismissed" onClick={() => selectReviewStatus("dismissed")}>
+          Rejected
+        </TabsTrigger>
+      </TabsList>
+    </Tabs>
+  );
+  if (!review.isLoading && !hasReviewItems) {
+    return (
+      <div className="surface review-empty-layout">
+        <Panel className="review-empty-panel" aria-label="Review queue">
+          {reviewStatusTabs}
+          <ReviewEmptyDetail isLoading={false} statusFilter={statusFilter} hasActiveFilters={false} />
+        </Panel>
+      </div>
+    );
+  }
   return (
     <div className="surface review-layout">
-      <Panel className="review-list">
-        <SectionHeader title="Review" />
-        <Tabs value={statusFilter} onValueChange={(value) => selectReviewStatus(value as "pending" | "dismissed")} className="review-tabs">
-          <TabsList aria-label="Review status">
-            <TabsTrigger value="pending" onClick={() => selectReviewStatus("pending")}>
-              To decide
-            </TabsTrigger>
-            <TabsTrigger value="dismissed" onClick={() => selectReviewStatus("dismissed")}>
-              Rejected
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
+      <Panel className="review-list" aria-label="Review queue">
+        {reviewStatusTabs}
         {hasReviewItems && (
           <div className="review-decision-summary" aria-label="Review decision summary">
             <Badge tone={pendingCount ? "warn" : "good"}>{pendingCount ? `${pendingCount} to decide` : "clear"}</Badge>

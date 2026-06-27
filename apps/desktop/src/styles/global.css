@@ -4216,6 +4216,25 @@ textarea {
   gap: 16px;
 }
 
+.review-empty-layout {
+  display: grid;
+}
+
+.review-empty-panel {
+  min-height: min(72vh, 720px);
+  display: grid;
+  grid-template-rows: auto 1fr;
+  padding: 16px;
+}
+
+.review-empty-panel .review-tabs {
+  margin-bottom: 0;
+}
+
+.review-empty-panel .surface-empty-state {
+  min-height: 0;
+}
+
 .review-tabs {
   display: inline-flex;
   max-width: 100%;
