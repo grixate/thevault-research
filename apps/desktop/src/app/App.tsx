@@ -8780,7 +8780,7 @@ function GraphView() {
               </div>
             </div>
             <div className="claim-evidence-list" aria-label="Claim evidence">
-              {(evidence.data ?? []).length === 0 && <p className="empty-copy">No evidence links are attached to this claim yet.</p>}
+              {(evidence.data ?? []).length === 0 && <p className="empty-copy">No evidence</p>}
               {(evidence.data ?? []).map((link) => (
                 <article key={link.id}>
                   <div>

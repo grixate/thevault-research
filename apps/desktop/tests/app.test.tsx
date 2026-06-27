@@ -4601,6 +4601,53 @@ describe("App", () => {
     expect(screen.queryByText("Select a claim to inspect its source links.")).toBeNull();
   });
 
+  it("keeps an empty claim evidence panel quiet", async () => {
+    const claim = {
+      id: "clm_empty_evidence",
+      node_id: "node_empty_evidence",
+      title: "Unlinked claim",
+      normalized_text: "Unlinked claims should wait for source evidence.",
+      status: "weakly_supported",
+      confidence: 0.41,
+      evidence_strength: 0
+    };
+    const request = vi.fn(async (route: string, payload?: any) => {
+      if (route === "health.get") return { ok: true, version: "0.1.0", db_ready: true, workspace_id: "wrk_default" };
+      if (route === "jobs.list") return [];
+      if (route === "stats.get") {
+        return {
+          sources: 0,
+          source_blocks: 0,
+          notes: 0,
+          claims: 1,
+          claims_without_evidence: 1,
+          contradicted_claims: 0,
+          pending_review_items: 0,
+          generated_notes_pending_review: 0,
+          installed_tools: 0,
+          failed_jobs: 0,
+          learning_items: 0
+        };
+      }
+      if (route === "events.list") return [];
+      if (route === "claims.list") return [claim];
+      if (route === "claims.evidence") {
+        expect(payload).toEqual({ claimId: "clm_empty_evidence" });
+        return [];
+      }
+      if (route === "ai.capabilities") return [];
+      if (route === "ai.providers") return [];
+      return [];
+    });
+    window.vault = { request, selectFiles: vi.fn(async () => []) };
+    useUIStore.setState({ surface: "graph", selectedClaimId: "clm_empty_evidence" });
+    renderApp();
+
+    expect(await screen.findByRole("heading", { name: "Unlinked claim", level: 2 })).toBeTruthy();
+    expect(await screen.findByText("No evidence")).toBeTruthy();
+    expect(screen.queryByText("No evidence links are attached to this claim yet.")).toBeNull();
+  });
+
   it("keeps the empty Practice surface quiet", async () => {
     const request = vi.fn(async (route: string) => {
       if (route === "health.get") return { ok: true, version: "0.1.0", db_ready: true, workspace_id: "wrk_default" };
