@@ -10019,17 +10019,20 @@ function ToolsView() {
                     <span>{toolRunReviewLabel(selectedRun)}</span>
                   </div>
                   {selectedRun.error && <small className="model-test-error">{selectedRun.error}</small>}
-                  <details className="payload-view">
-                    <summary>Result JSON</summary>
-                    <pre>{JSON.stringify(output, null, 2)}</pre>
-                  </details>
-                  <details className="payload-view">
-                    <summary>Stdout</summary>
-                    <pre>{selectedRun.stdout || "No stdout."}</pre>
-                  </details>
-                  <details className="payload-view">
-                    <summary>Stderr</summary>
-                    <pre>{selectedRun.stderr || "No stderr."}</pre>
+                  <details className="payload-view tool-run-raw-details">
+                    <summary>Run details</summary>
+                    <div>
+                      <span>Result JSON</span>
+                      <pre>{JSON.stringify(output, null, 2)}</pre>
+                    </div>
+                    <div>
+                      <span>Output log</span>
+                      <pre>{selectedRun.stdout || "None"}</pre>
+                    </div>
+                    <div>
+                      <span>Error log</span>
+                      <pre>{selectedRun.stderr || "None"}</pre>
+                    </div>
                   </details>
                 </>
               ) : (

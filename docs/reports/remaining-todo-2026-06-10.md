@@ -101,7 +101,7 @@ Latest completed slice:
 - Quieted the rejected Review archive state on 2026-06-27: rejected-only views no longer show a green `clear` summary, and the proposal detail no longer repeats the proposal type badge inside the body. Visual evidence: `/tmp/vault-review-rejected-type-deduped.png`.
 - Quieted the Review detail header on 2026-06-27: selected proposals no longer repeat the item kind as an uppercase eyebrow; the list card owns the kind label and the detail pane starts with the proposal title. Visual evidence: `/tmp/vault-review-rejected-no-eyebrow.png`.
 - Quieted the Local tools detail header on 2026-06-27: selected helpers no longer repeat `installed` as a header eyebrow; the operational status stays in the helper contract body where it belongs. Visual evidence: `/tmp/vault-local-tools-installed-no-eyebrow.png`.
-- Quieted the Local tools result detail on 2026-06-27: helper results now show the compact status/finding row first and keep raw `Result JSON` collapsed until explicitly opened. Visual evidence: `/tmp/vault-local-tools-result-json-collapsed.png`.
+- Quieted the Local tools result detail on 2026-06-27: helper results now show the compact status/finding row first and keep raw JSON/log output behind one collapsed `Run details` disclosure instead of separate `Result JSON`, `Stdout`, and `Stderr` rows. Visual evidence: `/tmp/vault-local-tools-run-details-collapsed.png`.
 
 Earlier implementation slice built a reproducible macOS arm64 `whisper-cli` package from `whisper.cpp` source, moved the whisper runtime from distribution-decision to release-evidence, verified all production model candidate bytes, and merged the current byte-evidence files into one candidate overlay.
 

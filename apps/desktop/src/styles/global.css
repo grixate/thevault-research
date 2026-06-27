@@ -5476,6 +5476,18 @@ blockquote span {
   color: var(--line-strong);
 }
 
+.tool-run-raw-details > div {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.tool-run-raw-details > div > span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
 .settings-layout {
   display: grid;
 }
