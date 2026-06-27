@@ -9076,32 +9076,6 @@ function AssistantView() {
                 </article>
               )}
               <article className="assistant-message assistant-message-answer">
-                {(answer?.review_item_id || answer?.ai_run_id || answer?.answer_markdown) && (
-                  <div className="assistant-answer-header">
-                    <div className="assistant-answer-actions">
-                      {answer?.review_item_id && (
-                        <Button icon={<GitBranch size={15} />} variant="quiet" onClick={openReviewFollowUp}>
-                          Review follow-up
-                        </Button>
-                      )}
-                      {answer?.ai_run_id && (
-                        <TaskCreateButton
-                          targetType="assistant_answer"
-                          targetId={String(answer.ai_run_id)}
-                          targetTitle={submittedQuestionText || "Assistant answer"}
-                          defaultTitle={`Follow up on ${assistantAnswerNoteTitle(submittedQuestionText || "Assistant answer")}`}
-                          relation="follow_up_answer"
-                          metadata={assistantAnswerTaskMetadata(answer, submittedQuestionText)}
-                        />
-                      )}
-                      {answer?.answer_markdown && (
-                        <Button icon={<FilePlus2 size={15} />} variant="secondary" disabled={saveAssistantAnswer.isPending} onClick={() => saveAssistantAnswer.mutate()}>
-                          {saveAssistantAnswer.isPending ? "Saving" : "Save as note"}
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                )}
                 <div className="markdown-output">
                   {ask.isPending ? "Working locally..." : answer?.answer_markdown}
                 </div>
@@ -9114,6 +9088,30 @@ function AssistantView() {
                     {showCitationValidation && <span>{validationStatus}</span>}
                   </div>
                 </div>
+                {(answer?.review_item_id || answer?.ai_run_id || answer?.answer_markdown) && (
+                  <div className="assistant-answer-actions" aria-label="Assistant answer actions">
+                    {answer?.review_item_id && (
+                      <Button icon={<GitBranch size={15} />} variant="quiet" onClick={openReviewFollowUp}>
+                        Review follow-up
+                      </Button>
+                    )}
+                    {answer?.ai_run_id && (
+                      <TaskCreateButton
+                        targetType="assistant_answer"
+                        targetId={String(answer.ai_run_id)}
+                        targetTitle={submittedQuestionText || "Assistant answer"}
+                        defaultTitle={`Follow up on ${assistantAnswerNoteTitle(submittedQuestionText || "Assistant answer")}`}
+                        relation="follow_up_answer"
+                        metadata={assistantAnswerTaskMetadata(answer, submittedQuestionText)}
+                      />
+                    )}
+                    {answer?.answer_markdown && (
+                      <Button icon={<FilePlus2 size={15} />} variant="secondary" disabled={saveAssistantAnswer.isPending} onClick={() => saveAssistantAnswer.mutate()}>
+                        {saveAssistantAnswer.isPending ? "Saving" : "Save as note"}
+                      </Button>
+                    )}
+                  </div>
+                )}
                 {saveAssistantAnswer.error && <small className="model-test-error">{saveAssistantAnswer.error.message}</small>}
                 {uncertainties.length > 0 && (
                   <div className="assistant-uncertainties" aria-label="Assistant uncertainties">

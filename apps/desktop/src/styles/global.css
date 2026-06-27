@@ -4964,23 +4964,12 @@ blockquote span {
   line-height: 1.62;
 }
 
-.assistant-answer-header {
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  gap: 12px;
-  min-height: 30px;
-  margin-bottom: 4px;
-}
-
-.assistant-answer-header > div {
+.assistant-answer-actions {
   display: flex;
   flex-wrap: wrap;
+  justify-content: flex-start;
   gap: 8px;
-}
-
-.assistant-answer-actions {
-  justify-content: flex-end;
+  margin-top: -2px;
 }
 
 .assistant-answer-status {
@@ -5070,10 +5059,6 @@ blockquote span {
   color: var(--foreground);
   background: var(--muted-bg);
   border-color: var(--line);
-}
-
-.assistant-answer-header .badge {
-  width: fit-content;
 }
 
 .assistant-context-select {
