@@ -7190,7 +7190,7 @@ function ReviewEmptyDetail({
   }
   return (
     <div className="surface-empty-state">
-      <strong>{statusFilter === "pending" ? "Review is clear." : "No rejected proposals"}</strong>
+      <strong>{statusFilter === "pending" ? "No proposals" : "No rejected proposals"}</strong>
     </div>
   );
 }

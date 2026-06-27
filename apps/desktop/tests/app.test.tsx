@@ -4434,7 +4434,8 @@ describe("App", () => {
         data: { decision_note: "This should become a task." }
       })
     );
-    expect((await screen.findAllByText("Review is clear.")).length).toBeGreaterThan(0);
+    expect((await screen.findAllByText("No proposals")).length).toBeGreaterThan(0);
+    expect(screen.queryByText("Review is clear.")).toBeNull();
     const queue = await screen.findByLabelText("Review queue");
     expect(within(queue).getByRole("tablist", { name: "Review status" })).toBeTruthy();
     expect(screen.queryByRole("heading", { name: "Review", level: 2 })).toBeNull();

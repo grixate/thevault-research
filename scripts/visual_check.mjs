@@ -180,6 +180,10 @@ const scenarios = {
   "review-empty": async (page) => {
     await installEmptyVaultBridge(page);
     await openReview(page);
+    await page.waitForFunction(() => {
+      const text = document.body.innerText ?? "";
+      return text.includes("No proposals") && !text.includes("Review is clear.");
+    });
   },
   "settings-models": async (page) => {
     await installEmptyVaultBridge(page);

@@ -95,6 +95,7 @@ Latest completed slice:
 - Quieted the Home quick-start path on 2026-06-27: the first-run rows now show direct destinations and actions without filler badges like `empty`, `clear`, or `checking`, and `Models` now resolves to `Setup` instead of repeating itself. Visual evidence: `/tmp/vault-home-empty-minimal-path.png`.
 - Quieted the Tasks empty copy on 2026-06-27: empty Inbox now says `No tasks` instead of the cutesy `Inbox clear.`, matching the neutral empty-state language used by Notes, Storage, Capsules, and Graph. Visual evidence: `/tmp/vault-tasks-empty-neutral-copy.png`.
 - Quieted the blank Home activity panel on 2026-06-27: clean workspaces no longer show `Recent activity`, `0 updates`, zero counters, or `No activity` until there is real activity or a nonzero workspace signal. Visual evidence: `/tmp/vault-home-empty-no-zero-activity.png`.
+- Quieted the Review empty copy on 2026-06-27: empty pending queues now say `No proposals` instead of `Review is clear.`, keeping Review aligned with the app's neutral `No ...` empty-state language. Visual evidence: `/tmp/vault-review-empty-neutral-copy.png`.
 
 Earlier implementation slice built a reproducible macOS arm64 `whisper-cli` package from `whisper.cpp` source, moved the whisper runtime from distribution-decision to release-evidence, verified all production model candidate bytes, and merged the current byte-evidence files into one candidate overlay.
 
@@ -606,7 +607,7 @@ Latest Storage minimalist first-glance verification on 2026-06-21:
 Latest Review minimalist first-glance verification on 2026-06-21:
 
 - Review no longer shows the decision summary or proposal filters when there are no proposals in the current status view.
-- The list pane stays quiet in the empty state; the detail pane owns the single `Review is clear.` message.
+- The list pane stays quiet in the empty state; the detail pane owns the single `No proposals` message.
 - Review loading no longer flashes a false clear state; it shows one loading row in the list and keeps the detail pane visually blank.
 - Filtered-empty detail now says `No matching proposals` instead of implying Review is clear.
 - Extended `scripts/visual_check.mjs` with `review-loading` and `review-empty` scenarios using the same approved stable Chromium command prefix.
