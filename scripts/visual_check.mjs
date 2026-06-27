@@ -221,6 +221,22 @@ const scenarios = {
     await installEmptyVaultBridge(page);
     await openLocalTools(page);
   },
+  "capsules-empty": async (page) => {
+    await installEmptyVaultBridge(page);
+    await openCapsules(page);
+    await page.waitForFunction(() => {
+      const text = document.body.innerText ?? "";
+      const noCapsuleCount = Array.from(document.querySelectorAll("strong")).filter((element) => element.textContent === "No capsules").length;
+      return (
+        noCapsuleCount === 1 &&
+        text.includes("No capsules") &&
+        text.includes("New") &&
+        text.includes("Import") &&
+        !text.includes("No capsule selected") &&
+        !text.includes("Find capsules")
+      );
+    });
+  },
   "command-actions": async (page) => {
     await installEmptyVaultBridge(page);
     await page.goto(baseUrl, { waitUntil: "networkidle" });
@@ -320,6 +336,12 @@ async function openLocalTools(page) {
   if (await tools.count()) await tools.first().click();
 }
 
+async function openCapsules(page) {
+  await page.goto(baseUrl, { waitUntil: "networkidle" });
+  const capsules = page.locator('.main-nav button[aria-label="Capsules"]');
+  if (await capsules.count()) await capsules.first().click();
+}
+
 async function openQuickNote(page) {
   await page.goto(baseUrl, { waitUntil: "networkidle" });
   await page.locator('.topbar button[aria-label="Quick note"]').click();
@@ -352,7 +374,8 @@ async function installEmptyVaultBridge(page) {
         if (route === "claims.list") return [];
         if (route === "todos.list") return { items: [], total: 0, limit: 100, offset: 0 };
         if (route === "todoLists.list") return [];
-        if (route === "capsules.list") return { items: [] };
+        if (route === "capsules.list") return { items: [], total: 0 };
+        if (route === "capsules.imports") return { items: [], total: 0 };
         if (route === "learning.items") return [];
         if (route === "tools.list") return [];
         if (route === "ai.capabilities") return [];

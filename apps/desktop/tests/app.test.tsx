@@ -1564,6 +1564,9 @@ describe("App", () => {
 
     fireEvent.click(await screen.findByRole("button", { name: "Capsules" }));
     expect(await screen.findByText("No capsules")).toBeTruthy();
+    await waitFor(() => expect(screen.queryByText("No capsule selected")).toBeNull());
+    await waitFor(() => expect(screen.queryByLabelText("Find capsules")).toBeNull());
+    expect(screen.getByRole("button", { name: "Import" })).toBeTruthy();
     fireEvent.click(screen.getAllByRole("button", { name: "New" })[0]);
     fireEvent.change(await screen.findByLabelText("Capsule name"), { target: { value: "Acoustic Science Foundations" } });
     const detailsSummary = screen.getByText("Details");

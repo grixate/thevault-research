@@ -7604,7 +7604,9 @@ function CapsulesView() {
     queryFn: () => vaultRequest<CapsuleImportListResponse>("capsules.imports", { limit: 6, offset: 0 })
   });
   const rows = capsules.data?.items ?? [];
+  const importRows = capsuleImports.data?.items ?? [];
   const selected = rows.find((capsule) => capsule.id === selectedCapsuleId) ?? rows[0];
+  const resolvedEmpty = !capsules.isLoading && !capsuleImports.isLoading && rows.length === 0 && !importResult && importRows.length === 0;
   const detail = useQuery({
     queryKey: ["capsule", selected?.id],
     queryFn: () => vaultRequest<Capsule>("capsules.get", { capsuleId: selected!.id }),
@@ -7681,65 +7683,60 @@ function CapsulesView() {
     }
   }
   return (
-    <div className="surface split-view capsules-view">
-      <Panel className="list-pane">
-        <SectionHeader
-          title="Capsules"
-          actions={
-            <>
-              <Button icon={<Import size={16} />} variant="quiet" disabled={importCapsule.isPending} onClick={() => importCapsule.mutate()}>
-                Import
-              </Button>
-              <Button icon={<Plus size={16} />} onClick={() => setCreateOpen(true)}>
-                New
-              </Button>
-            </>
-          }
-        />
-        <label className="source-list-search">
-          <Search size={15} />
-          <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Find capsules" aria-label="Find capsules" />
-        </label>
-        <div className="entity-list capsules-list">
-          {capsules.isLoading && <div className="entity-list-empty">Loading capsules...</div>}
-          {!capsules.isLoading && rows.length === 0 && (
-            <div className="entity-list-empty">
-              <Archive size={18} />
-              <strong>No capsules</strong>
-              <Button type="button" size="sm" variant="primary" icon={<Plus size={14} />} onClick={() => setCreateOpen(true)}>
-                New
-              </Button>
-            </div>
-          )}
-          {rows.map((capsule) => (
-            <button key={capsule.id} className={selected?.id === capsule.id ? "active" : ""} onClick={() => setSelectedCapsuleId(capsule.id)}>
-              <span className="note-list-title">
-                <strong>{capsule.name}</strong>
-              </span>
-              <span className="note-list-preview">{capsuleCountsLine(capsule.counts)}</span>
-              <small className="note-list-meta">
-                <Clock3 size={12} />
-                {capsule.version} · {compactDate(capsule.updated_at)}
-              </small>
-            </button>
-          ))}
-        </div>
-        <CapsuleImportHistory
-          imports={capsuleImports.data?.items ?? []}
-          total={capsuleImports.data?.total ?? 0}
-          loading={capsuleImports.isLoading}
-          selectedImportId={importResult?.import_id}
-          onOpen={(importId) => openImportDetail.mutate(importId)}
-        />
-        {openImportDetail.error && <small className="model-test-error">{openImportDetail.error.message}</small>}
-      </Panel>
+    <div className={`surface split-view capsules-view ${resolvedEmpty ? "split-view-empty-list" : ""}`}>
+      {!resolvedEmpty && (
+        <Panel className="list-pane">
+          <SectionHeader
+            title="Capsules"
+            actions={
+              <>
+                <Button icon={<Import size={16} />} variant="quiet" disabled={importCapsule.isPending} onClick={() => importCapsule.mutate()}>
+                  Import
+                </Button>
+                <Button icon={<Plus size={16} />} onClick={() => setCreateOpen(true)}>
+                  New
+                </Button>
+              </>
+            }
+          />
+          <label className="source-list-search">
+            <Search size={15} />
+            <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Find capsules" aria-label="Find capsules" />
+          </label>
+          <div className="entity-list capsules-list">
+            {capsules.isLoading && <div className="entity-list-empty">Loading capsules...</div>}
+            {rows.map((capsule) => (
+              <button key={capsule.id} className={selected?.id === capsule.id ? "active" : ""} onClick={() => setSelectedCapsuleId(capsule.id)}>
+                <span className="note-list-title">
+                  <strong>{capsule.name}</strong>
+                </span>
+                <span className="note-list-preview">{capsuleCountsLine(capsule.counts)}</span>
+                <small className="note-list-meta">
+                  <Clock3 size={12} />
+                  {capsule.version} · {compactDate(capsule.updated_at)}
+                </small>
+              </button>
+            ))}
+          </div>
+          <CapsuleImportHistory
+            imports={importRows}
+            total={capsuleImports.data?.total ?? 0}
+            loading={capsuleImports.isLoading}
+            selectedImportId={importResult?.import_id}
+            onOpen={(importId) => openImportDetail.mutate(importId)}
+          />
+          {openImportDetail.error && <small className="model-test-error">{openImportDetail.error.message}</small>}
+        </Panel>
+      )}
       <Panel className="capsule-detail detail-pane">
-        {importResult ? (
+        {!selected?.id && (capsules.isLoading || capsuleImports.isLoading) ? (
+          <div className="source-detail-loading" aria-label="Loading Capsules" aria-busy="true" />
+        ) : importResult ? (
           <CapsuleImportDetail result={importResult} onClose={() => setImportResult(null)} />
         ) : detail.data ? (
           <CapsuleDetail capsule={detail.data} onOpenTarget={openCapsuleTarget} />
         ) : (
-          <CapsuleEmptyDetail onCreate={() => setCreateOpen(true)} />
+          <CapsuleEmptyDetail onCreate={() => setCreateOpen(true)} onImport={() => importCapsule.mutate()} importing={importCapsule.isPending} />
         )}
       </Panel>
       <Dialog.Root open={createOpen} onOpenChange={setCreateOpen}>
@@ -7886,14 +7883,18 @@ function CapsuleImportHistory({
   );
 }
 
-function CapsuleEmptyDetail({ onCreate }: { onCreate: () => void }) {
+function CapsuleEmptyDetail({ onCreate, onImport, importing }: { onCreate: () => void; onImport: () => void; importing: boolean }) {
   return (
-    <div className="source-empty-state">
-      <Archive size={20} />
-      <strong>No capsule selected</strong>
-      <Button type="button" size="sm" icon={<Plus size={14} />} onClick={onCreate}>
-        New
-      </Button>
+    <div className="surface-empty-state">
+      <strong>No capsules</strong>
+      <div className="entity-list-empty-actions">
+        <Button type="button" icon={<Plus size={15} />} onClick={onCreate}>
+          New
+        </Button>
+        <Button type="button" variant="quiet" icon={<Import size={15} />} disabled={importing} onClick={onImport}>
+          Import
+        </Button>
+      </div>
     </div>
   );
 }
