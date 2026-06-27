@@ -14,6 +14,7 @@ Runs the v1 quality gate:
   - Python lint
   - desktop unit/security/route tests
   - desktop production build
+  - promptless browser QA smoke
   - renderer e2e smoke
   - AI registry structural validation
   - local AI smoke
@@ -59,6 +60,7 @@ run_step "Python core tests" bash -lc "cd services/core && uv run pytest"
 run_step "Python lint" bash -lc "cd services/core && uv run ruff check ."
 run_step "Desktop tests" pnpm --filter @vault/desktop test -- --runInBand
 run_step "Desktop production build" pnpm --filter @vault/desktop build
+run_step "Promptless browser QA" node scripts/check_browser_qa.mjs
 run_step "Renderer e2e smoke" pnpm e2e
 run_step "AI registry validation" ./scripts/validate_ai_registries.sh
 run_step "Local AI smoke" ./scripts/test_local_ai.sh --format json

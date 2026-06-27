@@ -11905,20 +11905,21 @@ function SettingsView() {
                     {testRuntime.data && <small>{testRuntime.data.status}: {testRuntime.data.message}</small>}
                     {stopLlamaServer.error && <small className="model-test-error">{stopLlamaServer.error.message}</small>}
                   </div>
-                  <div className="download-list">
-                    <h3>Download queue</h3>
-                    {(downloads.data ?? []).length === 0 && <p>No model downloads yet.</p>}
-                    {(downloads.data ?? []).map((download) => (
-                      <DownloadQueueRow
-                        key={download.id}
-                        download={download}
-                        busy={downloadActionBusy}
-                        onPause={() => pauseDownload.mutate(download.id)}
-                        onResume={() => resumeDownload.mutate(download.id)}
-                        onCancel={() => cancelDownload.mutate(download.id)}
-                      />
-                    ))}
-                  </div>
+                  {(downloads.data ?? []).length > 0 && (
+                    <div className="download-list">
+                      <h3>Download queue</h3>
+                      {(downloads.data ?? []).map((download) => (
+                        <DownloadQueueRow
+                          key={download.id}
+                          download={download}
+                          busy={downloadActionBusy}
+                          onPause={() => pauseDownload.mutate(download.id)}
+                          onResume={() => resumeDownload.mutate(download.id)}
+                          onCancel={() => cancelDownload.mutate(download.id)}
+                        />
+                      ))}
+                    </div>
+                  )}
               </div>
             </details>
           </div>
